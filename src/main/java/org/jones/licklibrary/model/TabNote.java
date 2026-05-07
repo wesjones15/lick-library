@@ -1,3 +1,10 @@
 package org.jones.licklibrary.model;
 
-public record TabNote(int stringIndex, int fret, int columnIndex, String technique) {}
+import org.jones.licklibrary.constants.Guitar;
+import org.jones.licklibrary.constants.Note;
+
+public record TabNote(int stringIndex, Integer fret, int columnIndex, String technique) {
+    public Note toNote() {
+        return Guitar.getNoteAt(this.stringIndex,this.fret);
+    }
+}

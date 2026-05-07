@@ -51,3 +51,22 @@
 - Implement all `TODO` methods (user will fill business logic)
 - Update CLAUDE.md `Future` section as features are implemented
 - Decide on request body shape for `POST /api/lick` (currently raw String — may want a wrapper object)
+
+---
+
+## Session 2
+
+### Decisions Made
+- `source_tab` dropped from `Lick` entity and `LickResponse` — `List<IntervalNote>` is the canonical lick representation
+- New `IntervalNote` record: `(Interval interval, String technique)` — pairs each interval with the technique used to exit toward the next note (h, p, /, etc.); null on most notes and always null on the last
+- Interval hash is technique-agnostic (hashes interval names only) so same shape with different articulation deduplicates correctly
+- Serialization format for DB `intervals` column: `ONE,FLAT_THREE:h,FOUR,FIVE` — technique appended with `:` only when present
+- Technique character is the *following* character in the tab (describes how you leave a note, not how you arrived)
+
+### Implemented
+- `IntervalNote.java` — new record
+- `Lick.java` — removed `sourceTab`, added `toString()` rendering e.g. `ONE FLAT_THREE[h] FOUR FIVE`
+- `LickResponse.java` — removed `sourceTab`, changed `intervals` to `List<IntervalNote>`
+- `LickService.toIntervals()` — implemented: resolves each TabNote → Note → Interval, pairs with technique
+- `LickService.serializeIntervals()` / `deserializeIntervals()` — implemented
+- `CLAUDE.md` — updated to reflect all of the above

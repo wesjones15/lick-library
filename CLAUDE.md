@@ -21,11 +21,12 @@ src/main/java/org/jones/licklibrary/
 │   └── LickController.java         # REST endpoints
 ├── service/
 │   ├── TabParserService.java        # raw tab → ordered note sequence
-│   ├── IntervalService.java         # notes → Interval enum sequence
+│   ├── IntervalService.java         # notes → IntervalNote sequence
 │   ├── PositionFinderService.java   # interval sequence + key → alternate neck positions
 │   └── LickService.java             # orchestrates pipelines, handles DB lookup
 ├── model/
 │   ├── TabNote.java                 # record: stringIndex, fret, columnIndex, technique
+│   ├── IntervalNote.java            # record: interval, technique — primary lick representation
 │   ├── Lick.java                    # DB entity
 │   └── Position.java                # a single playable position on the neck
 ├── repository/
@@ -46,14 +47,14 @@ src/main/resources/
 
 ## Enums
 
-**Note.java** — used only during parsing to resolve string+fret to an absolute note. Does not travel beyond IntervalService.
+**Note.java** — used only during parsing to resolve string+fret to an absolute note. Does not travel beyond the tab parsing step.
 ```
 C, C_SHARP, D, D_SHARP, E, F, F_SHARP, G, G_SHARP, A, A_SHARP, B
 shift(int semitones) → (ordinal + semitones) % 12
 ```
 Flats are aliased to their sharp equivalent on input.
 
-**Interval.java** — used everywhere from IntervalService onward.
+**Interval.java** — used everywhere from parsing onward.
 ```
 ONE, FLAT_TWO, TWO, FLAT_THREE, THREE, FOUR, FLAT_FIVE, FIVE, FLAT_SIX, SIX, FLAT_SEVEN, SEVEN
 shift(int semitones) → (ordinal + semitones) % 12
@@ -65,27 +66,49 @@ Conversion from Note to Interval: `(note.ordinal() - firstNote.ordinal() + 12) %
 
 ---
 
+## Models
+
+**TabNote** — raw parsed position from ASCII tab. Short-lived: exists only during tab parsing.
+```
+record TabNote(int stringIndex, int fret, int columnIndex, String technique)
+toNote() → Guitar.getNoteAt(stringIndex, fret)
+```
+
+**IntervalNote** — primary lick representation. Pairs an interval with the technique used to exit toward the next note (`h`, `p`, `/`, etc.). Technique is null for most notes.
+```
+record IntervalNote(Interval interval, String technique)
+```
+
+Serialization format for DB storage: comma-separated, technique appended with `:` only when present.
+```
+ONE,FLAT_THREE:h,FOUR,FIVE
+```
+
+---
+
 ## Upload Pipeline
 
 ```
 POST /api/lick { tab }
     │
     ▼
-TabParserService
+parseTab (LickService)
     parse each of 6 string lines → Map<columnIndex, TabNote>
     merge all 6 into TreeMap<columnIndex, List<TabNote>>
     for simultaneous notes: take first (MVP)
     output: ordered List<TabNote>
     │
     ▼
-IntervalService
+toIntervals (LickService)
     resolve each TabNote → Note via Guitar.getNoteAt()
     first note = ONE, all others derived via (note - firstNote + 12) % 12
-    output: List<Interval>
+    pair each Interval with technique from TabNote
+    output: List<IntervalNote>
     │
     ▼
 LickService
-    hash interval sequence
+    serialize intervals → String
+    hash interval sequence (technique-agnostic hash — hash only Interval names)
     check DB by hash → if exists, return existing record
     if new → store and return
 ```
@@ -126,7 +149,7 @@ Each string line is processed independently:
 1. Strip string label prefix (`E|`, `B|`, `A|` etc.)
 2. Walk character by character, recording column index of each fret number
 3. Group consecutive digits (handles frets 10, 11, 12 etc.)
-4. Record technique character if present (`h`, `p`, `/`, `\`, `b`) — stored as metadata, ignored in interval logic for MVP
+4. Record technique character if present (`h`, `p`, `/`, `\`, `b`) — the character *following* the fret number, indicating how to transition to the next note
 5. Output: `Map<Integer, TabNote>` for that string
 
 Merge all 6 string maps into `TreeMap<Integer, List<TabNote>>` — TreeMap gives temporal order for free.
@@ -138,9 +161,8 @@ Merge all 6 string maps into `TreeMap<Integer, List<TabNote>>` — TreeMap gives
 ```sql
 CREATE TABLE lick (
     id              UUID PRIMARY KEY,
-    interval_hash   VARCHAR(64) UNIQUE NOT NULL,  -- SHA-256 of interval sequence
-    intervals       VARCHAR(255) NOT NULL,          -- e.g. "ONE,FLAT_THREE,FOUR,FIVE"
-    source_tab      TEXT,
+    interval_hash   VARCHAR(64) UNIQUE NOT NULL,  -- SHA-256 of interval names only (technique-agnostic)
+    intervals       VARCHAR(255) NOT NULL,          -- e.g. "ONE,FLAT_THREE:h,FOUR,FIVE"
     mode_tag        VARCHAR(32),                    -- optional, user-supplied
     endpoint_degree VARCHAR(16),                    -- e.g. "FIVE", for solo chaining later
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -164,7 +186,7 @@ POST  /api/lick                          { tab }              → LickResponse
 GET   /api/lick?key=A&mode=MAJOR&page=0                       → Page<LickResponse>
 ```
 
-LickResponse contains interval sequence, positions for the requested key, and source tab. Filter params (mode, endpoint degree etc.) should be stubbed from day one even if unused in MVP.
+LickResponse contains the IntervalNote sequence and positions for the requested key. Filter params (mode, endpoint degree etc.) should be stubbed from day one even if unused in MVP.
 
 ---
 

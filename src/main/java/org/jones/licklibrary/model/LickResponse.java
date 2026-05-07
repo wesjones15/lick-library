@@ -4,7 +4,6 @@ import java.util.List;
 
 public record LickResponse(
     String intervalHash,
-    List<String> intervals,
-    List<Position> positions,
-    String sourceTab
+    List<IntervalNote> intervals,
+    List<Position> positions
 ) {}
