@@ -70,3 +70,28 @@
 - `LickService.toIntervals()` — implemented: resolves each TabNote → Note → Interval, pairs with technique
 - `LickService.serializeIntervals()` / `deserializeIntervals()` — implemented
 - `CLAUDE.md` — updated to reflect all of the above
+
+---
+
+## Session 3
+
+### Decisions Made
+- `IntervalNote` serialization format changed to numeric degree names: `1 3 2 / 3 4` (space-separated, technique follows its interval as a separate token)
+- `Interval` enum is now the source of truth for display names via `displayName()` (ONE→"1", FLAT_THREE→"b3") and `fromDisplayName()` for reverse lookup
+- `IntervalNote.toString()` renders itself using `displayName()` — e.g. `"3 h"` or `"1"`
+- `IntervalNoteListConverter` is the single owner of serialize/deserialize logic; `LickService.serializeIntervals` / `deserializeIntervals` removed as redundant
+- `Lick.intervals` is now `List<IntervalNote>` (not String) — JPA converter handles persistence transparently
+- `Position` redesigned from `List<int[]>` to `List<TabNote>` — preserves technique and supports simultaneous notes (multiple TabNotes sharing a columnIndex)
+- `Position.toString()` renders a full 6-string ASCII tab from the TabNote list
+- `Lick` gains `List<TabNote> sourceNotes` — the original parsed notes (including simultaneous) stored via `TabNoteListConverter`
+- `LickService.parseTab` preserves all notes including simultaneous (no filtering); `toIntervals` takes the first note per column for the flat interval sequence
+
+### Implemented
+- `Interval.java` — added `displayName()` and `fromDisplayName()`
+- `IntervalNote.java` — added `toString()`
+- `IntervalNoteListConverter.java` — new JPA converter using enum display names
+- `IntervalNoteListConverter` tests, `IntervalNoteTest`, `IntervalTest` (including `shift` tests)
+- `LickService.java` — removed `INTERVAL_NAMES`, `serializeIntervals`, `deserializeIntervals`; `toIntervals` now groups by columnIndex
+- `Position.java` — redesigned to `List<TabNote>` with ASCII tab renderer
+- `TabNoteListConverter.java` — new JPA converter (`stringIndex:fret:columnIndex:technique` format)
+- `Lick.java` — `intervals` now `List<IntervalNote>` with `@Convert`; added `sourceNotes` field

@@ -1,5 +1,7 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.model.IntervalNote;
+import org.jones.licklibrary.model.Lick;
 import org.jones.licklibrary.model.TabNote;
 import org.jones.licklibrary.repository.LickRepository;
 import org.jones.licklibrary.repository.PositionCacheRepository;
@@ -53,6 +55,20 @@ class LickServiceTest {
         System.out.println(notes.toString());
         System.out.println(lickService.toNoteString(notes));
 
+    }
+
+    @Test
+    void test_toIntervals_simple_sample() {
+        String inputTab =
+                "E|----------------|\n" +
+                "B|------1---------|\n" +
+                "G|--1/2-----2p0---|\n" +
+                "D|--------------3-|\n" +
+                "A|----------------|\n" +
+                "E|----------------|";
+        List<TabNote> notes = lickService.parseTab(inputTab);
+        List<IntervalNote> intervals = lickService.toIntervals(notes);
+        System.out.println(intervals.toString());
     }
 
     @Test

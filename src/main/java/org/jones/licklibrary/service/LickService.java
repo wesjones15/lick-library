@@ -76,39 +76,23 @@ public class LickService {
 
     /**
      * Converts an ordered TabNote sequence to IntervalNotes relative to the first note.
-     * First note is always ONE. Each subsequent note: (note - firstNote + 12) % 12.
+     * For simultaneous notes (same columnIndex), takes the first. First note is always ONE.
      */
     List<IntervalNote> toIntervals(List<TabNote> notes) {
-        Note first = notes.get(0).toNote();
-        List<IntervalNote> out = new ArrayList<>();
+        List<TabNote> melody = new ArrayList<>();
+        int lastCol = Integer.MIN_VALUE;
         for (TabNote tabNote : notes) {
+            if (tabNote.columnIndex() != lastCol) {
+                melody.add(tabNote);
+                lastCol = tabNote.columnIndex();
+            }
+        }
+        Note first = melody.get(0).toNote();
+        List<IntervalNote> out = new ArrayList<>();
+        for (TabNote tabNote : melody) {
             Note note = tabNote.toNote();
             Interval interval = Interval.values()[(note.ordinal() - first.ordinal() + 12) % 12];
             out.add(new IntervalNote(interval, tabNote.technique()));
-        }
-        return out;
-    }
-
-    String serializeIntervals(List<IntervalNote> intervals) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < intervals.size(); i++) {
-            IntervalNote in = intervals.get(i);
-            sb.append(in.interval().name());
-            if (in.technique() != null && !in.technique().isEmpty()) {
-                sb.append(":").append(in.technique());
-            }
-            if (i < intervals.size() - 1) sb.append(",");
-        }
-        return sb.toString();
-    }
-
-    List<IntervalNote> deserializeIntervals(String serialized) {
-        List<IntervalNote> out = new ArrayList<>();
-        for (String token : serialized.split(",")) {
-            String[] parts = token.split(":");
-            Interval interval = Interval.valueOf(parts[0]);
-            String technique = parts.length > 1 ? parts[1] : null;
-            out.add(new IntervalNote(interval, technique));
         }
         return out;
     }
