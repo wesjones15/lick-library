@@ -58,7 +58,7 @@ class LickServiceTest {
             }};
         });
 
-        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null));
+        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null));
 
         verify(lickRepository).save(any(Lick.class));
         assertEquals(Mode.IONIAN, response.mode());
@@ -75,7 +75,7 @@ class LickServiceTest {
 
         when(lickRepository.findByIntervalHash(anyString())).thenReturn(Optional.of(existing));
 
-        lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null));
+        lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null));
 
         verify(lickRepository, never()).save(any());
     }
@@ -85,7 +85,7 @@ class LickServiceTest {
         when(lickRepository.findByIntervalHash(anyString())).thenReturn(Optional.empty());
         when(lickRepository.save(any(Lick.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, Mode.DORIAN));
+        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, Mode.DORIAN, null));
 
         assertEquals(Mode.DORIAN, response.mode());
     }

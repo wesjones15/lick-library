@@ -19,7 +19,10 @@ public class LickUtils {
     private LickUtils() {}
 
     public static List<IntervalNote> toIntervals(List<TabNote> notes) {
-        Note first = notes.get(0).toNote();
+        return toIntervals(notes, notes.get(0).toNote());
+    }
+
+    public static List<IntervalNote> toIntervals(List<TabNote> notes, Note rootKey) {
         List<IntervalNote> out = new ArrayList<>();
         int normalizedCol = 0;
         int lastRawCol = Integer.MIN_VALUE;
@@ -29,7 +32,7 @@ public class LickUtils {
             }
             lastRawCol = tabNote.columnIndex();
             Note note = tabNote.toNote();
-            Interval interval = Interval.values()[(note.ordinal() - first.ordinal() + 12) % 12];
+            Interval interval = Interval.values()[(note.ordinal() - rootKey.ordinal() + 12) % 12];
             out.add(new IntervalNote(interval, tabNote.technique(), normalizedCol));
         }
         return out;

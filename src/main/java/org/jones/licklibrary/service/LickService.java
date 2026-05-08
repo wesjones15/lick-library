@@ -38,7 +38,8 @@ public class LickService {
             throw new IllegalArgumentException("rawTab must not be blank");
         }
         List<TabNote> notes = parseTab(request.rawTab());
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+        Note rootKey = request.inputKey() != null ? request.inputKey() : notes.get(0).toNote();
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey);
         String hash = LickUtils.hashIntervals(intervals);
 
         Optional<Lick> existing = lickRepository.findByIntervalHash(hash);

@@ -46,6 +46,20 @@ class LickUtilsTest {
     // --- toIntervals ---
 
     @Test
+    void toIntervals_usesProvidedRootKeyInsteadOfFirstNote() {
+        // A string open = A (ordinal 9), fret 2 = B (ordinal 11). Root key = C (ordinal 0).
+        // A relative to C: (9 - 0 + 12) % 12 = 9 = SIX
+        // B relative to C: (11 - 0 + 12) % 12 = 11 = SEVEN
+        List<TabNote> notes = List.of(
+            new TabNote(1, 0, 0, null), // A
+            new TabNote(1, 2, 1, null)  // B
+        );
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.C);
+        assertEquals(Interval.SIX,   intervals.get(0).interval());
+        assertEquals(Interval.SEVEN, intervals.get(1).interval());
+    }
+
+    @Test
     void toIntervals_firstNoteIsAlwaysONE() {
         List<TabNote> notes = List.of(new TabNote(4, 2, 0, null)); // A string fret 2 = B
         List<IntervalNote> intervals = LickUtils.toIntervals(notes);

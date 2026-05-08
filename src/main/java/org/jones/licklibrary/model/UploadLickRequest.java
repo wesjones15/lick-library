@@ -1,3 +1,5 @@
 package org.jones.licklibrary.model;
 
-public record UploadLickRequest(String rawTab, Mode mode) {}
+import org.jones.licklibrary.constants.Note;
+
+public record UploadLickRequest(String rawTab, Mode mode, Note inputKey) {}
