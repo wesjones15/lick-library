@@ -2,6 +2,7 @@ package org.jones.licklibrary.service;
 
 import org.jones.licklibrary.constants.Guitar;
 import org.jones.licklibrary.constants.Note;
+import org.jones.licklibrary.controller.LickNotFoundException;
 import org.jones.licklibrary.model.*;
 import org.jones.licklibrary.repository.LickRepository;
 import org.jones.licklibrary.repository.PositionCacheRepository;
@@ -88,7 +89,7 @@ public class LickService {
 
     public LickResponse getLick(UUID id, Note key) {
         Lick lick = lickRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Lick not found: " + id));
+            .orElseThrow(() -> new LickNotFoundException(id));
         List<Position> positions = resolvePositions(lick, key);
         return toLickResponse(lick, positions);
     }

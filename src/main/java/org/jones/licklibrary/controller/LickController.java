@@ -34,7 +34,12 @@ public class LickController {
     public ResponseEntity<LickResponse> getLick(
             @PathVariable UUID id,
             @RequestParam String key) {
-        Note noteKey = Note.valueOf(key.toUpperCase());
+        Note noteKey;
+        try {
+            noteKey = Note.valueOf(key.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
         return ResponseEntity.ok(lickService.getLick(id, noteKey));
     }
 }

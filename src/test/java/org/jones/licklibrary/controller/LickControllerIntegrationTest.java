@@ -146,4 +146,27 @@ class LickControllerIntegrationTest {
         assertTrue(positions.size() > 0);
         assertFalse(positions.get(0).get("notes").isEmpty());
     }
+
+    @Test
+    void getLick_unknownId_returns404() throws Exception {
+        mockMvc.perform(get("/api/lick/{id}", java.util.UUID.randomUUID()).param("key", "A"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getLick_invalidKey_returns400() throws Exception {
+        String body = objectMapper.writeValueAsString(
+            new java.util.HashMap<>() {{ put("rawTab", MAJOR_TAB); }});
+
+        MvcResult upload = mockMvc.perform(post("/api/lick")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String id = objectMapper.readTree(upload.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(get("/api/lick/{id}", id).param("key", "X"))
+            .andExpect(status().isBadRequest());
+    }
 }
