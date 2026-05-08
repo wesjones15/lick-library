@@ -4,6 +4,7 @@ import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.LickResponse;
 import org.jones.licklibrary.model.UploadLickRequest;
 import org.jones.licklibrary.service.LickService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,12 @@ public class LickController {
     @GetMapping
     public List<LickResponse> getAllLicks() {
         return lickService.getAllLicks();
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteLick(@PathVariable UUID id) {
+        lickService.deleteLick(id);
     }
 
     @GetMapping("/{id}")

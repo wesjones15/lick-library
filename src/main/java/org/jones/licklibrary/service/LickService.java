@@ -97,6 +97,11 @@ public class LickService {
         return toLickResponse(lick, positions);
     }
 
+    public void deleteLick(UUID id) {
+        if (!lickRepository.existsById(id)) throw new LickNotFoundException(id);
+        lickRepository.deleteById(id);
+    }
+
     List<Position> resolvePositions(Lick lick, Note key) {
         // MVP: always recompute; position cache skipped
         return findPositions(lick.getIntervals(), key);
