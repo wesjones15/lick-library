@@ -22,7 +22,11 @@ public class LickController {
 
     @PostMapping
     public ResponseEntity<LickResponse> uploadLick(@RequestBody UploadLickRequest request) {
-        return ResponseEntity.ok(lickService.uploadLick(request));
+        try {
+            return ResponseEntity.ok(lickService.uploadLick(request));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping

@@ -8,5 +8,5 @@ public record LickResponse(
     String rawTab,
     String intervalDisplayString,
     Mode mode,
-    List<Position> positions
+    List<PositionResponse> positions
 ) {}

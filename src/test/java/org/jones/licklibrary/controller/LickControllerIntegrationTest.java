@@ -144,7 +144,7 @@ class LickControllerIntegrationTest {
         JsonNode positions = json.get("positions");
         assertNotNull(positions);
         assertTrue(positions.size() > 0);
-        assertFalse(positions.get(0).get("notes").isEmpty());
+        assertFalse(positions.get(0).get("tabString").asText().isBlank());
     }
 
     @Test

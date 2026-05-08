@@ -31,6 +31,9 @@ public class LickService {
     // --- Upload pipeline ---
 
     public LickResponse uploadLick(UploadLickRequest request) {
+        if (request.rawTab() == null || request.rawTab().isBlank()) {
+            throw new IllegalArgumentException("rawTab must not be blank");
+        }
         List<TabNote> notes = parseTab(request.rawTab());
         List<IntervalNote> intervals = LickUtils.toIntervals(notes);
         String hash = LickUtils.hashIntervals(intervals);
@@ -170,12 +173,15 @@ public class LickService {
     }
 
     LickResponse toLickResponse(Lick lick, List<Position> positions) {
+        List<PositionResponse> positionResponses = positions.stream()
+            .map(p -> new PositionResponse(p.toTabString()))
+            .toList();
         return new LickResponse(
             lick.getId(),
             lick.getRawTab(),
             IntervalNoteListConverter.toDisplayString(lick.getIntervals()),
             lick.getMode(),
-            positions
+            positionResponses
         );
     }
 
