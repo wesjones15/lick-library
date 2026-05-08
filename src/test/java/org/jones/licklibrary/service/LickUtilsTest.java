@@ -3,6 +3,7 @@ package org.jones.licklibrary.service;
 import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
+import org.jones.licklibrary.model.Mode;
 import org.jones.licklibrary.model.TabNote;
 import org.junit.jupiter.api.Test;
 
@@ -92,7 +93,17 @@ class LickUtilsTest {
 
     @Test
     void toAbsoluteNotes_convertsIntervalsToNotesForKey() {
-        // TODO
+        // ONE, TWO, THREE in key A → A, B, C#
+        List<IntervalNote> intervals = List.of(
+            new IntervalNote(Interval.ONE,   null, 0),
+            new IntervalNote(Interval.TWO,   null, 1),
+            new IntervalNote(Interval.THREE, null, 2)
+        );
+        List<Note> notes = LickUtils.toAbsoluteNotes(intervals, Note.A);
+        assertEquals(3, notes.size());
+        assertEquals(Note.A,       notes.get(0));
+        assertEquals(Note.B,       notes.get(1));
+        assertEquals(Note.C_SHARP, notes.get(2));
     }
 
     // --- hashIntervals ---
@@ -113,5 +124,48 @@ class LickUtilsTest {
         List<IntervalNote> b = List.of(new IntervalNote(Interval.ONE,  null, 0),
                                        new IntervalNote(Interval.FIVE, null, 1));
         assertEquals(LickUtils.hashIntervals(a), LickUtils.hashIntervals(b));
+    }
+
+    // --- detectMode ---
+
+    @Test
+    void detectMode_ionianWhenNoFlats() {
+        List<IntervalNote> intervals = List.of(
+            new IntervalNote(Interval.ONE,   null, 0),
+            new IntervalNote(Interval.TWO,   null, 1),
+            new IntervalNote(Interval.THREE, null, 2)
+        );
+        assertEquals(Mode.IONIAN, LickUtils.detectMode(intervals));
+    }
+
+    @Test
+    void detectMode_aeolianWhenFlatSeven() {
+        // b7 eliminates IONIAN and LYDIAN; tiebreak among remaining picks AEOLIAN
+        List<IntervalNote> intervals = List.of(
+            new IntervalNote(Interval.ONE,        null, 0),
+            new IntervalNote(Interval.FLAT_SEVEN, null, 1)
+        );
+        assertEquals(Mode.AEOLIAN, LickUtils.detectMode(intervals));
+    }
+
+    @Test
+    void detectMode_phrygianWhenFlatTwo() {
+        // b2 eliminates IONIAN, DORIAN, LYDIAN, MIXOLYDIAN, AEOLIAN → PHRYGIAN wins tiebreak over LOCRIAN
+        List<IntervalNote> intervals = List.of(
+            new IntervalNote(Interval.ONE,      null, 0),
+            new IntervalNote(Interval.FLAT_TWO, null, 1)
+        );
+        assertEquals(Mode.PHRYGIAN, LickUtils.detectMode(intervals));
+    }
+
+    @Test
+    void detectMode_locrianWhenFlatTwoAndFlatFive() {
+        // b2 → {PHRYGIAN, LOCRIAN}; b5 further eliminates PHRYGIAN → LOCRIAN uniquely
+        List<IntervalNote> intervals = List.of(
+            new IntervalNote(Interval.ONE,      null, 0),
+            new IntervalNote(Interval.FLAT_TWO, null, 1),
+            new IntervalNote(Interval.FLAT_FIVE, null, 2)
+        );
+        assertEquals(Mode.LOCRIAN, LickUtils.detectMode(intervals));
     }
 }
