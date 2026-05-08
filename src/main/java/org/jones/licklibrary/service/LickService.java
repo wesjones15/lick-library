@@ -147,7 +147,21 @@ public class LickService {
             p.notes().stream().mapToInt(TabNote::fret).max().orElse(0)
         ));
 
-        return results;
+        // Round-robin by starting string so consecutive positions differ visually
+        Map<Integer, List<Position>> byStartString = new LinkedHashMap<>();
+        for (Position p : results) {
+            byStartString.computeIfAbsent(p.notes().get(0).stringIndex(), k -> new ArrayList<>()).add(p);
+        }
+        List<Position> interleaved = new ArrayList<>();
+        List<List<Position>> groups = new ArrayList<>(byStartString.values());
+        int maxSize = groups.stream().mapToInt(List::size).max().orElse(0);
+        for (int i = 0; i < maxSize; i++) {
+            for (List<Position> group : groups) {
+                if (i < group.size()) interleaved.add(group.get(i));
+            }
+        }
+
+        return interleaved;
     }
 
     List<TabNote> findNeckPositions(Note note) {

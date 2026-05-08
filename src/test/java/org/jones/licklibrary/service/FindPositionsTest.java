@@ -14,8 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -93,11 +95,28 @@ class FindPositionsTest {
     }
 
     @Test
-    void findPositions_ranksPositionsByMaxFretAscending() {
+    void findPositions_ranksPositionsByMaxFretAscendingWithinEachStartingString() {
         List<Position> positions = lickService.findPositions(minorPentatonicFragment(), Note.A);
-        for (int i = 1; i < positions.size(); i++) {
-            assertTrue(maxFret(positions.get(i - 1)) <= maxFret(positions.get(i)),
-                "positions not sorted at index " + i);
+        Map<Integer, Integer> lastMaxFret = new HashMap<>();
+        for (Position p : positions) {
+            int startString = p.notes().get(0).stringIndex();
+            int mf = maxFret(p);
+            int prev = lastMaxFret.getOrDefault(startString, 0);
+            assertTrue(mf >= prev,
+                "max-fret not ascending within starting string " + startString + ": " + mf + " < " + prev);
+            lastMaxFret.put(startString, mf);
+        }
+    }
+
+    @Test
+    void findPositions_firstRoundHasDistinctStartingStrings() {
+        List<Position> positions = lickService.findPositions(minorPentatonicFragment(), Note.A);
+        long distinctStarts = positions.stream()
+            .map(p -> p.notes().get(0).stringIndex()).distinct().count();
+        Set<Integer> seen = new HashSet<>();
+        for (int i = 0; i < Math.min((int) distinctStarts, positions.size()); i++) {
+            int s = positions.get(i).notes().get(0).stringIndex();
+            assertTrue(seen.add(s), "duplicate starting string at index " + i + ": string " + s);
         }
     }
 
