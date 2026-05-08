@@ -97,4 +97,26 @@ class FindPositionsTest {
                 "positions not sorted at index " + i);
         }
     }
+
+    @Test
+    void findPositions_longLickProducesPositions() {
+        String rawTab =
+            "e|------------|--------------|--------------|----------|\n" +
+            "B|------------|--------------|--------------|----------|\n" +
+            "G|------------|--------------|--------------|----------|\n" +
+            "D|------------|--------------|--------------|----------|\n" +
+            "A|-----0-2/4--|-4\\2-0-2/4\\2--|-2h4-2h4-4\\2--|-2/4\\2-0--|\n" +
+            "E|-0-2--------|--------------|--------------|------4/5-|";
+
+        List<TabNote> notes = lickService.parseTab(rawTab);
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.A);
+        int span = notes.stream().mapToInt(TabNote::fret).max().orElse(0)
+                 - notes.stream().mapToInt(TabNote::fret).min().orElse(0);
+        List<Position> positions = lickService.findPositions(intervals, Note.A, Math.max(4, span));
+
+        assertFalse(positions.isEmpty());
+        assertTrue(positions.size() <= LickService.MAX_POSITIONS);
+        positions.forEach(p -> assertTrue(maxFret(p) - minFret(p) <= Math.max(4, span),
+            "position exceeds span limit: " + p.toTabString()));
+    }
 }

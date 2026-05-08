@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,7 +40,8 @@ class BuildPositionTest {
         );
         List<Note> absoluteNotes = List.of(Note.E, Note.A);
 
-        List<Position> positions = lickService.buildPositions(root, intervals, absoluteNotes);
+        List<Position> positions = new ArrayList<>();
+        lickService.buildPositions(root, intervals, absoluteNotes, 4, positions);
 
         assertFalse(positions.isEmpty());
         assertEquals(new TabNote(0, 0, 0, null), positions.get(0).notes().get(0));
@@ -55,7 +57,8 @@ class BuildPositionTest {
         // E → F# (2 semitones). F# on string 0 = fret 2.
         List<Note> absoluteNotes = List.of(Note.E, Note.F_SHARP);
 
-        List<Position> positions = lickService.buildPositions(root, intervals, absoluteNotes);
+        List<Position> positions = new ArrayList<>();
+        lickService.buildPositions(root, intervals, absoluteNotes, 4, positions);
 
         assertFalse(positions.isEmpty());
         positions.forEach(p -> {
@@ -73,7 +76,8 @@ class BuildPositionTest {
         );
         List<Note> absoluteNotes = List.of(Note.E, Note.A);
 
-        List<Position> positions = lickService.buildPositions(root, intervals, absoluteNotes);
+        List<Position> positions = new ArrayList<>();
+        lickService.buildPositions(root, intervals, absoluteNotes, 4, positions);
 
         assertFalse(positions.isEmpty());
         assertEquals(2, positions.get(0).notes().get(0).columnIndex());
@@ -91,7 +95,8 @@ class BuildPositionTest {
         );
         List<Note> absoluteNotes = List.of(Note.C, Note.D);
 
-        List<Position> positions = lickService.buildPositions(root, intervals, absoluteNotes);
+        List<Position> positions = new ArrayList<>();
+        lickService.buildPositions(root, intervals, absoluteNotes, 4, positions);
 
         assertTrue(positions.size() > 1, "expected multiple paths, got " + positions.size());
         // Closest candidate (string 1 fret 5, distance 1.0) should be among results

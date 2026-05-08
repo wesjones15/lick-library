@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public class LickService {
 
     static final int MAX_FRET = 15;
+    static final int MAX_POSITIONS = 50;
 
     private final LickRepository lickRepository;
     private final PositionCacheRepository positionCacheRepository;
@@ -49,11 +50,15 @@ public class LickService {
 
         Mode mode = request.mode() != null ? request.mode() : LickUtils.detectMode(intervals);
 
+        int tabSpan = notes.stream().mapToInt(TabNote::fret).max().orElse(0)
+                    - notes.stream().mapToInt(TabNote::fret).min().orElse(0);
+
         Lick lick = new Lick();
         lick.setIntervalHash(hash);
         lick.setIntervals(intervals);
         lick.setRawTab(request.rawTab());
         lick.setMode(mode);
+        lick.setTabSpan(tabSpan);
         lick = lickRepository.save(lick);
         return toSummaryResponse(lick);
     }
@@ -107,17 +112,22 @@ public class LickService {
     }
 
     List<Position> resolvePositions(Lick lick, Note key) {
-        // MVP: always recompute; position cache skipped
-        return findPositions(lick.getIntervals(), key);
+        int spanLimit = Math.max(4, lick.getTabSpan() != null ? lick.getTabSpan() : 4);
+        return findPositions(lick.getIntervals(), key, spanLimit);
     }
 
     List<Position> findPositions(List<IntervalNote> intervals, Note key) {
+        return findPositions(intervals, key, 4);
+    }
+
+    List<Position> findPositions(List<IntervalNote> intervals, Note key, int spanLimit) {
         List<Note> absoluteNotes = LickUtils.toAbsoluteNotes(intervals, key);
         List<TabNote> rootCandidates = findNeckPositions(absoluteNotes.get(0));
 
         List<Position> results = new ArrayList<>();
         for (TabNote root : rootCandidates) {
-            results.addAll(buildPositions(root, intervals, absoluteNotes));
+            if (results.size() >= MAX_POSITIONS) break;
+            buildPositions(root, intervals, absoluteNotes, spanLimit, results);
         }
 
         Set<String> seen = new HashSet<>();
@@ -159,31 +169,33 @@ public class LickService {
         return candidates;
     }
 
-    List<Position> buildPositions(TabNote root, List<IntervalNote> intervals, List<Note> absoluteNotes) {
-        List<Position> results = new ArrayList<>();
-        if (root.fret() > MAX_FRET) return results;
+    void buildPositions(TabNote root, List<IntervalNote> intervals, List<Note> absoluteNotes, int spanLimit, List<Position> results) {
+        if (root.fret() > MAX_FRET) return;
         List<TabNote> path = new ArrayList<>();
         path.add(new TabNote(root.stringIndex(), root.fret(), intervals.get(0).columnIndex(), intervals.get(0).technique()));
-        dfsPositions(path, intervals, absoluteNotes, 1, results);
-        return results;
+        dfsPositions(path, intervals, absoluteNotes, 1, results, spanLimit);
     }
 
     private void dfsPositions(List<TabNote> path, List<IntervalNote> intervals,
-            List<Note> absoluteNotes, int idx, List<Position> results) {
+            List<Note> absoluteNotes, int idx, List<Position> results, int spanLimit) {
+        if (results.size() >= MAX_POSITIONS) return;
         if (idx == absoluteNotes.size()) {
             results.add(new Position(new ArrayList<>(path)));
             return;
         }
         TabNote prev = path.get(path.size() - 1);
         String technique = intervals.get(idx - 1).technique();
-        for (TabNote candidate : findCandidates(prev, absoluteNotes.get(idx), technique)) {
+        List<TabNote> candidates = findCandidates(prev, absoluteNotes.get(idx), technique);
+        int candidateCap = Math.max(4, 20 / absoluteNotes.size());
+        int limit = Math.min(candidates.size(), candidateCap);
+        for (TabNote candidate : candidates.subList(0, limit)) {
             TabNote node = new TabNote(candidate.stringIndex(), candidate.fret(),
                 intervals.get(idx).columnIndex(), intervals.get(idx).technique());
             path.add(node);
             int minFret = path.stream().mapToInt(TabNote::fret).min().orElse(0);
             int maxFret = path.stream().mapToInt(TabNote::fret).max().orElse(0);
-            if (node.fret() <= MAX_FRET && maxFret - minFret <= 4) {
-                dfsPositions(path, intervals, absoluteNotes, idx + 1, results);
+            if (node.fret() <= MAX_FRET && maxFret - minFret <= spanLimit) {
+                dfsPositions(path, intervals, absoluteNotes, idx + 1, results, spanLimit);
             }
             path.remove(path.size() - 1);
         }
