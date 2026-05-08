@@ -1,7 +1,6 @@
 package org.jones.licklibrary.service;
 
 import org.jones.licklibrary.constants.Guitar;
-import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.*;
 import org.jones.licklibrary.repository.LickRepository;
@@ -31,14 +30,10 @@ public class LickService {
 
     public void uploadLick(String tab) {
         List<TabNote> notes = parseTab(tab);
-        List<IntervalNote> intervals = toIntervals(notes);
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
         throw new UnsupportedOperationException("TODO");
     }
 
-    /**
-     * Parses a raw multi-line tab string into a time-ordered sequence of TabNotes.
-     * Each of the 6 string lines is processed independently, then merged via column index.
-     */
     List<TabNote> parseTab(String rawTab) {
         String[] strings = rawTab.split("\n");
         List<TabNote> out = new ArrayList<>();
@@ -67,45 +62,6 @@ public class LickService {
         return out;
     }
 
-    String toNoteString(List<TabNote> tabnotes) {
-        StringBuilder sb = new StringBuilder();
-        for (TabNote tabnote : tabnotes) {
-            Note note = tabnote.toNote();
-            sb.append(note.toString());
-            sb.append(" " + tabnote.technique());
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Converts an ordered TabNote sequence to IntervalNotes relative to the first note.
-     * Simultaneous notes (same raw columnIndex) receive the same normalized columnIndex.
-     * First note is always ONE.
-     */
-    List<IntervalNote> toIntervals(List<TabNote> notes) {
-        Note first = notes.get(0).toNote();
-        List<IntervalNote> out = new ArrayList<>();
-        int normalizedCol = 0;
-        int lastRawCol = Integer.MIN_VALUE;
-        for (TabNote tabNote : notes) {
-            if (tabNote.columnIndex() != lastRawCol && lastRawCol != Integer.MIN_VALUE) {
-                normalizedCol++;
-            }
-            lastRawCol = tabNote.columnIndex();
-            Note note = tabNote.toNote();
-            Interval interval = Interval.values()[(note.ordinal() - first.ordinal() + 12) % 12];
-            out.add(new IntervalNote(interval, tabNote.technique(), normalizedCol));
-        }
-        return out;
-    }
-
-    /**
-     * SHA-256 hashes the interval sequence for use as a stable DB key.
-     */
-    String hashIntervals(List<IntervalNote> intervals) {
-        throw new UnsupportedOperationException("TODO");
-    }
-
     // --- Lookup pipeline ---
 
     public Page<LickResponse> getLicks(String key, String mode, int page) {
@@ -116,13 +72,8 @@ public class LickService {
         throw new UnsupportedOperationException("TODO");
     }
 
-    /**
-     * Converts intervals to absolute notes for the given key, finds all valid
-     * string/fret locations starting from each root position, filters by 4-fret span,
-     * and ranks by span ascending.
-     */
     List<Position> findPositions(List<IntervalNote> intervals, Note key) {
-        List<Note> absoluteNotes = toAbsoluteNotes(intervals, key);
+        List<Note> absoluteNotes = LickUtils.toAbsoluteNotes(intervals, key);
         List<TabNote> rootCandidates = findNeckPositions(absoluteNotes.get(0));
 
         List<Position> results = new ArrayList<>();
@@ -145,14 +96,6 @@ public class LickService {
         ));
 
         return results;
-    }
-
-    List<Note> toAbsoluteNotes(List<IntervalNote> intervals, Note key) {
-        List<Note> out = new ArrayList<>();
-        for (IntervalNote in : intervals) {
-            out.add(key.shift(in.interval().ordinal()));
-        }
-        return out;
     }
 
     List<TabNote> findNeckPositions(Note note) {
@@ -180,12 +123,8 @@ public class LickService {
                 }
             }
         }
-        candidates.sort(Comparator.comparingInt(c -> proximityScore(current, c)));
+        candidates.sort(Comparator.comparingInt(c -> LickUtils.proximityScore(current, c)));
         return candidates;
-    }
-
-    int proximityScore(TabNote from, TabNote to) {
-        return Math.abs(from.fret() - to.fret()) + Math.abs(from.stringIndex() - to.stringIndex());
     }
 
     Position buildPosition(TabNote root, List<IntervalNote> intervals, List<Note> absoluteNotes) {
