@@ -10,12 +10,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class LickService {
@@ -130,8 +129,19 @@ public class LickService {
             buildPositions(root, intervals, absoluteNotes, spanLimit, results);
         }
 
-        Set<String> seen = new HashSet<>();
-        results = results.stream().filter(p -> seen.add(p.toTabString())).collect(Collectors.toCollection(ArrayList::new));
+        Map<List<Integer>, Position> byShape = new LinkedHashMap<>();
+        for (Position p : results) {
+            List<Integer> shapeKey = buildDiversityKey(p);
+            Position existing = byShape.get(shapeKey);
+            if (existing == null) {
+                byShape.put(shapeKey, p);
+            } else {
+                int pMin  = p.notes().stream().mapToInt(TabNote::fret).min().orElse(0);
+                int exMin = existing.notes().stream().mapToInt(TabNote::fret).min().orElse(0);
+                if (pMin < exMin) byShape.put(shapeKey, p);
+            }
+        }
+        results = new ArrayList<>(byShape.values());
 
         results.sort(Comparator.comparingInt(p ->
             p.notes().stream().mapToInt(TabNote::fret).max().orElse(0)
@@ -199,6 +209,16 @@ public class LickService {
             }
             path.remove(path.size() - 1);
         }
+    }
+
+    private static List<Integer> buildDiversityKey(Position p) {
+        List<Integer> key = new ArrayList<>();
+        for (TabNote n : p.notes()) {
+            key.add(n.stringIndex());
+        }
+        int minFret = p.notes().stream().mapToInt(TabNote::fret).min().orElse(0);
+        key.add(minFret / 5);
+        return key;
     }
 
     LickResponse toLickResponse(Lick lick, List<Position> positions) {

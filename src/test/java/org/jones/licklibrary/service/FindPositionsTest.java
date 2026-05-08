@@ -13,7 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -118,5 +121,17 @@ class FindPositionsTest {
         assertTrue(positions.size() <= LickService.MAX_POSITIONS);
         positions.forEach(p -> assertTrue(maxFret(p) - minFret(p) <= Math.max(4, span),
             "position exceeds span limit: " + p.toTabString()));
+    }
+
+    @Test
+    void findPositions_noDuplicateStringPatternsInSameRegion() {
+        List<Position> positions = lickService.findPositions(minorPentatonicFragment(), Note.A);
+        Set<List<Integer>> keys = new HashSet<>();
+        for (Position p : positions) {
+            List<Integer> key = new ArrayList<>();
+            p.notes().forEach(n -> key.add(n.stringIndex()));
+            key.add(p.notes().stream().mapToInt(TabNote::fret).min().orElse(0) / 5);
+            assertTrue(keys.add(key), "duplicate string pattern + region: " + p.toTabString());
+        }
     }
 }
