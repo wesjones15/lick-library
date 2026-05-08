@@ -1,8 +1,10 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
 import org.jones.licklibrary.model.Lick;
+import org.jones.licklibrary.model.Position;
 import org.jones.licklibrary.model.TabNote;
 import org.jones.licklibrary.repository.LickRepository;
 import org.jones.licklibrary.repository.PositionCacheRepository;
@@ -190,8 +192,8 @@ class LickServiceTest {
     void buildPosition_rootIsFirstNote() {
         TabNote root = new TabNote(0, 0, 0, null);
         List<IntervalNote> intervals = List.of(
-            new IntervalNote(org.jones.licklibrary.constants.Interval.ONE,  null, 0),
-            new IntervalNote(org.jones.licklibrary.constants.Interval.FOUR, null, 1)
+            new IntervalNote(Interval.ONE,  null, 0),
+            new IntervalNote(Interval.FOUR, null, 1)
         );
         List<Note> absoluteNotes = List.of(Note.E, Note.A);
 
@@ -205,8 +207,8 @@ class LickServiceTest {
     void buildPosition_techniqueConstrainsNextNoteToSameString() {
         TabNote root = new TabNote(0, 0, 0, null);
         List<IntervalNote> intervals = List.of(
-            new IntervalNote(org.jones.licklibrary.constants.Interval.ONE, "h", 0),
-            new IntervalNote(org.jones.licklibrary.constants.Interval.TWO, null, 1)
+            new IntervalNote(Interval.ONE, "h", 0),
+            new IntervalNote(Interval.TWO, null, 1)
         );
         // E → F# (2 semitones). F# on string 0 = fret 2.
         List<Note> absoluteNotes = List.of(Note.E, Note.F_SHARP);
@@ -222,8 +224,8 @@ class LickServiceTest {
     void buildPosition_columnIndexTakenFromIntervals() {
         TabNote root = new TabNote(0, 0, 0, null);
         List<IntervalNote> intervals = List.of(
-            new IntervalNote(org.jones.licklibrary.constants.Interval.ONE,  null, 2),
-            new IntervalNote(org.jones.licklibrary.constants.Interval.FOUR, null, 5)
+            new IntervalNote(Interval.ONE,  null, 2),
+            new IntervalNote(Interval.FOUR, null, 5)
         );
         List<Note> absoluteNotes = List.of(Note.E, Note.A);
 
@@ -240,8 +242,8 @@ class LickServiceTest {
         // Candidates on strings 1-3: (1,5) score 1, (3,7) score 3, (2,0) score 5.
         TabNote root = new TabNote(2, 5, 0, null);
         List<IntervalNote> intervals = List.of(
-            new IntervalNote(org.jones.licklibrary.constants.Interval.ONE, null, 0),
-            new IntervalNote(org.jones.licklibrary.constants.Interval.TWO, null, 1)
+            new IntervalNote(Interval.ONE, null, 0),
+            new IntervalNote(Interval.TWO, null, 1)
         );
         List<Note> absoluteNotes = List.of(Note.C, Note.D);
 
@@ -253,6 +255,26 @@ class LickServiceTest {
     }
 
     // --- findPositions ---
+
+    @Test
+    void findPositions_threeNoteMinorPentatonicFragmentInA() {
+        // ONE=A, FLAT_THREE=C, FIVE=E
+        List<IntervalNote> intervals = List.of(
+            new IntervalNote(Interval.ONE,        null, 0),
+            new IntervalNote(Interval.FLAT_THREE, null, 1),
+            new IntervalNote(Interval.FIVE,       null, 2)
+        );
+
+        List<Position> positions = lickService.findPositions(intervals, Note.A);
+
+        System.out.println("findPositions — A minor pentatonic fragment (A C E): " + positions.size() + " positions");
+        for (Position p : positions) {
+            System.out.println(p.toTabString());
+            System.out.println();
+        }
+
+        assertFalse(positions.isEmpty());
+    }
 
     @Test
     void findPositions_returnsValidPositions() {

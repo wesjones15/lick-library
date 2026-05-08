@@ -16,6 +16,8 @@ import java.util.List;
 @Service
 public class LickService {
 
+    static final int MAX_FRET = 15;
+
     private final LickRepository lickRepository;
     private final PositionCacheRepository positionCacheRepository;
 
@@ -134,12 +136,13 @@ public class LickService {
             return frets.stream().mapToInt(Integer::intValue).max().orElse(0)
                  - frets.stream().mapToInt(Integer::intValue).min().orElse(0) > 4;
         });
+        results.removeIf(p ->
+            p.notes().stream().mapToInt(TabNote::fret).max().orElse(0) > MAX_FRET
+        );
 
-        results.sort(Comparator.comparingInt(p -> {
-            List<Integer> frets = p.notes().stream().map(TabNote::fret).toList();
-            return frets.stream().mapToInt(Integer::intValue).max().orElse(0)
-                 - frets.stream().mapToInt(Integer::intValue).min().orElse(0);
-        }));
+        results.sort(Comparator.comparingInt(p ->
+            p.notes().stream().mapToInt(TabNote::fret).max().orElse(0)
+        ));
 
         return results;
     }

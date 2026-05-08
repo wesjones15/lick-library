@@ -103,7 +103,11 @@ toString() → displayName [+ " " + technique]  — display only, no columnIndex
 - `sourceNotes` — `List<TabNote>` via `TabNoteListConverter`; original parsed notes including simultaneous
 - `modeTag`, `endpointDegree` — optional metadata for future filtering
 
-**Position** — `record Position(List<TabNote> notes)`. Represents one playable position on the neck. `toString()` renders a 6-string ASCII tab using `columnIndex` for character placement.
+**Position** — `record Position(List<TabNote> notes)`. Represents one playable position on the neck. `toTabString()` renders a 6-string ASCII tab using a column-slot model:
+- Slots defined by sorted unique `columnIndex` values across all notes
+- Slot width = max fret digit count at that column across all strings
+- Separator between slots: technique char (if the note on that string has one) or `-`
+- Fixed 1-char leading and trailing padding inside each `|`
 
 **LickResponse** — `record LickResponse(String intervalHash, List<IntervalNote> intervals, List<Position> positions)`.
 
@@ -164,7 +168,8 @@ findPositions (LickService)
         no technique: next note may be same string or ±1 adjacent string
         pick closest candidate by proximityScore = |fret delta| + |string delta|
     filter: max 4-fret span
-    rank by span ascending (tighter = better)
+    filter: no note above MAX_FRET (default 15, constant in LickService)
+    rank by max-fret ascending (lowest on neck first)
     output: List<Position>
 ```
 

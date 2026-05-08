@@ -116,3 +116,21 @@
 - `LickService.toIntervals()` — now assigns normalized columnIndex and preserves all simultaneous notes
 - `IntervalNoteTest.java` — updated to 3-arg constructor
 - `IntervalNoteListConverterTest.java` — updated constructors + storage format assertions; added `toDisplayString` tests and simultaneous-notes serialize test
+
+---
+
+## Session 5
+
+### Decisions Made
+- `Position.toString()` renamed to `toTabString()` and fully rewritten using a column-slot model
+- Column-slot layout rules: 1 leading hyphen, 1 trailing hyphen, 1-char separator between slots (technique char or `-`), slot width = max fret digit count across all strings at that column
+- `buildPosition` now stamps output `TabNote` column indices from `IntervalNote.columnIndex()` rather than loop index — simultaneous notes correctly share a slot in `toTabString()`
+- `findPositions` sort changed from span-ascending to max-fret-ascending (positions sorted lowest on neck first)
+- `MAX_FRET = 15` constant added to `LickService` — positions with any note above this fret are filtered out; easy to change
+
+### Implemented
+- `Position.java` — replaced `toString()` with `toTabString()` using column-slot rendering
+- `PositionTest.java` — 5 tests covering: single note, two notes same string, technique pair, two-digit fret slot widening, gap created by note on another string
+- `LickService.buildPosition()` — column index now sourced from `intervals.get(i).columnIndex()`
+- `LickService.findPositions()` — sort changed to max-fret ascending; added `MAX_FRET` filter
+- `LickServiceTest` — 4 `buildPosition` tests (root placement, technique string constraint, columnIndex propagation, greedy nearest-neighbour); 1 `findPositions` integration-style test with stdout output for manual verification
