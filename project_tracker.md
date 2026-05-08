@@ -205,3 +205,26 @@
 - `FindCandidatesTest.java` — `noTechnique` test updated to assert all-strings range and that candidates span more than 2 strings
 - `FindPositionsTest.java` — count assertion relaxed from `assertEquals(8)` to `assertTrue(>= 8)`
 - `LickUtilsTest.java` — all `proximityScore` assertions updated to `double` with delta; `bothDiffer` case now asserts `Math.sqrt(8)` instead of `4`
+
+---
+
+## Session 8
+
+### Decisions Made
+- **Upload root key** — `toIntervals` previously always treated the first note of the tab as the root (ONE). Added an optional `inputKey` field to the upload request so users can declare what key the tab is in. Intervals are then computed relative to that key instead of the first note. A tab starting on E in a song in A now correctly stores E as the FIVE rather than ONE.
+- **`toIntervals` overload pattern** — the single-argument version delegates to the new two-argument version with `notes.get(0).toNote()` as the root; all existing callers and tests are unaffected.
+- **`inputKey` not persisted** — the root key is only used during interval computation at upload time; it is not stored on the `Lick` entity. The stored intervals already encode the correct relationship.
+- **Sharp note bug fix** — `KeySelector` was sending `"C#"`, `"D#"` etc. to the backend, but `Note.valueOf("C#")` throws because Java enum names can't contain `#`. Sharp keys in the detail page key selector silently returned 400. Fixed by using `C_SHARP`/`D_SHARP` etc. as option values (displaying `C#`/`D#` to the user). This also gates the upload root key feature working correctly for sharp keys.
+- **Dedup still applies** — two tabs with the same notes but different `inputKey` selections will produce different interval sequences and thus different hashes; they are stored as separate licks (correct behavior).
+
+### Implemented — Backend
+- `LickUtils.java` — added `toIntervals(List<TabNote>, Note rootKey)` overload; existing `toIntervals(List<TabNote>)` delegates to it
+- `UploadLickRequest.java` — added `Note inputKey` field (nullable); Jackson deserializes `"A"`, `"C_SHARP"` etc. directly to `Note` enum
+- `LickService.uploadLick` — resolves root key from `request.inputKey()` if non-null, else falls back to first note
+- `LickServiceTest.java` — updated `UploadLickRequest` constructors to pass explicit `null` for `inputKey`
+- `LickUtilsTest.java` — added `toIntervals_usesProvidedRootKeyInsteadOfFirstNote`: A and B relative to root C should be SIX and SEVEN
+
+### Implemented — Frontend
+- `KeySelector.tsx` — replaced flat `NOTES` string array with `{ value, label }` pairs; `value` is the Java enum name (`C_SHARP`), `label` is the display string (`C#`); fixes sharp key requests returning 400
+- `client.ts` — added `inputKey?: string` to `UploadRequest` interface
+- `UploadForm.tsx` — added `inputKey` state (default `''`), root key dropdown ("Root: first note" as default option) placed before the mode dropdown; conditionally includes `inputKey` in the request body
