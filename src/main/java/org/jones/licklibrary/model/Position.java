@@ -1,43 +1,71 @@
 package org.jones.licklibrary.model;
 
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public record Position(List<TabNote> notes) {
 
-    private static final String[] LABELS    = {"e", "B", "G", "D", "A", "E"};
-    private static final int[]    DISPLAY   = {5, 4, 3, 2, 1, 0}; // high to low
+    private static final String[] LABELS       = {"e", "B", "G", "D", "A", "E"};
+    private static final int[]    DISPLAY_ORDER = {5, 4, 3, 2, 1, 0};
 
-    @Override
-    public String toString() {
+    public String toTabString() {
         if (notes == null || notes.isEmpty()) return "";
 
-        int width = notes.stream()
-            .mapToInt(n -> n.columnIndex()
-                + String.valueOf(n.fret()).length()
-                + (n.technique() != null && !n.technique().isEmpty() ? 1 : 0))
-            .max().orElse(0) + 2;
+        List<Integer> slots = notes.stream()
+            .map(TabNote::columnIndex)
+            .distinct()
+            .sorted()
+            .toList();
 
-        char[][] rows = new char[6][width];
-        for (char[] row : rows) Arrays.fill(row, '-');
+        Map<Integer, Integer> slotWidths = new HashMap<>();
+        for (int slot : slots) {
+            int w = notes.stream()
+                .filter(n -> n.columnIndex() == slot)
+                .mapToInt(n -> String.valueOf(n.fret()).length())
+                .max().orElse(1);
+            slotWidths.put(slot, w);
+        }
 
+        Map<Integer, Map<Integer, TabNote>> byString = new HashMap<>();
         for (TabNote note : notes) {
-            String fretStr = String.valueOf(note.fret());
-            int col = note.columnIndex();
-            for (int i = 0; i < fretStr.length() && col + i < width; i++) {
-                rows[note.stringIndex()][col + i] = fretStr.charAt(i);
-            }
-            if (note.technique() != null && !note.technique().isEmpty()) {
-                int techCol = col + fretStr.length();
-                if (techCol < width) rows[note.stringIndex()][techCol] = note.technique().charAt(0);
-            }
+            byString.computeIfAbsent(note.stringIndex(), k -> new HashMap<>())
+                    .put(note.columnIndex(), note);
         }
 
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
-            if (sb.length() > 0) sb.append("\n");
-            sb.append(LABELS[i]).append("|").append(new String(rows[DISPLAY[i]])).append("|");
+        String[] rows = new String[6];
+        for (int s = 0; s < 6; s++) {
+            Map<Integer, TabNote> stringNotes = byString.getOrDefault(s, Map.of());
+            StringBuilder sb = new StringBuilder();
+            sb.append('-');
+            for (int i = 0; i < slots.size(); i++) {
+                int slot = slots.get(i);
+                int w = slotWidths.get(slot);
+                TabNote note = stringNotes.get(slot);
+                if (note != null) {
+                    String fretStr = String.valueOf(note.fret());
+                    sb.append(fretStr);
+                    for (int p = fretStr.length(); p < w; p++) sb.append('-');
+                } else {
+                    for (int p = 0; p < w; p++) sb.append('-');
+                }
+                if (i < slots.size() - 1) {
+                    if (note != null && note.technique() != null && !note.technique().isEmpty()) {
+                        sb.append(note.technique().charAt(0));
+                    } else {
+                        sb.append('-');
+                    }
+                }
+            }
+            sb.append('-');
+            rows[s] = sb.toString();
         }
-        return sb.toString();
+
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            if (result.length() > 0) result.append('\n');
+            result.append(LABELS[i]).append('|').append(rows[DISPLAY_ORDER[i]]).append('|');
+        }
+        return result.toString();
     }
 }
