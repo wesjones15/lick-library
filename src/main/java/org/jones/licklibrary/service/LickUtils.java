@@ -3,10 +3,16 @@ package org.jones.licklibrary.service;
 import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
+import org.jones.licklibrary.model.Mode;
 import org.jones.licklibrary.model.TabNote;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class LickUtils {
 
@@ -52,6 +58,47 @@ public class LickUtils {
     }
 
     public static String hashIntervals(List<IntervalNote> intervals) {
-        throw new UnsupportedOperationException("TODO");
+        String input = intervals.stream()
+            .map(n -> n.interval().displayName())
+            .collect(Collectors.joining(","));
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Mode detectMode(List<IntervalNote> intervals) {
+        Set<Interval> present = intervals.stream()
+            .map(IntervalNote::interval)
+            .collect(Collectors.toSet());
+
+        List<Mode> candidates = new ArrayList<>(List.of(Mode.values()));
+
+        if (present.contains(Interval.FLAT_TWO))
+            candidates.removeAll(List.of(Mode.IONIAN, Mode.DORIAN, Mode.LYDIAN, Mode.MIXOLYDIAN, Mode.AEOLIAN));
+        if (present.contains(Interval.FLAT_THREE))
+            candidates.removeAll(List.of(Mode.IONIAN, Mode.LYDIAN, Mode.MIXOLYDIAN));
+        if (present.contains(Interval.FLAT_FIVE))
+            candidates.removeAll(List.of(Mode.IONIAN, Mode.DORIAN, Mode.PHRYGIAN, Mode.MIXOLYDIAN, Mode.AEOLIAN));
+        if (present.contains(Interval.FLAT_SIX))
+            candidates.removeAll(List.of(Mode.IONIAN, Mode.DORIAN, Mode.LYDIAN, Mode.MIXOLYDIAN));
+        if (present.contains(Interval.FLAT_SEVEN))
+            candidates.removeAll(List.of(Mode.IONIAN, Mode.LYDIAN));
+
+        if (candidates.isEmpty()) return Mode.IONIAN;
+        if (candidates.size() == 1) return candidates.get(0);
+
+        // tiebreak by commonality
+        for (Mode m : List.of(Mode.IONIAN, Mode.AEOLIAN, Mode.DORIAN, Mode.MIXOLYDIAN, Mode.PHRYGIAN, Mode.LYDIAN, Mode.LOCRIAN)) {
+            if (candidates.contains(m)) return m;
+        }
+        return candidates.get(0);
     }
 }

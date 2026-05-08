@@ -5,12 +5,13 @@ import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.*;
 import org.jones.licklibrary.repository.LickRepository;
 import org.jones.licklibrary.repository.PositionCacheRepository;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class LickService {
@@ -28,10 +29,25 @@ public class LickService {
 
     // --- Upload pipeline ---
 
-    public void uploadLick(String tab) {
-        List<TabNote> notes = parseTab(tab);
+    public LickResponse uploadLick(UploadLickRequest request) {
+        List<TabNote> notes = parseTab(request.rawTab());
         List<IntervalNote> intervals = LickUtils.toIntervals(notes);
-        throw new UnsupportedOperationException("TODO");
+        String hash = LickUtils.hashIntervals(intervals);
+
+        Optional<Lick> existing = lickRepository.findByIntervalHash(hash);
+        if (existing.isPresent()) {
+            return toSummaryResponse(existing.get());
+        }
+
+        Mode mode = request.mode() != null ? request.mode() : LickUtils.detectMode(intervals);
+
+        Lick lick = new Lick();
+        lick.setIntervalHash(hash);
+        lick.setIntervals(intervals);
+        lick.setRawTab(request.rawTab());
+        lick.setMode(mode);
+        lick = lickRepository.save(lick);
+        return toSummaryResponse(lick);
     }
 
     List<TabNote> parseTab(String rawTab) {
@@ -64,12 +80,22 @@ public class LickService {
 
     // --- Lookup pipeline ---
 
-    public Page<LickResponse> getLicks(String key, String mode, int page) {
-        throw new UnsupportedOperationException("TODO");
+    public List<LickResponse> getAllLicks() {
+        return lickRepository.findAll().stream()
+            .map(this::toSummaryResponse)
+            .toList();
+    }
+
+    public LickResponse getLick(UUID id, Note key) {
+        Lick lick = lickRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Lick not found: " + id));
+        List<Position> positions = resolvePositions(lick, key);
+        return toLickResponse(lick, positions);
     }
 
     List<Position> resolvePositions(Lick lick, Note key) {
-        throw new UnsupportedOperationException("TODO");
+        // MVP: always recompute; position cache skipped
+        return findPositions(lick.getIntervals(), key);
     }
 
     List<Position> findPositions(List<IntervalNote> intervals, Note key) {
@@ -143,6 +169,22 @@ public class LickService {
     }
 
     LickResponse toLickResponse(Lick lick, List<Position> positions) {
-        throw new UnsupportedOperationException("TODO");
+        return new LickResponse(
+            lick.getId(),
+            lick.getRawTab(),
+            IntervalNoteListConverter.toDisplayString(lick.getIntervals()),
+            lick.getMode(),
+            positions
+        );
+    }
+
+    LickResponse toSummaryResponse(Lick lick) {
+        return new LickResponse(
+            lick.getId(),
+            lick.getRawTab(),
+            IntervalNoteListConverter.toDisplayString(lick.getIntervals()),
+            lick.getMode(),
+            null
+        );
     }
 }

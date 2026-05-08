@@ -1,9 +1,12 @@
 package org.jones.licklibrary.model;
 
 import java.util.List;
+import java.util.UUID;
 
 public record LickResponse(
-    String intervalHash,
-    List<IntervalNote> intervals,
+    UUID id,
+    String rawTab,
+    String intervalDisplayString,
+    Mode mode,
     List<Position> positions
 ) {}

@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "lick")
@@ -21,12 +20,12 @@ public class Lick {
     @Column(nullable = false)
     private List<IntervalNote> intervals;
 
-    @Convert(converter = TabNoteListConverter.class)
-    @Column(name = "source_notes", columnDefinition = "TEXT")
-    private List<TabNote> sourceNotes;
+    @Column(name = "raw_tab", columnDefinition = "TEXT")
+    private String rawTab;
 
-    @Column(name = "mode_tag", length = 32)
-    private String modeTag;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 16)
+    private Mode mode;
 
     @Column(name = "endpoint_degree", length = 16)
     private String endpointDegree;
@@ -39,10 +38,10 @@ public class Lick {
     public void setIntervalHash(String intervalHash) { this.intervalHash = intervalHash; }
     public List<IntervalNote> getIntervals() { return intervals; }
     public void setIntervals(List<IntervalNote> intervals) { this.intervals = intervals; }
-    public List<TabNote> getSourceNotes() { return sourceNotes; }
-    public void setSourceNotes(List<TabNote> sourceNotes) { this.sourceNotes = sourceNotes; }
-    public String getModeTag() { return modeTag; }
-    public void setModeTag(String modeTag) { this.modeTag = modeTag; }
+    public String getRawTab() { return rawTab; }
+    public void setRawTab(String rawTab) { this.rawTab = rawTab; }
+    public Mode getMode() { return mode; }
+    public void setMode(Mode mode) { this.mode = mode; }
     public String getEndpointDegree() { return endpointDegree; }
     public void setEndpointDegree(String endpointDegree) { this.endpointDegree = endpointDegree; }
     public LocalDateTime getCreatedAt() { return createdAt; }

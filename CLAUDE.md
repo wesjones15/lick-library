@@ -10,7 +10,6 @@ Spring Boot backend for a guitar lick library. Upload a tab to store its interva
 - H2 (embedded, file-persisted)
 - JUnit 5 + Mockito
 - Standard tuning only (MVP)
-- Major scale only (MVP)
 
 ---
 
@@ -21,14 +20,15 @@ src/main/java/org/jones/licklibrary/
 ├── controller/
 │   └── LickController.java              # REST endpoints
 ├── service/
-│   └── LickService.java                 # all pipeline logic (parse, intervals, positions, DB)
+│   ├── LickService.java                 # pipeline orchestration, DB interaction
+│   └── LickUtils.java                   # stateless helpers: toIntervals, toAbsoluteNotes, proximityScore, toNoteString, hashIntervals
 ├── model/
 │   ├── TabNote.java                     # record: stringIndex, fret, columnIndex, technique
 │   ├── IntervalNote.java                # record: interval, technique, columnIndex
 │   ├── IntervalNoteListConverter.java   # JPA converter + toDisplayString()
-│   ├── TabNoteListConverter.java        # JPA converter for List<TabNote>
 │   ├── Lick.java                        # DB entity
 │   ├── LickResponse.java                # API response record
+│   ├── Mode.java                        # enum: IONIAN DORIAN PHRYGIAN LYDIAN MIXOLYDIAN AEOLIAN LOCRIAN
 │   ├── Position.java                    # a single playable position on the neck
 │   └── PositionCache.java               # DB entity for position cache
 ├── repository/
@@ -40,12 +40,6 @@ src/main/java/org/jones/licklibrary/
     └── Guitar.java                      # open string notes in standard tuning
 ```
 
-```
-src/main/resources/
-├── application.properties
-└── data.sql                             # optional seed data
-```
-
 ---
 
 ## Enums
@@ -55,7 +49,6 @@ src/main/resources/
 C, C_SHARP, D, D_SHARP, E, F, F_SHARP, G, G_SHARP, A, A_SHARP, B
 shift(int semitones) → (ordinal + semitones) % 12
 ```
-Flats are aliased to their sharp equivalent on input.
 
 **Interval.java** — used everywhere from parsing onward.
 ```
@@ -68,6 +61,20 @@ shift(int semitones) → (ordinal + semitones) % 12
 Conversion from Note to Interval: `(note.ordinal() - firstNote.ordinal() + 12) % 12`
 
 **Guitar.java** — open strings low to high: `E, A, D, G, B, E`. `getNoteAt(stringIndex, fret)` = `STANDARD_TUNING[stringIndex].shift(fret)`.
+
+**Mode.java** — auto-detected from intervals present; can be overridden by user on upload.
+```
+IONIAN, DORIAN, PHRYGIAN, LYDIAN, MIXOLYDIAN, AEOLIAN, LOCRIAN
+```
+Detection: flat intervals eliminate incompatible modes; default to most common remaining candidate when ambiguous.
+
+| Interval present | Eliminates |
+|---|---|
+| FLAT_TWO   | Ionian, Dorian, Lydian, Mixolydian, Aeolian |
+| FLAT_THREE | Ionian, Lydian, Mixolydian |
+| FLAT_FIVE  | Ionian, Dorian, Phrygian, Mixolydian, Aeolian |
+| FLAT_SIX   | Ionian, Dorian, Lydian, Mixolydian |
+| FLAT_SEVEN | Ionian, Lydian |
 
 ---
 
@@ -85,7 +92,7 @@ record IntervalNote(Interval interval, String technique, int columnIndex)
 toString() → displayName [+ " " + technique]  — display only, no columnIndex
 ```
 - `technique` is the character *following* the fret in the tab (`h`, `p`, `/`, etc.) — describes how you leave a note toward the next. Null on most notes, always null on last.
-- `columnIndex` is a normalized sequential integer (0, 1, 2…). Notes played simultaneously (same raw tab column) share the same columnIndex.
+- `columnIndex` is a normalized sequential integer (0, 1, 2…). Notes played simultaneously share the same columnIndex.
 
 **IntervalNoteListConverter** — JPA `AttributeConverter<List<IntervalNote>, String>`.
 - **DB storage format**: `displayName:columnIndex:technique` comma-separated. Technique is empty string when absent.
@@ -98,86 +105,87 @@ toString() → displayName [+ " " + technique]  — display only, no columnIndex
   ```
 
 **Lick** — DB entity.
-- `intervalHash` — SHA-256 of interval names only (technique-agnostic), used as dedup key
+- `intervalHash` — SHA-256 of interval names only (technique-agnostic), dedup key
 - `intervals` — `List<IntervalNote>` via `IntervalNoteListConverter`; the canonical lick shape
-- `sourceNotes` — `List<TabNote>` via `TabNoteListConverter`; original parsed notes including simultaneous
-- `modeTag`, `endpointDegree` — optional metadata for future filtering
+- `rawTab` — original ASCII tab string as uploaded; used for display in list view
+- `mode` — `Mode` enum, auto-detected from intervals; overridable on upload
+- `endpointDegree` — optional, for future solo chaining
 
-**Position** — `record Position(List<TabNote> notes)`. Represents one playable position on the neck. `toTabString()` renders a 6-string ASCII tab using a column-slot model:
+**Position** — `record Position(List<TabNote> notes)`. `toTabString()` renders a 6-string ASCII tab using a column-slot model:
 - Slots defined by sorted unique `columnIndex` values across all notes
 - Slot width = max fret digit count at that column across all strings
-- Separator between slots: technique char (if the note on that string has one) or `-`
+- Separator between slots: technique char (if that string's note has one) or `-`
 - Fixed 1-char leading and trailing padding inside each `|`
 
-**LickResponse** — `record LickResponse(String intervalHash, List<IntervalNote> intervals, List<Position> positions)`.
+**LickResponse** — two shapes depending on endpoint:
+- List view: `id`, `rawTab`, `intervalDisplayString`
+- Single view: above + `mode`, `List<Position>` rendered for the requested key
 
 ---
 
 ## Upload Pipeline
 
 ```
-POST /api/lick { tab }
+POST /api/lick { rawTab, mode? }
     │
     ▼
 parseTab (LickService)
     walk each of 6 string lines character by character
     record fret number and technique (following char) at each column index
     merge all 6 strings, sort by columnIndex
-    output: List<TabNote> (all notes including simultaneous, ordered by column)
+    output: List<TabNote>
     │
     ▼
-toIntervals (LickService)
+toIntervals (LickUtils)
     resolve each TabNote → Note via Guitar.getNoteAt()
     first note = ONE; all others: (note.ordinal() - first.ordinal() + 12) % 12 → Interval
-    assign normalized columnIndex: raw column positions (2, 5, 9…) → sequential (0, 1, 2…)
-    simultaneous notes (same raw column) receive same normalized columnIndex
-    preserve ALL notes — no filtering of simultaneous
+    assign normalized columnIndex; preserve ALL notes including simultaneous
     output: List<IntervalNote>
     │
     ▼
 LickService
-    serialize intervals → String (via IntervalNoteListConverter)
-    hash interval sequence (technique-agnostic — Interval names only) → SHA-256
+    detect mode from intervals (LickUtils.detectMode) — or use override if provided
+    hash interval names → SHA-256 (technique-agnostic)
     check DB by hash → if exists, return existing record
-    if new → store Lick (intervals + sourceNotes) and return
+    if new → store Lick (intervals, rawTab, mode) and return
 ```
 
-No root note on upload. No position computation on upload. The DB is a key-agnostic store of interval shapes.
+Deduplication is by `intervalHash`, not `rawTab` — same musical shape from different starting positions deduplicates correctly.
 
 ---
 
 ## Lookup Pipeline
 
 ```
-GET /api/lick?key=A&mode=MAJOR&page=0
+GET /api/lick
+    → return all Lick records: id, rawTab, intervalDisplayString (no positions)
+
+GET /api/lick/{id}?key=A
     │
     ▼
 LickService
-    fetch licks from DB (paginated)
-    for each lick:
-        check position cache by intervalHash + key
-        if cached → return cached positions
-        if not → call findPositions → cache → return
+    fetch Lick by id
+    check position cache by (intervalHash, key)
+    if cached → return cached positions
+    if not → call findPositions → cache → return
     │
     ▼
 findPositions (LickService)
-    convert IntervalNote sequence → absolute Notes for given key
-    for each root candidate on the neck: greedily build a position
-        findCandidates: for each next note, search nearby strings/frets
+    toAbsoluteNotes: convert IntervalNote sequence → absolute Notes for given key
+    for each root candidate on the neck: greedily build a position (buildPosition)
+        findCandidates: search nearby strings/frets for next note
         technique constraint: if technique present, next note must be same string
-        no technique: next note may be same string or ±1 adjacent string
-        pick closest candidate by proximityScore = |fret delta| + |string delta|
+        no technique: same string or ±1 adjacent string
+        pick closest by proximityScore = |fret delta| + |string delta|
     filter: max 4-fret span
     filter: no note above MAX_FRET (default 15, constant in LickService)
-    rank by max-fret ascending (lowest on neck first)
+    sort: max-fret ascending (lowest on neck first)
     output: List<Position>
 ```
 
 ---
 
 ## Tab Parser Detail
-
-Each string line is processed independently:
 
 1. Strip string label prefix (first 2 chars: `E|`, `B|`, etc.)
 2. Walk character by character; column index = character position - 2
@@ -186,7 +194,7 @@ Each string line is processed independently:
 
 All 6 strings merged into one list, sorted by `columnIndex`. Notes sharing a column index are simultaneous.
 
-**Known limitation**: two-digit frets (10+) are not yet handled — each digit is recorded separately.
+**Known limitation**: two-digit frets (10+) not yet handled — each digit recorded separately.
 
 ---
 
@@ -197,8 +205,8 @@ CREATE TABLE lick (
     id              UUID PRIMARY KEY,
     interval_hash   VARCHAR(64) UNIQUE NOT NULL,  -- SHA-256 of interval names (technique-agnostic)
     intervals       TEXT NOT NULL,                 -- e.g. "1:0:,b3:1:h,4:2:,5:3:"
-    source_notes    TEXT,                          -- original TabNote list including simultaneous
-    mode_tag        VARCHAR(32),
+    raw_tab         TEXT,                          -- original ASCII tab as uploaded
+    mode            VARCHAR(16),                   -- Mode enum name, auto-detected or user-supplied
     endpoint_degree VARCHAR(16),
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -217,22 +225,21 @@ CREATE TABLE position_cache (
 ## API
 
 ```
-POST  /api/lick                          { tab }              → LickResponse
-GET   /api/lick?key=A&mode=MAJOR&page=0                       → Page<LickResponse>
+POST /api/lick          { rawTab, mode? }     → LickResponse (list shape)
+GET  /api/lick                                → List<LickResponse> (list shape: id, rawTab, intervalDisplayString)
+GET  /api/lick/{id}?key=A                     → LickResponse (single shape: + mode, List<Position>)
 ```
-
-LickResponse contains the IntervalNote sequence and positions for the requested key. Filter params (mode, endpoint degree) should be stubbed even if unused in MVP.
 
 ---
 
 ## Future (not in MVP)
 
-- **Pentatonic + minor scales** — position finder needs to know which scale degrees are valid
-- **Modal filtering** — query licks by mode tag, filter by harmonic context
 - **Solo builder** — chain licks by endpoint degree and mode compatibility
 - **Lick similarity search** — find licks with same or related interval shape
+- **Modal filtering** — query licks by mode tag
 - **Community library** — multi-user, shared DB (already key-agnostic so straightforward)
 - **Non-standard tunings** — Guitar.java is isolated for this reason
 - **Two-digit fret parsing** — parseTab needs lookahead to group consecutive digits
 - **findPositions dedup for simultaneous notes** — buildPosition iterates absoluteNotes sequentially, which breaks for notes sharing a columnIndex; needs chord-aware handling
 - **findCandidates optimization** — currently brute-forces all 6×25 positions; could compute fret mathematically
+- **Pagination on GET /api/lick** — add page param once library grows

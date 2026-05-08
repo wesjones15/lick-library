@@ -1,10 +1,14 @@
 package org.jones.licklibrary.controller;
 
+import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.LickResponse;
+import org.jones.licklibrary.model.UploadLickRequest;
 import org.jones.licklibrary.service.LickService;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/lick")
@@ -17,16 +21,20 @@ public class LickController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> uploadLick(@RequestBody String tab) {
-        lickService.uploadLick(tab);
-        return ResponseEntity.accepted().build();
+    public ResponseEntity<LickResponse> uploadLick(@RequestBody UploadLickRequest request) {
+        return ResponseEntity.ok(lickService.uploadLick(request));
     }
 
     @GetMapping
-    public Page<LickResponse> getLicks(
-            @RequestParam String key,
-            @RequestParam(required = false) String mode,
-            @RequestParam(defaultValue = "0") int page) {
-        return lickService.getLicks(key, mode, page);
+    public List<LickResponse> getAllLicks() {
+        return lickService.getAllLicks();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<LickResponse> getLick(
+            @PathVariable UUID id,
+            @RequestParam String key) {
+        Note noteKey = Note.valueOf(key.toUpperCase());
+        return ResponseEntity.ok(lickService.getLick(id, noteKey));
     }
 }
