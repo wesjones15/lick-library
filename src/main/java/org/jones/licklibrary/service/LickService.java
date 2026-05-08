@@ -187,14 +187,14 @@ public class LickService {
 
     Position buildPosition(TabNote root, List<IntervalNote> intervals, List<Note> absoluteNotes) {
         List<TabNote> sequence = new ArrayList<>();
-        sequence.add(new TabNote(root.stringIndex(), root.fret(), 0, intervals.get(0).technique()));
+        sequence.add(new TabNote(root.stringIndex(), root.fret(), intervals.get(0).columnIndex(), intervals.get(0).technique()));
 
         for (int i = 1; i < absoluteNotes.size(); i++) {
             String technique = intervals.get(i - 1).technique();
             List<TabNote> candidates = findCandidates(sequence.get(sequence.size() - 1), absoluteNotes.get(i), technique);
             if (candidates.isEmpty()) return null;
             TabNote best = candidates.get(0);
-            sequence.add(new TabNote(best.stringIndex(), best.fret(), i, intervals.get(i).technique()));
+            sequence.add(new TabNote(best.stringIndex(), best.fret(), intervals.get(i).columnIndex(), intervals.get(i).technique()));
         }
 
         return new Position(sequence);
