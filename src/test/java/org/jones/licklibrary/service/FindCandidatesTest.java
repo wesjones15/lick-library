@@ -28,15 +28,18 @@ class FindCandidatesTest {
     }
 
     @Test
-    void findCandidates_searchesSameAndAdjacentStringsWhenNoTechnique() {
-        // D string (2), fret 5. Searching for Note.A on strings 1-3.
+    void findCandidates_searchesAllStringsWhenNoTechnique() {
+        // D string (2), fret 5. With no technique, all 6 strings are searched.
         TabNote current = new TabNote(2, 5, 0, null);
         List<TabNote> candidates = lickService.findCandidates(current, Note.A, null);
 
         assertFalse(candidates.isEmpty());
         candidates.forEach(c ->
-            assertTrue(c.stringIndex() >= 1 && c.stringIndex() <= 3,
-                "candidate outside expected string range: " + c.stringIndex()));
+            assertTrue(c.stringIndex() >= 0 && c.stringIndex() <= 5,
+                "candidate outside valid string range: " + c.stringIndex()));
+        // Candidates should span more than just adjacent strings
+        long distinctStrings = candidates.stream().mapToInt(TabNote::stringIndex).distinct().count();
+        assertTrue(distinctStrings > 2, "expected candidates across multiple strings");
     }
 
     @Test

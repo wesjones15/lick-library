@@ -43,8 +43,8 @@ public class LickUtils {
         return out;
     }
 
-    public static int proximityScore(TabNote from, TabNote to) {
-        return Math.abs(from.fret() - to.fret()) + Math.abs(from.stringIndex() - to.stringIndex());
+    public static double proximityScore(TabNote from, TabNote to) {
+        return Math.hypot(from.fret() - to.fret(), from.stringIndex() - to.stringIndex());
     }
 
     public static String toNoteString(List<TabNote> tabnotes) {

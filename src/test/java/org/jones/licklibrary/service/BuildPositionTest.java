@@ -3,6 +3,7 @@ package org.jones.licklibrary.service;
 import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
+import org.jones.licklibrary.model.Position;
 import org.jones.licklibrary.model.TabNote;
 import org.jones.licklibrary.repository.LickRepository;
 import org.jones.licklibrary.repository.PositionCacheRepository;
@@ -30,7 +31,7 @@ class BuildPositionTest {
     }
 
     @Test
-    void buildPosition_rootIsFirstNote() {
+    void buildPositions_rootIsFirstNote() {
         TabNote root = new TabNote(0, 0, 0, null);
         List<IntervalNote> intervals = List.of(
             new IntervalNote(Interval.ONE,  null, 0),
@@ -38,14 +39,14 @@ class BuildPositionTest {
         );
         List<Note> absoluteNotes = List.of(Note.E, Note.A);
 
-        var position = lickService.buildPosition(root, intervals, absoluteNotes);
+        List<Position> positions = lickService.buildPositions(root, intervals, absoluteNotes);
 
-        assertNotNull(position);
-        assertEquals(new TabNote(0, 0, 0, null), position.notes().get(0));
+        assertFalse(positions.isEmpty());
+        assertEquals(new TabNote(0, 0, 0, null), positions.get(0).notes().get(0));
     }
 
     @Test
-    void buildPosition_techniqueConstrainsNextNoteToSameString() {
+    void buildPositions_techniqueConstrainsNextNoteToSameString() {
         TabNote root = new TabNote(0, 0, 0, null);
         List<IntervalNote> intervals = List.of(
             new IntervalNote(Interval.ONE, "h", 0),
@@ -54,15 +55,17 @@ class BuildPositionTest {
         // E → F# (2 semitones). F# on string 0 = fret 2.
         List<Note> absoluteNotes = List.of(Note.E, Note.F_SHARP);
 
-        var position = lickService.buildPosition(root, intervals, absoluteNotes);
+        List<Position> positions = lickService.buildPositions(root, intervals, absoluteNotes);
 
-        assertNotNull(position);
-        assertEquals(0, position.notes().get(1).stringIndex());
-        assertEquals(2, position.notes().get(1).fret());
+        assertFalse(positions.isEmpty());
+        positions.forEach(p -> {
+            assertEquals(0, p.notes().get(1).stringIndex());
+            assertEquals(2, p.notes().get(1).fret());
+        });
     }
 
     @Test
-    void buildPosition_columnIndexTakenFromIntervals() {
+    void buildPositions_columnIndexTakenFromIntervals() {
         TabNote root = new TabNote(0, 0, 0, null);
         List<IntervalNote> intervals = List.of(
             new IntervalNote(Interval.ONE,  null, 2),
@@ -70,17 +73,17 @@ class BuildPositionTest {
         );
         List<Note> absoluteNotes = List.of(Note.E, Note.A);
 
-        var position = lickService.buildPosition(root, intervals, absoluteNotes);
+        List<Position> positions = lickService.buildPositions(root, intervals, absoluteNotes);
 
-        assertNotNull(position);
-        assertEquals(2, position.notes().get(0).columnIndex());
-        assertEquals(5, position.notes().get(1).columnIndex());
+        assertFalse(positions.isEmpty());
+        assertEquals(2, positions.get(0).notes().get(0).columnIndex());
+        assertEquals(5, positions.get(0).notes().get(1).columnIndex());
     }
 
     @Test
-    void buildPosition_greedyPicksClosestCandidate() {
-        // Root: G string fret 5 = C. Next = D (TWO above C).
-        // Candidates on strings 1-3: (1,5) score 1, (3,7) score 3, (2,0) score 5.
+    void buildPositions_returnsAllValidPaths() {
+        // Root: G string (2) fret 5 = C. Next note = D.
+        // With all-strings search, D is reachable on multiple strings within the 4-fret span.
         TabNote root = new TabNote(2, 5, 0, null);
         List<IntervalNote> intervals = List.of(
             new IntervalNote(Interval.ONE, null, 0),
@@ -88,10 +91,12 @@ class BuildPositionTest {
         );
         List<Note> absoluteNotes = List.of(Note.C, Note.D);
 
-        var position = lickService.buildPosition(root, intervals, absoluteNotes);
+        List<Position> positions = lickService.buildPositions(root, intervals, absoluteNotes);
 
-        assertNotNull(position);
-        assertEquals(1, position.notes().get(1).stringIndex());
-        assertEquals(5, position.notes().get(1).fret());
+        assertTrue(positions.size() > 1, "expected multiple paths, got " + positions.size());
+        // Closest candidate (string 1 fret 5, distance 1.0) should be among results
+        boolean hasClosest = positions.stream()
+            .anyMatch(p -> p.notes().get(1).stringIndex() == 1 && p.notes().get(1).fret() == 5);
+        assertTrue(hasClosest, "expected closest candidate (string 1 fret 5) in results");
     }
 }

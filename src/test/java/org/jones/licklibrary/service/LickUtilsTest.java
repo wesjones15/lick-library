@@ -18,28 +18,29 @@ class LickUtilsTest {
     @Test
     void proximityScore_samePosition() {
         TabNote n = new TabNote(2, 5, 0, null);
-        assertEquals(0, LickUtils.proximityScore(n, n));
+        assertEquals(0.0, LickUtils.proximityScore(n, n), 1e-9);
     }
 
     @Test
     void proximityScore_sameString() {
         TabNote from = new TabNote(2, 5, 0, null);
         TabNote to   = new TabNote(2, 8, 0, null);
-        assertEquals(3, LickUtils.proximityScore(from, to));
+        assertEquals(3.0, LickUtils.proximityScore(from, to), 1e-9);
     }
 
     @Test
     void proximityScore_sameFretAdjacentString() {
         TabNote from = new TabNote(2, 5, 0, null);
         TabNote to   = new TabNote(3, 5, 0, null);
-        assertEquals(1, LickUtils.proximityScore(from, to));
+        assertEquals(1.0, LickUtils.proximityScore(from, to), 1e-9);
     }
 
     @Test
     void proximityScore_bothDiffer() {
+        // fret delta 2, string delta 2 → hypot(2,2) = sqrt(8)
         TabNote from = new TabNote(2, 5, 0, null);
         TabNote to   = new TabNote(4, 7, 0, null);
-        assertEquals(4, LickUtils.proximityScore(from, to));
+        assertEquals(Math.sqrt(8), LickUtils.proximityScore(from, to), 1e-9);
     }
 
     // --- toIntervals ---
