@@ -5,6 +5,7 @@ import org.jones.licklibrary.model.TabNote;
 import org.jones.licklibrary.repository.LickRepository;
 import org.jones.licklibrary.repository.PositionCacheRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -57,18 +58,53 @@ class ParseTabTest {
         System.out.println(intervals);
     }
 
+    @Disabled("two-digit fret parsing not yet implemented")
     @Test
     void parseTab_handlesTwoDigitFrets() {
-        // TODO
+        // Known limitation: two-digit frets not yet implemented — each digit is recorded separately.
+        // This test asserts the intended behavior and will fail until the parser is fixed.
+        String inputTab =
+                "e|---------|\n" +
+                "B|---------|\n" +
+                "G|---------|\n" +
+                "D|---------|\n" +
+                "A|-12-4----|\n" +
+                "E|---------|";
+        List<TabNote> notes = lickService.parseTab(inputTab);
+        assertEquals(2, notes.size());
+        assertEquals(12, notes.get(0).fret());
     }
 
     @Test
     void parseTab_recordsTechniqueCharacters() {
-        // TODO
+        String inputTab =
+                "e|---------|\n" +
+                "B|---------|\n" +
+                "G|---------|\n" +
+                "D|---------|\n" +
+                "A|-5h7-9/--|\n" +
+                "E|---------|";
+        List<TabNote> notes = lickService.parseTab(inputTab);
+        assertEquals(3, notes.size());
+        assertEquals(5,   notes.get(0).fret());
+        assertEquals("h", notes.get(0).technique());
+        assertEquals(7,   notes.get(1).fret());
+        assertEquals("",  notes.get(1).technique());
+        assertEquals(9,   notes.get(2).fret());
+        assertEquals("/", notes.get(2).technique());
     }
 
     @Test
     void parseTab_simultaneousNotesPreserved() {
-        // TODO
+        String inputTab =
+                "e|--0------|\n" +
+                "B|--3------|\n" +
+                "G|---------|\n" +
+                "D|---------|\n" +
+                "A|---------|\n" +
+                "E|---------|";
+        List<TabNote> notes = lickService.parseTab(inputTab);
+        assertEquals(2, notes.size());
+        assertEquals(notes.get(0).columnIndex(), notes.get(1).columnIndex());
     }
 }

@@ -45,22 +45,47 @@ class LickUtilsTest {
 
     @Test
     void toIntervals_firstNoteIsAlwaysONE() {
-        // TODO
+        List<TabNote> notes = List.of(new TabNote(4, 2, 0, null)); // A string fret 2 = B
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+        assertEquals(Interval.ONE, intervals.get(0).interval());
     }
 
     @Test
     void toIntervals_computesCorrectIntervalsFromNotes() {
-        // TODO
+        // A string: open=A, fret2=B, fret4=C# → ONE, TWO, THREE
+        List<TabNote> notes = List.of(
+            new TabNote(4, 0, 0, null),
+            new TabNote(4, 2, 1, null),
+            new TabNote(4, 4, 2, null)
+        );
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+        assertEquals(3, intervals.size());
+        assertEquals(Interval.ONE,   intervals.get(0).interval());
+        assertEquals(Interval.TWO,   intervals.get(1).interval());
+        assertEquals(Interval.THREE, intervals.get(2).interval());
     }
 
     @Test
     void toIntervals_wrapsAroundOctave() {
-        // TODO
+        // string 4 (B) fret 0 = B (ordinal 11), string 1 (A) fret 0 = A (ordinal 9)
+        // (9 - 11 + 12) % 12 = 10 = FLAT_SEVEN
+        List<TabNote> notes = List.of(
+            new TabNote(4, 0, 0, null), // B string → B
+            new TabNote(1, 0, 1, null)  // A string → A
+        );
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+        assertEquals(Interval.FLAT_SEVEN, intervals.get(1).interval());
     }
 
     @Test
     void toIntervals_simultaneousNotesShareNormalizedColumnIndex() {
-        // TODO
+        List<TabNote> notes = List.of(
+            new TabNote(0, 0, 2, null), // same raw columnIndex
+            new TabNote(1, 0, 2, null)
+        );
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+        assertEquals(2, intervals.size());
+        assertEquals(intervals.get(0).columnIndex(), intervals.get(1).columnIndex());
     }
 
     // --- toAbsoluteNotes ---
@@ -74,11 +99,19 @@ class LickUtilsTest {
 
     @Test
     void hashIntervals_techniqueAgnostic() {
-        // TODO
+        List<IntervalNote> withTechnique    = List.of(new IntervalNote(Interval.ONE, "h", 0),
+                                                      new IntervalNote(Interval.TWO, "/", 1));
+        List<IntervalNote> withoutTechnique = List.of(new IntervalNote(Interval.ONE, null, 0),
+                                                      new IntervalNote(Interval.TWO, null, 1));
+        assertEquals(LickUtils.hashIntervals(withTechnique), LickUtils.hashIntervals(withoutTechnique));
     }
 
     @Test
     void hashIntervals_sameIntervalsProduceSameHash() {
-        // TODO
+        List<IntervalNote> a = List.of(new IntervalNote(Interval.ONE,  null, 0),
+                                       new IntervalNote(Interval.FIVE, null, 1));
+        List<IntervalNote> b = List.of(new IntervalNote(Interval.ONE,  null, 0),
+                                       new IntervalNote(Interval.FIVE, null, 1));
+        assertEquals(LickUtils.hashIntervals(a), LickUtils.hashIntervals(b));
     }
 }
