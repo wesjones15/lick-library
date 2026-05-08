@@ -95,6 +95,23 @@ class ParseTabTest {
     }
 
     @Test
+    void parseTab_recordsBackslashTechnique() {
+        String inputTab =
+                "e|---------|\n" +
+                "B|---------|\n" +
+                "G|---------|\n" +
+                "D|---------|\n" +
+                "A|-7\\5----|\n" +
+                "E|---------|";
+        List<TabNote> notes = lickService.parseTab(inputTab);
+        assertEquals(2, notes.size());
+        assertEquals(7,    notes.get(0).fret());
+        assertEquals("\\", notes.get(0).technique());
+        assertEquals(5,    notes.get(1).fret());
+        assertEquals("",   notes.get(1).technique());
+    }
+
+    @Test
     void parseTab_simultaneousNotesPreserved() {
         String inputTab =
                 "e|--0------|\n" +

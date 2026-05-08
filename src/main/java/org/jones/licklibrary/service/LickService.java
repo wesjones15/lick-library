@@ -69,7 +69,7 @@ public class LickService {
                     String technique = "";
                     if (line.length()-1 > j) {
                         String nextChar = String.valueOf(line.charAt(j+1));
-                        if (nextChar.matches("[hp/]")){
+                        if (nextChar.matches("[hp/\\\\]")){
                             technique = nextChar;
                         }
                     }

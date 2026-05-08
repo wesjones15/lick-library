@@ -16,7 +16,7 @@ public class PositionCache {
     @Column(name = "interval_hash", nullable = false, length = 64)
     private String intervalHash;
 
-    @Column(nullable = false, length = 8)
+    @Column(name = "note_key", nullable = false, length = 8)
     private String key;
 
     @Column(name = "positions_json", nullable = false, columnDefinition = "TEXT")
