@@ -134,4 +134,5 @@ class FindPositionsTest {
             assertTrue(keys.add(key), "duplicate string pattern + region: " + p.toTabString());
         }
     }
+
 }

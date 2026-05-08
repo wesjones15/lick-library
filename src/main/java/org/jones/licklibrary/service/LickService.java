@@ -164,8 +164,8 @@ public class LickService {
 
     List<TabNote> findCandidates(TabNote current, Note next, String technique) {
         int s = current.stringIndex();
-        int minString = (technique != null && !technique.isEmpty()) ? s : 0;
-        int maxString = (technique != null && !technique.isEmpty()) ? s : 5;
+        int minString = (technique != null && !technique.isEmpty()) ? s : Math.max(0, s - 2);
+        int maxString = (technique != null && !technique.isEmpty()) ? s : Math.min(5, s + 2);
 
         List<TabNote> candidates = new ArrayList<>();
         for (int string = minString; string <= maxString; string++) {
