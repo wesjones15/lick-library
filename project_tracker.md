@@ -184,3 +184,24 @@
 - `UploadForm.tsx` — textarea for raw tab, optional mode dropdown (auto-detect default), submit
 - `KeySelector.tsx` — controlled dropdown for C through B
 - `PositionTab.tsx` — `<pre>` block rendering a single `tabString` from backend
+
+---
+
+## Session 7
+
+### Decisions Made
+- **Position finder: greedy → DFS branching** — the old `buildPosition` committed to the single closest candidate at each step; if that pick led to a dead end later, the entire position was silently discarded. Long licks often produced only one result. Replaced with a recursive DFS (`buildPositions` + `dfsPositions`) that explores all valid candidates at every step and collects every complete path.
+- **String search range expanded** — `findCandidates` previously restricted to current string ±1 when no technique was present. Now searches all 6 strings (0–5), letting the span and MAX_FRET pruning serve as the physical constraint instead.
+- **Euclidean proximity scoring** — `proximityScore` changed from Manhattan (`|Δfret| + |Δstring|`) to Euclidean (`Math.hypot(Δfret, Δstring)`) so diagonal jumps aren't over-penalized vs. pure string or fret movement.
+- **Early pruning inside DFS** — branches are cut as soon as the current path would exceed the 4-fret span or MAX_FRET (15), keeping the search tractable even with a wider candidate set.
+- **Deduplication by tab string** — different root candidates can produce the same physical fingering; results are deduplicated by rendered tab string before sorting.
+- **Root fret guard** — roots above MAX_FRET are rejected immediately in `buildPositions` before any DFS work begins.
+- **`FindPositionsTest` count assertion relaxed** — the old assertion `assertEquals(8, ...)` was tied to the greedy algorithm's output count; updated to `assertTrue(size >= 8, ...)` since branching correctly produces more positions.
+
+### Implemented
+- `LickService.java` — replaced `buildPosition` with `buildPositions` (package-private) and `dfsPositions` (private); updated `findPositions` to flatMap results and deduplicate; updated `findCandidates` to search all strings + `comparingDouble`
+- `LickUtils.java` — `proximityScore` return type `int` → `double`, implementation `Math.abs` sum → `Math.hypot`
+- `BuildPositionTest.java` — all 4 tests migrated from `buildPosition` to `buildPositions`; last test renamed `buildPositions_returnsAllValidPaths` and now asserts multiple paths are returned
+- `FindCandidatesTest.java` — `noTechnique` test updated to assert all-strings range and that candidates span more than 2 strings
+- `FindPositionsTest.java` — count assertion relaxed from `assertEquals(8)` to `assertTrue(>= 8)`
+- `LickUtilsTest.java` — all `proximityScore` assertions updated to `double` with delta; `bothDiffer` case now asserts `Math.sqrt(8)` instead of `4`
