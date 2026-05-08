@@ -15,8 +15,10 @@ public class IntervalNoteListConverter implements AttributeConverter<List<Interv
         if (intervals == null || intervals.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
         for (IntervalNote in : intervals) {
-            if (sb.length() > 0) sb.append(" ");
-            sb.append(in.toString());
+            if (sb.length() > 0) sb.append(",");
+            sb.append(in.interval().displayName())
+              .append(":").append(in.columnIndex())
+              .append(":").append(in.technique() != null ? in.technique() : "");
         }
         return sb.toString();
     }
@@ -25,17 +27,23 @@ public class IntervalNoteListConverter implements AttributeConverter<List<Interv
     public List<IntervalNote> convertToEntityAttribute(String dbData) {
         List<IntervalNote> out = new ArrayList<>();
         if (dbData == null || dbData.isBlank()) return out;
-        String[] tokens = dbData.split(" ");
-        for (int i = 0; i < tokens.length; i++) {
-            if (tokens[i].matches("b?[1-7]")) {
-                Interval interval = Interval.fromDisplayName(tokens[i]);
-                String technique = null;
-                if (i + 1 < tokens.length && !tokens[i + 1].matches("b?[1-7]")) {
-                    technique = tokens[++i];
-                }
-                out.add(new IntervalNote(interval, technique));
-            }
+        for (String token : dbData.split(",")) {
+            String[] parts = token.split(":", 3);
+            Interval interval = Interval.fromDisplayName(parts[0]);
+            int columnIndex = Integer.parseInt(parts[1]);
+            String technique = parts.length > 2 && !parts[2].isEmpty() ? parts[2] : null;
+            out.add(new IntervalNote(interval, technique, columnIndex));
         }
         return out;
+    }
+
+    public static String toDisplayString(List<IntervalNote> intervals) {
+        if (intervals == null || intervals.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (IntervalNote in : intervals) {
+            if (sb.length() > 0) sb.append(" ");
+            sb.append(in.toString());
+        }
+        return sb.toString();
     }
 }

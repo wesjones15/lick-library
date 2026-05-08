@@ -95,3 +95,24 @@
 - `Position.java` — redesigned to `List<TabNote>` with ASCII tab renderer
 - `TabNoteListConverter.java` — new JPA converter (`stringIndex:fret:columnIndex:technique` format)
 - `Lick.java` — `intervals` now `List<IntervalNote>` with `@Convert`; added `sourceNotes` field
+
+---
+
+## Session 4
+
+### Decisions Made
+- `IntervalNote` gains `columnIndex` as a third record component — a normalized sequential integer (0, 1, 2…) derived from raw tab column positions
+- Simultaneous notes (multiple TabNotes at the same raw column) receive the same normalized columnIndex and are ALL preserved in the interval list (no first-per-column filtering)
+- `IntervalNoteListConverter` now has two distinct formats:
+  - **DB storage**: `displayName:columnIndex:technique` comma-separated (e.g. `1:0:,b3:1:h,4:2:,5:3:`) — roundtrippable, includes columnIndex
+  - **Display**: `toDisplayString()` static method — interval names + technique as trailing token, no columnIndex (e.g. `1 b3 h 4 5`)
+- `Lick.toString()` delegates to `IntervalNoteListConverter.toDisplayString(intervals)`
+- `tabParserService`, `IntervalService`, `PositionFinderService` never got their own files — all logic lives in `LickService` until it warrants splitting
+
+### Implemented
+- `IntervalNote.java` — added `columnIndex` as third record component; `toString()` unchanged (display only)
+- `IntervalNoteListConverter.java` — new storage format `displayName:columnIndex:technique`; new `toDisplayString()` static method
+- `Lick.java` — `toString()` updated to call `IntervalNoteListConverter.toDisplayString(intervals)`
+- `LickService.toIntervals()` — now assigns normalized columnIndex and preserves all simultaneous notes
+- `IntervalNoteTest.java` — updated to 3-arg constructor
+- `IntervalNoteListConverterTest.java` — updated constructors + storage format assertions; added `toDisplayString` tests and simultaneous-notes serialize test

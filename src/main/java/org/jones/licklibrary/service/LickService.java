@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Guitar;
 import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.*;
@@ -76,23 +77,22 @@ public class LickService {
 
     /**
      * Converts an ordered TabNote sequence to IntervalNotes relative to the first note.
-     * For simultaneous notes (same columnIndex), takes the first. First note is always ONE.
+     * Simultaneous notes (same raw columnIndex) receive the same normalized columnIndex.
+     * First note is always ONE.
      */
     List<IntervalNote> toIntervals(List<TabNote> notes) {
-        List<TabNote> melody = new ArrayList<>();
-        int lastCol = Integer.MIN_VALUE;
-        for (TabNote tabNote : notes) {
-            if (tabNote.columnIndex() != lastCol) {
-                melody.add(tabNote);
-                lastCol = tabNote.columnIndex();
-            }
-        }
-        Note first = melody.get(0).toNote();
+        Note first = notes.get(0).toNote();
         List<IntervalNote> out = new ArrayList<>();
-        for (TabNote tabNote : melody) {
+        int normalizedCol = 0;
+        int lastRawCol = Integer.MIN_VALUE;
+        for (TabNote tabNote : notes) {
+            if (tabNote.columnIndex() != lastRawCol && lastRawCol != Integer.MIN_VALUE) {
+                normalizedCol++;
+            }
+            lastRawCol = tabNote.columnIndex();
             Note note = tabNote.toNote();
             Interval interval = Interval.values()[(note.ordinal() - first.ordinal() + 12) % 12];
-            out.add(new IntervalNote(interval, tabNote.technique()));
+            out.add(new IntervalNote(interval, tabNote.technique(), normalizedCol));
         }
         return out;
     }
@@ -116,11 +116,88 @@ public class LickService {
 
     /**
      * Converts intervals to absolute notes for the given key, finds all valid
-     * string/fret locations, generates combinations, filters by 4-fret span,
+     * string/fret locations starting from each root position, filters by 4-fret span,
      * and ranks by span ascending.
      */
-    List<Position> findPositions(List<Interval> intervals, Note key) {
-        throw new UnsupportedOperationException("TODO");
+    List<Position> findPositions(List<IntervalNote> intervals, Note key) {
+        List<Note> absoluteNotes = toAbsoluteNotes(intervals, key);
+        List<TabNote> rootCandidates = findNeckPositions(absoluteNotes.get(0));
+
+        List<Position> results = new ArrayList<>();
+        for (TabNote root : rootCandidates) {
+            Position p = buildPosition(root, intervals, absoluteNotes);
+            if (p != null) results.add(p);
+        }
+
+        results.removeIf(p -> {
+            List<Integer> frets = p.notes().stream().map(TabNote::fret).toList();
+            return frets.stream().mapToInt(Integer::intValue).max().orElse(0)
+                 - frets.stream().mapToInt(Integer::intValue).min().orElse(0) > 4;
+        });
+
+        results.sort(Comparator.comparingInt(p -> {
+            List<Integer> frets = p.notes().stream().map(TabNote::fret).toList();
+            return frets.stream().mapToInt(Integer::intValue).max().orElse(0)
+                 - frets.stream().mapToInt(Integer::intValue).min().orElse(0);
+        }));
+
+        return results;
+    }
+
+    List<Note> toAbsoluteNotes(List<IntervalNote> intervals, Note key) {
+        List<Note> out = new ArrayList<>();
+        for (IntervalNote in : intervals) {
+            out.add(key.shift(in.interval().ordinal()));
+        }
+        return out;
+    }
+
+    List<TabNote> findNeckPositions(Note note) {
+        List<TabNote> out = new ArrayList<>();
+        for (int string = 0; string < 6; string++) {
+            for (int fret = 0; fret <= 24; fret++) {
+                if (Guitar.getNoteAt(string, fret) == note) {
+                    out.add(new TabNote(string, fret, 0, null));
+                }
+            }
+        }
+        return out;
+    }
+
+    List<TabNote> findCandidates(TabNote current, Note next, String technique) {
+        int s = current.stringIndex();
+        int minString = (technique != null && !technique.isEmpty()) ? s : Math.max(0, s - 1);
+        int maxString = (technique != null && !technique.isEmpty()) ? s : Math.min(5, s + 1);
+
+        List<TabNote> candidates = new ArrayList<>();
+        for (int string = minString; string <= maxString; string++) {
+            for (int fret = 0; fret <= 24; fret++) {
+                if (Guitar.getNoteAt(string, fret) == next) {
+                    candidates.add(new TabNote(string, fret, 0, null));
+                }
+            }
+        }
+        candidates.sort(Comparator.comparingInt(c -> proximityScore(current, c)));
+        return candidates;
+    }
+
+    int proximityScore(TabNote from, TabNote to) {
+        return Math.abs(from.fret() - to.fret()) + Math.abs(from.stringIndex() - to.stringIndex());
+    }
+
+    Position buildPosition(TabNote root, List<IntervalNote> intervals, List<Note> absoluteNotes) {
+        List<TabNote> sequence = new ArrayList<>();
+        sequence.add(new TabNote(root.stringIndex(), root.fret(), 0, intervals.get(0).technique()));
+
+        for (int i = 1; i < absoluteNotes.size(); i++) {
+            String technique = intervals.get(i - 1).technique();
+            List<TabNote> candidates = findCandidates(sequence.get(sequence.size() - 1), absoluteNotes.get(i), technique);
+            if (candidates.isEmpty()) return null;
+            TabNote best = candidates.get(0);
+            sequence.add(new TabNote(best.stringIndex(), best.fret(), i, intervals.get(i).technique()));
+        }
+
+        return new Position(sequence);
     }
 
     LickResponse toLickResponse(Lick lick, List<Position> positions) {

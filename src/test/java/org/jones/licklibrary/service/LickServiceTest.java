@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
 import org.jones.licklibrary.model.Lick;
 import org.jones.licklibrary.model.TabNote;
@@ -12,6 +13,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class LickServiceTest {
@@ -125,6 +128,60 @@ class LickServiceTest {
     @Test
     void getLicks_computesAndCachesPositionsOnMiss() {
         // TODO
+    }
+
+    // --- findNeckPositions ---
+
+    @Test
+    void findNeckPositions_allResultsResolveToRequestedNote() {
+        List<TabNote> positions = lickService.findNeckPositions(Note.E);
+        assertFalse(positions.isEmpty());
+        for (TabNote t : positions) {
+            assertEquals(Note.E, t.toNote());
+        }
+    }
+
+    @Test
+    void findNeckPositions_correctCount() {
+        // E appears on 2 open strings (0 and 5) → 3 occurrences each (frets 0, 12, 24)
+        // + 4 remaining strings → 2 occurrences each = 14 total
+        assertEquals(14, lickService.findNeckPositions(Note.E).size());
+    }
+
+    @Test
+    void findNeckPositions_includesOpenStrings() {
+        List<TabNote> positions = lickService.findNeckPositions(Note.E);
+        assertTrue(positions.stream().anyMatch(t -> t.stringIndex() == 0 && t.fret() == 0));
+        assertTrue(positions.stream().anyMatch(t -> t.stringIndex() == 5 && t.fret() == 0));
+    }
+
+    // --- proximityScore ---
+
+    @Test
+    void proximityScore_samePosition() {
+        TabNote n = new TabNote(2, 5, 0, null);
+        assertEquals(0, lickService.proximityScore(n, n));
+    }
+
+    @Test
+    void proximityScore_sameString() {
+        TabNote from = new TabNote(2, 5, 0, null);
+        TabNote to   = new TabNote(2, 8, 0, null);
+        assertEquals(3, lickService.proximityScore(from, to));
+    }
+
+    @Test
+    void proximityScore_sameFretAdjacentString() {
+        TabNote from = new TabNote(2, 5, 0, null);
+        TabNote to   = new TabNote(3, 5, 0, null);
+        assertEquals(1, lickService.proximityScore(from, to));
+    }
+
+    @Test
+    void proximityScore_bothDiffer() {
+        TabNote from = new TabNote(2, 5, 0, null);
+        TabNote to   = new TabNote(4, 7, 0, null);
+        assertEquals(4, lickService.proximityScore(from, to));
     }
 
     // --- findPositions ---

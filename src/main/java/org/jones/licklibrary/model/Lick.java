@@ -49,7 +49,6 @@ public class Lick {
 
     @Override
     public String toString() {
-        if (intervals == null) return "";
-        return intervals.stream().map(IntervalNote::toString).collect(Collectors.joining(" "));
+        return IntervalNoteListConverter.toDisplayString(intervals);
     }
 }

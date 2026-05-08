@@ -2,7 +2,7 @@ package org.jones.licklibrary.model;
 
 import org.jones.licklibrary.constants.Interval;
 
-public record IntervalNote(Interval interval, String technique) {
+public record IntervalNote(Interval interval, String technique, int columnIndex) {
 
     @Override
     public String toString() {
