@@ -66,24 +66,28 @@ public class LickService {
     List<TabNote> parseTab(String rawTab) {
         String[] strings = rawTab.split("\n");
         List<TabNote> out = new ArrayList<>();
-        // TODO: retool this to look at at least 3 chars
-        //  at a time, and only grab numbers that are
-        //  surrounded by - or technique. this will enable
-        //  us to discern 2 digit fret nums
         for (int i = 0; i < strings.length; i++) {
             String line = strings[i];
             for (int j = 2; j < line.length(); j++) {
-                String fret = String.valueOf(line.charAt(j));
-                if (fret.matches("[0-9]")) {
+                if (Character.isDigit(line.charAt(j))) {
+                    int fretNum;
+                    int techniqueIdx;
+                    if (j + 1 < line.length() && Character.isDigit(line.charAt(j + 1))) {
+                        fretNum = (line.charAt(j) - '0') * 10 + (line.charAt(j + 1) - '0');
+                        techniqueIdx = j + 2;
+                        j++;
+                    } else {
+                        fretNum = line.charAt(j) - '0';
+                        techniqueIdx = j + 1;
+                    }
                     String technique = "";
-                    if (line.length()-1 > j) {
-                        String nextChar = String.valueOf(line.charAt(j+1));
-                        if (nextChar.matches("[hp/\\\\]")){
-                            technique = nextChar;
+                    if (techniqueIdx < line.length()) {
+                        char next = line.charAt(techniqueIdx);
+                        if (next == 'h' || next == 'p' || next == '/' || next == '\\') {
+                            technique = String.valueOf(next);
                         }
                     }
-                    TabNote note = new TabNote(i, Integer.valueOf(fret), j-2, technique);
-                    out.add(note);
+                    out.add(new TabNote(i, fretNum, j - 2, technique));
                 }
             }
         }

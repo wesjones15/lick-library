@@ -90,6 +90,55 @@ class LickServiceTest {
         assertEquals(Mode.DORIAN, response.mode());
     }
 
+    // --- parseTab ---
+
+    @Test
+    void parseTab_twoDigitFret_parsedAsSingleNote() {
+        String tab =
+            "e|--10--|\n" +
+            "B|------|\n" +
+            "G|------|\n" +
+            "D|------|\n" +
+            "A|------|\n" +
+            "E|------|";
+        List<TabNote> notes = lickService.parseTab(tab);
+        assertEquals(1, notes.size());
+        assertEquals(10, notes.get(0).fret());
+    }
+
+    @Test
+    void parseTab_twoDigitFretWithTechnique() {
+        String tab =
+            "e|--10h12--|\n" +
+            "B|---------|\n" +
+            "G|---------|\n" +
+            "D|---------|\n" +
+            "A|---------|\n" +
+            "E|---------|";
+        List<TabNote> notes = lickService.parseTab(tab);
+        assertEquals(2, notes.size());
+        assertEquals(10, notes.get(0).fret());
+        assertEquals("h", notes.get(0).technique());
+        assertEquals(12, notes.get(1).fret());
+        assertEquals("", notes.get(1).technique());
+    }
+
+    @Test
+    void parseTab_singleDigitFretUnchanged() {
+        String tab =
+            "e|--5h7--|\n" +
+            "B|-------|\n" +
+            "G|-------|\n" +
+            "D|-------|\n" +
+            "A|-------|\n" +
+            "E|-------|";
+        List<TabNote> notes = lickService.parseTab(tab);
+        assertEquals(2, notes.size());
+        assertEquals(5, notes.get(0).fret());
+        assertEquals("h", notes.get(0).technique());
+        assertEquals(7, notes.get(1).fret());
+    }
+
     // --- resolvePositions / position cache ---
 
     @Disabled("position cache not yet wired into resolvePositions")
