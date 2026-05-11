@@ -316,3 +316,31 @@
 - All 7 existing position-building tests updated to pass `Guitar.STANDARD` explicitly
 - `LickUtilsTest.java` — 1-arg `toIntervals` calls replaced with 3-arg; stale comments about "A string" corrected to "B string"
 - `ParseTabTest.java` — `@Disabled` removed from two-digit fret test; `toNoteString` calls removed; `toIntervals` call updated to 3-arg
+
+---
+
+## Session 12
+
+### Decisions Made
+- **Instrument selector (frontend + backend)** — Output positions on LibraryPage and DetailPage now reflect the selected instrument. The selector persists to `localStorage` so it survives navigation between pages. The upload pipeline stays fixed to `Guitar.STANDARD` (no need to store instrument with the lick shape).
+- **Named instruments** — Dropdown offers Standard Guitar, Drop D, Open G, Open D, DADGAD, Bass, Ukulele, Mandolin, Banjo, and Custom. Frontend values match `InstrumentRegistry` keys (`GUITAR`, `DROP_D`, etc.).
+- **Custom tuning with Apply button** — Custom tuning is entered as a space-separated note string (e.g. `E A D G B E`). Positions only re-fetch on explicit click of the Apply button or pressing Enter — no debounce. This avoids mid-keystroke 400 errors. `appliedTuning` state gates the fetch; `customTuning` state tracks the input field live.
+- **`NoteParser`** — New utility class that maps user-typed note strings to `Note` enum values. Handles `C#`, `Db`, `Bb`, `A#`; both `A#` and `BB` map to `B_FLAT`. Case-insensitive after normalisation.
+- **`CustomInstrument`** — New `Instrument` implementation constructed from a `Note[]` tuning array. Labels and display order are derived from the tuning (high string first, highest string label is lowercase) — same convention as the fix applied to `Guitar` variants this session.
+- **`GET /api/lick/{id}` tuning param** — New optional `?tuning=E A D G B E` query param. When present, the backend parses it via `NoteParser` and builds a `CustomInstrument`; invalid note names return 400. `?instrument=` is used when tuning is absent (existing behaviour).
+- **Guitar variant label bug fix** — `Guitar.labels()` was hardcoded to standard guitar string names (`e|B|G|D|A|E|`) for all variants, making Drop D, Open G, etc. look identical to standard in the rendered tab. Changed `labels()` to compute names dynamically from the instance's `tuning` array using a `noteToLabel()` helper. Highest-string label is lowercase; all others uppercase. Drop D's bottom string now shows `D|` instead of `E|`.
+- **Positions header shows instrument** — DetailPage heading changed from `Positions in A` to `Positions in A — Bass` (or the tuning string for Custom, e.g. `E A D G B E`). Added `INSTRUMENT_LABELS` map in `DetailPage.tsx`.
+- **Stale JVM diagnosis** — Backend process (PID 50842) had been running since Friday before the instrument abstraction was compiled. All instrument changes were on disk but the running JVM had old code. Killed old process and restarted; confirmed by sending an unknown instrument name and getting 400.
+
+### Implemented — Backend
+- `constants/NoteParser.java` — new class; static `Map<String, Note>` with aliases; `parse(String)` throws `IllegalArgumentException` on unknown input
+- `constants/CustomInstrument.java` — new `Instrument` implementation; constructor reverses `Note[]` for labels/displayOrder (high string first); `noteToLabel` helper for display names
+- `constants/Guitar.java` — `labels()` rewritten to be instance-aware: computes string names dynamically from `tuning` field via `noteToLabel(Note, boolean lowercase)` helper; hardcoded standard labels removed
+- `controller/LickController.java` — `@RequestParam(required = false) String tuning` added to `GET /{id}`; when non-blank, splits on `\s+`, parses each token via `NoteParser`, constructs `CustomInstrument`; parse errors return 400
+
+### Implemented — Frontend (`lick_library_ui`)
+- `src/hooks/useInstrument.ts` — new hook; `useState` with lazy localStorage initialiser; `setInstrument` / `setCustomTuning` write-through to `localStorage`; keys `lick_instrument` / `lick_custom_tuning`
+- `src/components/InstrumentSelector.tsx` — new component; `<select>` over named instrument list; when `CUSTOM` selected, shows flex row with text `<input>` (Enter triggers `onSubmit`) + indigo "Apply" button; optional `error` prop shows red text below
+- `src/api/client.ts` — `getLick` gains `instrument` and `customTuning` params; sends `?tuning=` for custom, `?instrument=` for named; throws `Error(\`${res.status}\`)` so callers can detect 400
+- `src/pages/LibraryPage.tsx` — imports `useInstrument` + `InstrumentSelector`; selector shown above lick list as passive preference (no re-fetch; persists selection for DetailPage)
+- `src/pages/DetailPage.tsx` — imports `useInstrument` + `InstrumentSelector`; `appliedTuning` state replaces debounce; useEffect deps `[id, key, algo, instrument, appliedTuning]`; guard skips fetch when CUSTOM + empty applied tuning; `instrumentError` state for 400 responses; `INSTRUMENT_LABELS` map; "Positions in A — Bass" header format; controls row uses `flex flex-wrap items-start gap-3`
