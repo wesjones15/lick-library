@@ -281,3 +281,38 @@
 
 ### Other
 - `idea_bucket.txt` — created; 11 feature ideas with codebase-specific notes added under each point
+
+---
+
+## Session 11
+
+### Decisions Made
+- **LoserBracketPositionBuilder (chord-aware greedy)** — third position algorithm added, selectable via `?algo=chord`. Two-pass approach: first pass greedily places one note per unique `columnIndex`; second pass places chord partners (notes sharing a `columnIndex`) near their parallel notes on a different string. Partners that can't fit the span constraint are silently skipped rather than discarding the whole position. This is the only algorithm that correctly handles simultaneous notes.
+- **Bb/grid fixes (frontend)** — the `KeySelector` was sending `A_SHARP` for B♭; `Note` enum uses `B_FLAT`. Fixed `KeySelector.tsx` and `DetailPage.tsx` `KEY_LABELS` map. The "Positions in …" heading applied `uppercase` via Tailwind which turned `Bb` into `BB`; fixed with a `normal-case` span wrapper.
+- **Dynamic position grid (frontend)** — detail page positions now use a CSS `auto-fill` grid whose minimum cell width is computed from the rendered tab line length (`tabLineLength * 8.4 + 32` px), so cells fill the viewport naturally and wrap onto additional rows.
+- **Tab grid expansion (idea #6, frontend)** — when the cursor is at the closing `|` of the tab textarea and a valid input character is typed, `expandTab()` inserts a `-` before each line's closing `|` to grow the grid by one column. The cursor is repositioned using `linesBefore` offset + `nextCursorRef` to land in the correct slot.
+- **Two-digit fret parsing (idea #7, backend)** — `parseTab` now handles frets 10–15: when a digit at column `j` is followed by another digit at `j+1`, the two are combined into a single fret number, `j` is advanced to skip `j+1`, and the technique character is read from `j+2`. Single-digit fret handling is unchanged.
+- **Instrument abstraction (idea #2, backend)** — `Guitar` is no longer a standalone constants class; it now implements a new `Instrument` interface. Four additional instruments added: `Bass`, `Ukulele`, `Mandolin`, `Banjo`. `Guitar` now has named tuning variants: `STANDARD`, `DROP_D`, `OPEN_G`, `OPEN_D`, `DADGAD`. `InstrumentRegistry.fromName(String)` maps query-param strings to instances. All position-building methods, `Position.toTabString`, and `LickUtils.toIntervals` now take an explicit `Instrument` parameter — no `Guitar.STANDARD` hardcoded outside `Guitar.java` and `LickService.uploadLick`. `TabNote.toNote()` removed; `LickUtils.toNoteString` removed (unused). All backwards-compat overloads removed; tests updated to pass `Guitar.STANDARD` explicitly.
+- **`GET /api/lick/{id}` instrument param** — `?instrument=GUITAR` (default) or any `InstrumentRegistry`-known name. Invalid name returns 400.
+- **`ParseTabTest` two-digit fret test un-disabled** — the test was `@Disabled("not yet implemented")` since session 6; now enabled and passing.
+- **`FindNeckPositionsTest` count fixed** — expected count for E on standard guitar was 14 (assumed fret 24 in range); correct count with MAX_FRET=15 is 9.
+
+### Implemented — Backend
+- `constants/Instrument.java` — new interface: `tuning()`, `labels()`, `displayOrder()`, `name()`, `stringCount()` (default), `getNoteAt(int, int)` (default), `minFret(int)` (default → 0)
+- `constants/InstrumentRegistry.java` — `fromName(String)`: switch on uppercased name; throws `IllegalArgumentException` for unknown names
+- `constants/Guitar.java` — implements `Instrument`; static instances `STANDARD`, `DROP_D`, `OPEN_G`, `OPEN_D`, `DADGAD`; legacy static `getNoteAt` removed
+- `constants/Bass.java`, `Ukulele.java`, `Mandolin.java`, `Banjo.java` — new `Instrument` implementations; `Banjo` has a TODO for 5th-string `minFret` quirk (deferred)
+- `service/PositionBuilder.java` — all methods take `Instrument`; backwards-compat overloads removed; `Guitar` import removed
+- `service/DfsPositionBuilder.java`, `GreedyPositionBuilder.java`, `LoserBracketPositionBuilder.java` — all take `Instrument`; `LoserBracketPositionBuilder` is new
+- `service/LickService.java` — `getLick`/`resolvePositions`/`toLickResponse` now 4-arg; `uploadLick` uses `Guitar.STANDARD.getNoteAt(...)` instead of `toNote()`; `LickUtils.toIntervals` call passes `Guitar.STANDARD`
+- `service/LickUtils.java` — `toIntervals(List<TabNote>, Note, Instrument)` 3-arg replaces 2-arg and 1-arg versions; `toNoteString` removed
+- `model/TabNote.java` — `toNote()` removed; now a plain data record
+- `model/Position.java` — `toTabString(Instrument)` overload added using `instrument.labels()`/`displayOrder()`/`stringCount()`; no-arg delegates to `Guitar.STANDARD`
+- `controller/LickController.java` — `?instrument=` query param wired via `InstrumentRegistry`; 400 on unknown instrument
+- `service/parseTab` — two-digit fret lookahead added
+
+### Implemented — Tests
+- `LoserBracketPositionBuilderTest.java` — new; 5 tests: same results as greedy on non-chord input, chord partners share `columnIndex`, partners on different strings, span respected, partial positions returned when partner unplaceable
+- All 7 existing position-building tests updated to pass `Guitar.STANDARD` explicitly
+- `LickUtilsTest.java` — 1-arg `toIntervals` calls replaced with 3-arg; stale comments about "A string" corrected to "B string"
+- `ParseTabTest.java` — `@Disabled` removed from two-digit fret test; `toNoteString` calls removed; `toIntervals` call updated to 3-arg
