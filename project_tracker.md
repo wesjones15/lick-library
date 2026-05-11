@@ -228,3 +228,56 @@
 - `KeySelector.tsx` — replaced flat `NOTES` string array with `{ value, label }` pairs; `value` is the Java enum name (`C_SHARP`), `label` is the display string (`C#`); fixes sharp key requests returning 400
 - `client.ts` — added `inputKey?: string` to `UploadRequest` interface
 - `UploadForm.tsx` — added `inputKey` state (default `''`), root key dropdown ("Root: first note" as default option) placed before the mode dropdown; conditionally includes `inputKey` in the request body
+
+---
+
+## Session 9
+
+### Decisions Made
+- **Sliding DFS candidate cap** — `dfsPositions` previously explored all candidates at every step, causing exponential blowup on long licks (a 23-note tab hung indefinitely). Added a per-step cap `Math.max(4, 20 / noteCount)` so shorter licks get more branching (variety) while longer licks are bounded. Candidates are proximity-sorted so capping to the N closest keeps the most musically relevant branches.
+- **Global MAX_POSITIONS cap** — the old `MAX_POSITIONS = 50` check was on a per-root local list, not the global results list. Each root could add up to 50, resulting in hundreds of positions total. Fixed by passing the global results list directly into `buildPositions`/`dfsPositions` so the cap applies across all root candidates.
+- **Dynamic span (`tabSpan`)** — the hardcoded 4-fret span filter rejected tabs whose original fingering spans more than 4 frets (the 23-note example spans 0–5). Fixed by storing `tabSpan = max_fret − min_fret` on the `Lick` entity at upload time and passing it as `spanLimit` to `findPositions` via `resolvePositions`. The 2-arg `findPositions` overload defaults to 4 for all existing callers and tests.
+- **`buildPositions` signature change** — no longer returns a list; now takes the global results list as a parameter and mutates it in place. This is what enables the global cap.
+- **Position diversity: string-pattern + fret-region dedup** — positions that share the same string assignment (same string for each note) and sit in the same 5-fret region of the neck are the same fingering shape in a slightly different register ("sequential variations"). Replaced exact-tab-string dedup with a `(string sequence, min_fret / 5)` key, keeping only the lowest-register representative per group. Preserves genuine variety (different strings OR different neck region) while eliminating near-duplicate positions.
+
+### Implemented
+- `Lick.java` — added `tabSpan` (`Integer`, nullable) with getter/setter; H2 adds the column automatically via `ddl-auto`
+- `LickService.java` — sliding candidate cap in `dfsPositions`; global results list threaded through `buildPositions`; `findPositions` 3-arg overload with `spanLimit`; `resolvePositions` computes `Math.max(4, tabSpan)`; `buildDiversityKey` helper; string-pattern + fret-region dedup replacing tab-string dedup; unused `HashSet`/`Set`/`Collectors` imports removed; `LinkedHashMap`/`Map` imports added
+- `BuildPositionTest.java` — updated 4 call sites from `buildPositions(root, intervals, notes, 4)` to `buildPositions(root, intervals, notes, 4, results)` with a locally created `ArrayList`; added `ArrayList` import
+- `FindPositionsTest.java` — long-lick test rewritten as `findPositions_longLickProducesPositions`: computes span from parsed notes, calls 3-arg `findPositions(intervals, Note.A, Math.max(4, span))`, asserts non-empty and within MAX_POSITIONS; `@Timeout` annotation removed; added `findPositions_noDuplicateStringPatternsInSameRegion` test using the string-pattern + fret-region key
+
+---
+
+## Session 10
+
+### Decisions Made
+- **±2 string constraint in `findCandidates`** — the session-7 expansion to all-6-strings caused 5-string leap positions that were physically absurd. Restricted to current string ±2 (bounded to 0–5) when no technique is present. Technique still locks to same string only.
+- **Round-robin interleaving** — after sorting by max-fret ascending, positions are grouped by starting string then interleaved round-robin so consecutive results always come from different starting strings. Ensures visual variety in the first several positions shown.
+- **Overwrite-mode tab editor** — the upload textarea is now pre-filled with a 6-string, 16-column empty tab template. Typing replaces the character under the cursor in place (overwrite mode); the cursor advances automatically. String labels and `|` bars are protected (unoverwritable). Backspace replaces the previous char with `-`. Non-tab keys (letters, symbols not in `[0-9hp/\-]`) are blocked entirely via `e.preventDefault()` to prevent lines from growing. Cursor restoration uses `useLayoutEffect` + a `nextCursorRef` to fire synchronously after React reconciliation.
+- **Position algorithm strategy pattern** — `findNeckPositions`, `findCandidates`, `buildPositions`, `dfsPositions`, `buildDiversityKey`, and `findPositions` extracted from `LickService` into an abstract `PositionBuilder` base class. Two concrete implementations: `DfsPositionBuilder` (existing logic, unchanged) and `GreedyPositionBuilder` (new — single-pass nearest-neighbour, one path per root). `LickService` holds instances of both and selects based on an `algo` param.
+- **Algo selection via `?algo=` query param** — `GET /api/lick/{id}?key=A&algo=greedy` (default) or `algo=dfs`. Frontend detail page gains a Greedy/DFS toggle that triggers a re-fetch on change.
+- **Mode interval tooltip** — hovering the mode chip on the detail page shows a dark tooltip with the mode's interval formula (e.g. `1  2  b3  4  5  6  b7`). Implemented with Tailwind `group`/`group-hover` opacity transition.
+- **Key display fix** — the "Positions in …" heading was showing raw enum names like `G_SHARP`. Added a `KEY_LABELS` map to render `G#`, `Bb`, etc. `A_SHARP` displays as `Bb` (and in the key selector dropdown) per standard music convention.
+
+### Implemented — Backend
+- `service/PositionBuilder.java` — new abstract base class; `MAX_FRET = 15`, `MAX_POSITIONS = 50`; `findNeckPositions` and `findCandidates` (moved verbatim from `LickService`)
+- `service/DfsPositionBuilder.java` — new class; all DFS + diversity dedup + round-robin logic moved from `LickService` verbatim
+- `service/GreedyPositionBuilder.java` — new class; single-pass algorithm, picks `candidates.get(0)` at each step, discards path if any step fails span/fret constraints
+- `LickService.java` — removed all position-building methods; added `greedyBuilder`/`dfsBuilder` fields; `resolvePositions(Lick, Note, String algo)` and `getLick(UUID, Note, String algo)`; forwarding constants `MAX_FRET`/`MAX_POSITIONS` kept for test compatibility
+- `LickController.java` — `@RequestParam(defaultValue = "greedy") String algo` added to `GET /{id}`
+
+### Implemented — Frontend
+- `UploadForm.tsx` — pre-filled `EMPTY_TAB` template; `handleKeyDown` with `isProtected` guard, overwrite logic, backspace-to-dash, full single-char `preventDefault`; `useRef` + `useLayoutEffect` for cursor restoration; submit disabled until at least one digit present; resets to template on success
+- `DetailPage.tsx` — `algo` state + Greedy/DFS toggle button group; `KEY_LABELS` map for display; `useEffect` depends on `[id, key, algo]`; mode interval tooltip via `MODE_INTERVALS` map + `group-hover`
+- `KeySelector.tsx` — `A_SHARP` label changed from `A#` to `Bb`
+- `client.ts` — `getLick(id, key, algo = 'greedy')`
+
+### Implemented — Tests
+- `FindNeckPositionsTest`, `FindCandidatesTest` — removed Mockito mocks; instantiate `new GreedyPositionBuilder()` directly
+- `BuildPositionTest` — removed mocks; instantiates `new DfsPositionBuilder()`; calls `builder.buildPositions(...)`
+- `FindPositionsTest` — keeps `LickService` mock for `parseTab`; adds `DfsPositionBuilder dfsBuilder`; all `findPositions` calls replaced with `dfsBuilder.build(...)`
+- `FindCandidatesTest` — `searchesAllStrings` test renamed to `searchesWithinTwoStringsWhenNoTechnique`; asserts `Math.abs(stringIndex - 2) <= 2`
+- `FindPositionsTest` — `ranksPositionsByMaxFretAscending` replaced with `ranksPositionsByMaxFretAscendingWithinEachStartingString` (round-robin breaks global order); added `firstRoundHasDistinctStartingStrings`
+
+### Other
+- `idea_bucket.txt` — created; 11 feature ideas with codebase-specific notes added under each point
