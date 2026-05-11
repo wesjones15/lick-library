@@ -1,8 +1,10 @@
 package org.jones.licklibrary.controller;
 
+import org.jones.licklibrary.constants.CustomInstrument;
 import org.jones.licklibrary.constants.Instrument;
 import org.jones.licklibrary.constants.InstrumentRegistry;
 import org.jones.licklibrary.constants.Note;
+import org.jones.licklibrary.constants.NoteParser;
 import org.jones.licklibrary.model.LickResponse;
 import org.jones.licklibrary.model.UploadLickRequest;
 import org.jones.licklibrary.service.LickService;
@@ -48,7 +50,8 @@ public class LickController {
             @PathVariable UUID id,
             @RequestParam String key,
             @RequestParam(defaultValue = "greedy") String algo,
-            @RequestParam(defaultValue = "GUITAR") String instrument) {
+            @RequestParam(defaultValue = "GUITAR") String instrument,
+            @RequestParam(required = false) String tuning) {
         Note noteKey;
         try {
             noteKey = Note.valueOf(key.toUpperCase());
@@ -56,10 +59,21 @@ public class LickController {
             return ResponseEntity.badRequest().build();
         }
         Instrument inst;
-        try {
-            inst = InstrumentRegistry.fromName(instrument);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+        if (tuning != null && !tuning.isBlank()) {
+            try {
+                String[] tokens = tuning.trim().split("\\s+");
+                Note[] notes = new Note[tokens.length];
+                for (int i = 0; i < tokens.length; i++) notes[i] = NoteParser.parse(tokens[i]);
+                inst = new CustomInstrument(notes);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        } else {
+            try {
+                inst = InstrumentRegistry.fromName(instrument);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
+            }
         }
         return ResponseEntity.ok(lickService.getLick(id, noteKey, algo, inst));
     }
