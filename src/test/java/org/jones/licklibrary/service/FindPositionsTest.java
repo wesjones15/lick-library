@@ -29,10 +29,12 @@ class FindPositionsTest {
     @Mock private PositionCacheRepository positionCacheRepository;
 
     private LickService lickService;
+    private DfsPositionBuilder dfsBuilder;
 
     @BeforeEach
     void setUp() {
         lickService = new LickService(lickRepository, positionCacheRepository);
+        dfsBuilder = new DfsPositionBuilder();
     }
 
     @Test
@@ -44,7 +46,7 @@ class FindPositionsTest {
             new IntervalNote(Interval.FIVE,       null, 2)
         );
 
-        List<Position> positions = lickService.findPositions(intervals, Note.A);
+        List<Position> positions = dfsBuilder.build(intervals, Note.A, 4);
 
         System.out.println("findPositions — A minor pentatonic fragment (A C E): " + positions.size() + " positions");
         for (Position p : positions) {
@@ -74,21 +76,21 @@ class FindPositionsTest {
 
     @Test
     void findPositions_returnsValidPositions() {
-        List<Position> positions = lickService.findPositions(minorPentatonicFragment(), Note.A);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
         assertFalse(positions.isEmpty());
         positions.forEach(p -> assertEquals(3, p.notes().size()));
     }
 
     @Test
     void findPositions_filtersPositionsExceedingFourFretSpan() {
-        List<Position> positions = lickService.findPositions(minorPentatonicFragment(), Note.A);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
         positions.forEach(p -> assertTrue(maxFret(p) - minFret(p) <= 4,
             "position has fret span > 4: " + p.toTabString()));
     }
 
     @Test
     void findPositions_filtersPositionsAboveMaxFret() {
-        List<Position> positions = lickService.findPositions(minorPentatonicFragment(), Note.A);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
         positions.forEach(p ->
             p.notes().forEach(n -> assertTrue(n.fret() <= LickService.MAX_FRET,
                 "note above MAX_FRET in: " + p.toTabString())));
@@ -96,7 +98,7 @@ class FindPositionsTest {
 
     @Test
     void findPositions_ranksPositionsByMaxFretAscendingWithinEachStartingString() {
-        List<Position> positions = lickService.findPositions(minorPentatonicFragment(), Note.A);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
         Map<Integer, Integer> lastMaxFret = new HashMap<>();
         for (Position p : positions) {
             int startString = p.notes().get(0).stringIndex();
@@ -110,7 +112,7 @@ class FindPositionsTest {
 
     @Test
     void findPositions_firstRoundHasDistinctStartingStrings() {
-        List<Position> positions = lickService.findPositions(minorPentatonicFragment(), Note.A);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
         long distinctStarts = positions.stream()
             .map(p -> p.notes().get(0).stringIndex()).distinct().count();
         Set<Integer> seen = new HashSet<>();
@@ -134,7 +136,7 @@ class FindPositionsTest {
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.A);
         int span = notes.stream().mapToInt(TabNote::fret).max().orElse(0)
                  - notes.stream().mapToInt(TabNote::fret).min().orElse(0);
-        List<Position> positions = lickService.findPositions(intervals, Note.A, Math.max(4, span));
+        List<Position> positions = dfsBuilder.build(intervals, Note.A, Math.max(4, span));
 
         assertFalse(positions.isEmpty());
         assertTrue(positions.size() <= LickService.MAX_POSITIONS);
@@ -144,7 +146,7 @@ class FindPositionsTest {
 
     @Test
     void findPositions_noDuplicateStringPatternsInSameRegion() {
-        List<Position> positions = lickService.findPositions(minorPentatonicFragment(), Note.A);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
         Set<List<Integer>> keys = new HashSet<>();
         for (Position p : positions) {
             List<Integer> key = new ArrayList<>();

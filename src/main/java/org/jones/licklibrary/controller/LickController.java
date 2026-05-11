@@ -44,13 +44,14 @@ public class LickController {
     @GetMapping("/{id}")
     public ResponseEntity<LickResponse> getLick(
             @PathVariable UUID id,
-            @RequestParam String key) {
+            @RequestParam String key,
+            @RequestParam(defaultValue = "greedy") String algo) {
         Note noteKey;
         try {
             noteKey = Note.valueOf(key.toUpperCase());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(lickService.getLick(id, noteKey));
+        return ResponseEntity.ok(lickService.getLick(id, noteKey, algo));
     }
 }

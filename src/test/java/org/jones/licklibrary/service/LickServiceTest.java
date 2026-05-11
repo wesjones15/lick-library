@@ -113,7 +113,7 @@ class LickServiceTest {
         when(positionCacheRepository.findByIntervalHashAndKey(hash, "A"))
             .thenReturn(Optional.of(cached));
 
-        lickService.getLick(UUID.randomUUID(), Note.A);
+        lickService.getLick(UUID.randomUUID(), Note.A, "greedy");
 
         // cache hit — positions should come from cache, not recomputed
         verify(positionCacheRepository, never()).save(any());
@@ -132,7 +132,7 @@ class LickServiceTest {
         when(positionCacheRepository.findByIntervalHashAndKey(anyString(), anyString()))
             .thenReturn(Optional.empty());
 
-        lickService.getLick(UUID.randomUUID(), Note.A);
+        lickService.getLick(UUID.randomUUID(), Note.A, "greedy");
 
         // cache miss — computed positions should be written to cache
         verify(positionCacheRepository).save(any(PositionCache.class));

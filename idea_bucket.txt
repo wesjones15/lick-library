@@ -1,0 +1,38 @@
+The current state of the app is a react vite frontend and a java spring boot backend. you input a guitar tab string, and it is converted into a collection of note objects and then gets processed into a list of output tab strings in the chosen key and mode. the unique licks get stored in a h2 db.
+
+The purpose of this file is to hold ideas in memory so we can easily refer to them in claude code ui.
+
+1. Restore the Simple Position building algorithm: The position building logic became too complicated. I want the fancy position building approach to be segregated. I want the original greedy findCandidates approach to be restored. I want a flag to be added which allows the user to select the position algorithm to be used via the front end. This should go on the results page. default to greedy. rerun position logic if fancy is selected.
+-- this should be implemented with an abstract class/method because for each algo, the input and output types will be the same.
+-- [codebase note] findPositions, buildPositions, dfsPositions, and findCandidates are all instance methods on LickService right now — they'd need to be extracted into a PositionBuilder strategy class to do this cleanly. The API would need an ?algo= param. Moderately scoped refactor but cleaner long-term.
+
+2. add other instruments. create instrument abstract class which defines common features and requirements of instruments. then add Ukelele, Lap Steel, Mandolin, Banjo tunings and layouts. we can select output instrument and use the same position logic to create tabs for other instruments. The front end will need a selector to choose the output instrument.
+--banjo 5th string starts at fret 5.
+-- [codebase note] Guitar.java was deliberately isolated for this reason — CLAUDE.md calls it out explicitly. Guitar.getNoteAt(string, fret) is the single seam to extend. The harder part is Position.toTabString(), which hardcodes 6 strings for ASCII rendering. Banjo's 5th-string-starts-at-fret-5 is genuinely tricky — the open note concept breaks down for that string.
+
+3. For the position logic, I want to add a third option which is based on greedy. It will do greedy based on single-note-at-a-time approach. if a repeat columnIndex is encountered, that IntervalNote is added to a "loser bracket" List. Once the first pass is complete, the loser bracket notes are iterated thru and then placed with consideration for where the parallel note is located
+-- [codebase note] This directly addresses a documented known limitation in CLAUDE.md: "buildPosition iterates absoluteNotes sequentially, which breaks for notes sharing a columnIndex; needs chord-aware handling." The loser bracket idea is a clean way to handle it. Would slot in as algorithm 3 under the abstraction from idea 1.
+
+4. Should I go all the way and just full on add the transposition tool from Ultimate Guitar? we already have the logic built out. This would need to be in conjunction with a feature that displays guitar chord sheets in addition to tabs. I think it could be useful. OMG i could make a web ui for my one-pager tabs. with transposition added. i can automate font size to shrink per line to prevent line breaks, but it would have to match with the chord line above, font wise.
+-- [codebase note] The transposition math is fully built — converting to intervals and back to any key is exactly what the lookup pipeline already does. The chord sheet rendering (chord names floating above lyric lines, auto font sizing) is a completely separate domain and a large scope expansion. Strong core but effectively two distinct features bundled together.
+
+5. all our algorithms have trouble with longer phrases. perhaps we break long, far traveling phrases up, either at measures or at | or some point we agree upon, to open up options.
+-- [codebase note] parseTab currently strips | completely — it's not preserved or used as a boundary signal. You'd need to emit measure-break markers during parsing and segment the interval list before running findPositions per segment. Doable and would genuinely improve quality on multi-bar phrases.
+
+6. the ui of the front end prefills an empty tab for the user to fill out. it is glitchy at the boundary. it needs to be able to expand when the tab being typed in is longer than the allotted space. this should not impact the user's ability to paste in a fully formed tab from external source.
+-- [codebase note] Approach is designed: detect cursor sitting on a closing | (followed by \n or end of string), insert a - before each line's closing | on all 6 lines simultaneously, recalculate cursor position, then proceed with the overwrite. Paste is already safe — onChange fires for paste and bypasses handleKeyDown entirely, so pasted tabs land in state as-is.
+
+7. we need to update the tab parsing logic to look at a few steps ahead at a time, in order to account for 2 digit frets and techniques.
+-- [codebase note] There's already a TODO comment in LickService.parseTab (lines 68–71) calling this out exactly. The fix is a one-line lookahead: when a digit is found at position j, check if j+1 is also a digit, combine and skip j+1.
+
+8. since the skeleton is here, I want to implement the full CAGED scales for each mode (well for ionian, and everything else is the same with adjusted root note). this can tie into licks. maybe it will turn into a utility for building licks or soloing in different modes.
+-- [codebase note] The interval math is all there. CAGED is 5 fixed fingering patterns for the pentatonic/diatonic scale — you'd be generating positions for a full scale shape rather than a lick sequence. Could reuse findNeckPositions + findCandidates to populate a full 5–7 note pattern.
+
+9. what would it take for this webapp to be optimized for 2025 ipad air. I would like to save the 'site' as a shortcut on my home screen, so that when i click on it, it opens as its own app, not as a browser tab.
+-- [codebase note] Pure frontend config — manifest.json, apple-touch-icon, viewport meta, display: standalone. Vite has a PWA plugin (vite-plugin-pwa) that handles most of the boilerplate. No backend touches needed.
+
+10. i don't want this personally, but maybe it would be wise to consider what changes should be implemented to make the webapp robust and have security, users, other shit such that it would be impressive as a personal project to interviewers. this is less valuable in my eyes than the functional aspects of this app.
+-- [codebase note] JWT auth, Spring Security, CORS policy, rate limiting, user-scoped repositories. The H2 file DB would need to become Postgres. Standard Spring Boot stack — none of it is hard, just overhead. Worth doing last if at all.
+
+11. a new feature could be adding parallel harmony. input: short tab or phrase. output: tab of a harmony that 'rhymes' or otherwise pairs with the input tab. the 2 tabs should complement one another if played in parallel.
+-- [codebase note] More tractable than it sounds given the interval-first design. For a given mode the diatonic scale steps are known — harmony a 3rd up means shifting each note up by 2 scale degrees while staying in mode. You'd transform List<IntervalNote> → List<IntervalNote> by mapping each interval to its diatonic 3rd, then feed through the existing position pipeline. The hard part is deciding what "rhymes" means for non-diatonic or chromatic phrases.
