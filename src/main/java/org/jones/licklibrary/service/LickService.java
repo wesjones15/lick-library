@@ -24,6 +24,7 @@ public class LickService {
 
     private final PositionBuilder greedyBuilder = new GreedyPositionBuilder();
     private final PositionBuilder dfsBuilder = new DfsPositionBuilder();
+    private final PositionBuilder loserBracketBuilder = new LoserBracketPositionBuilder();
 
     public LickService(LickRepository lickRepository,
                        PositionCacheRepository positionCacheRepository) {
@@ -112,7 +113,11 @@ public class LickService {
 
     List<Position> resolvePositions(Lick lick, Note key, String algo) {
         int spanLimit = Math.max(4, lick.getTabSpan() != null ? lick.getTabSpan() : 4);
-        PositionBuilder builder = "dfs".equalsIgnoreCase(algo) ? dfsBuilder : greedyBuilder;
+        PositionBuilder builder = switch (algo == null ? "" : algo.toLowerCase()) {
+            case "dfs"   -> dfsBuilder;
+            case "chord" -> loserBracketBuilder;
+            default      -> greedyBuilder;
+        };
         return builder.build(lick.getIntervals(), key, spanLimit);
     }
 
