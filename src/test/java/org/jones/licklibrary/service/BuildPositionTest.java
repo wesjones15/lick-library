@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Guitar;
 import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
@@ -32,7 +33,7 @@ class BuildPositionTest {
         List<Note> absoluteNotes = List.of(Note.E, Note.A);
 
         List<Position> positions = new ArrayList<>();
-        builder.buildPositions(root, intervals, absoluteNotes, 4, positions);
+        builder.buildPositions(root, intervals, absoluteNotes, 4, positions, Guitar.STANDARD);
 
         assertFalse(positions.isEmpty());
         assertEquals(new TabNote(0, 0, 0, null), positions.get(0).notes().get(0));
@@ -49,7 +50,7 @@ class BuildPositionTest {
         List<Note> absoluteNotes = List.of(Note.E, Note.F_SHARP);
 
         List<Position> positions = new ArrayList<>();
-        builder.buildPositions(root, intervals, absoluteNotes, 4, positions);
+        builder.buildPositions(root, intervals, absoluteNotes, 4, positions, Guitar.STANDARD);
 
         assertFalse(positions.isEmpty());
         positions.forEach(p -> {
@@ -68,7 +69,7 @@ class BuildPositionTest {
         List<Note> absoluteNotes = List.of(Note.E, Note.A);
 
         List<Position> positions = new ArrayList<>();
-        builder.buildPositions(root, intervals, absoluteNotes, 4, positions);
+        builder.buildPositions(root, intervals, absoluteNotes, 4, positions, Guitar.STANDARD);
 
         assertFalse(positions.isEmpty());
         assertEquals(2, positions.get(0).notes().get(0).columnIndex());
@@ -87,7 +88,7 @@ class BuildPositionTest {
         List<Note> absoluteNotes = List.of(Note.C, Note.D);
 
         List<Position> positions = new ArrayList<>();
-        builder.buildPositions(root, intervals, absoluteNotes, 4, positions);
+        builder.buildPositions(root, intervals, absoluteNotes, 4, positions, Guitar.STANDARD);
 
         assertTrue(positions.size() > 1, "expected multiple paths, got " + positions.size());
         // Closest candidate (string 1 fret 5, distance 1.0) should be among results

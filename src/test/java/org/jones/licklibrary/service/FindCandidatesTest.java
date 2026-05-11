@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Guitar;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.TabNote;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +23,7 @@ class FindCandidatesTest {
     void findCandidates_searchesWithinTwoStringsWhenNoTechnique() {
         // D string (index 2), fret 5. No technique → search strings 0–4 (±2).
         TabNote current = new TabNote(2, 5, 0, null);
-        List<TabNote> candidates = builder.findCandidates(current, Note.A, null);
+        List<TabNote> candidates = builder.findCandidates(current, Note.A, null, Guitar.STANDARD);
 
         assertFalse(candidates.isEmpty());
         candidates.forEach(c ->
@@ -35,7 +36,7 @@ class FindCandidatesTest {
     @Test
     void findCandidates_restrictesToSameStringWhenTechniquePresent() {
         TabNote current = new TabNote(2, 5, 0, null);
-        List<TabNote> candidates = builder.findCandidates(current, Note.A, "h");
+        List<TabNote> candidates = builder.findCandidates(current, Note.A, "h", Guitar.STANDARD);
 
         assertFalse(candidates.isEmpty());
         candidates.forEach(c ->
@@ -46,7 +47,7 @@ class FindCandidatesTest {
     void findCandidates_sortedByProximityClosestFirst() {
         // D string (2), fret 7 = A. Searching for A — same position scores 0 and should be first.
         TabNote current = new TabNote(2, 7, 0, null);
-        List<TabNote> candidates = builder.findCandidates(current, Note.A, null);
+        List<TabNote> candidates = builder.findCandidates(current, Note.A, null, Guitar.STANDARD);
 
         TabNote closest = candidates.get(0);
         assertEquals(2, closest.stringIndex());

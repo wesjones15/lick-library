@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Instrument;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
 import org.jones.licklibrary.model.Position;
@@ -13,13 +14,13 @@ import java.util.Optional;
 class GreedyPositionBuilder extends PositionBuilder {
 
     @Override
-    List<Position> build(List<IntervalNote> intervals, Note key, int spanLimit) {
+    List<Position> build(List<IntervalNote> intervals, Note key, int spanLimit, Instrument instrument) {
         List<Note> absoluteNotes = LickUtils.toAbsoluteNotes(intervals, key);
-        List<TabNote> rootCandidates = findNeckPositions(absoluteNotes.get(0));
+        List<TabNote> rootCandidates = findNeckPositions(absoluteNotes.get(0), instrument);
         List<Position> results = new ArrayList<>();
         for (TabNote root : rootCandidates) {
             if (root.fret() > MAX_FRET) continue;
-            buildGreedyPath(root, intervals, absoluteNotes, spanLimit).ifPresent(results::add);
+            buildGreedyPath(root, intervals, absoluteNotes, spanLimit, instrument).ifPresent(results::add);
             if (results.size() >= MAX_POSITIONS) break;
         }
         results.sort(Comparator.comparingInt(p ->
@@ -28,13 +29,13 @@ class GreedyPositionBuilder extends PositionBuilder {
     }
 
     private Optional<Position> buildGreedyPath(TabNote root, List<IntervalNote> intervals,
-            List<Note> absoluteNotes, int spanLimit) {
+            List<Note> absoluteNotes, int spanLimit, Instrument instrument) {
         List<TabNote> path = new ArrayList<>();
         path.add(new TabNote(root.stringIndex(), root.fret(),
             intervals.get(0).columnIndex(), intervals.get(0).technique()));
         for (int i = 1; i < absoluteNotes.size(); i++) {
             String technique = intervals.get(i - 1).technique();
-            List<TabNote> candidates = findCandidates(path.get(path.size() - 1), absoluteNotes.get(i), technique);
+            List<TabNote> candidates = findCandidates(path.get(path.size() - 1), absoluteNotes.get(i), technique, instrument);
             if (candidates.isEmpty()) return Optional.empty();
             TabNote node = new TabNote(candidates.get(0).stringIndex(), candidates.get(0).fret(),
                 intervals.get(i).columnIndex(), intervals.get(i).technique());

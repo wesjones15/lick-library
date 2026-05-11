@@ -1,11 +1,12 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Guitar;
+import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
 import org.jones.licklibrary.model.TabNote;
 import org.jones.licklibrary.repository.LickRepository;
 import org.jones.licklibrary.repository.PositionCacheRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -39,7 +40,6 @@ class ParseTabTest {
                 "E|------------------------------------|";
         List<TabNote> notes = lickService.parseTab(inputTab);
         System.out.println(notes);
-        System.out.println(LickUtils.toNoteString(notes));
     }
 
     @Test
@@ -52,17 +52,14 @@ class ParseTabTest {
                 "A|----------------|\n" +
                 "E|----------------|";
         List<TabNote> notes = lickService.parseTab(inputTab);
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+        Note root = Guitar.STANDARD.getNoteAt(notes.get(0).stringIndex(), notes.get(0).fret());
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, root, Guitar.STANDARD);
         System.out.println(notes);
-        System.out.println(LickUtils.toNoteString(notes));
         System.out.println(intervals);
     }
 
-    @Disabled("two-digit fret parsing not yet implemented")
     @Test
     void parseTab_handlesTwoDigitFrets() {
-        // Known limitation: two-digit frets not yet implemented — each digit is recorded separately.
-        // This test asserts the intended behavior and will fail until the parser is fixed.
         String inputTab =
                 "e|---------|\n" +
                 "B|---------|\n" +

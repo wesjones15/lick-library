@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Guitar;
 import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
@@ -54,27 +55,27 @@ class LickUtilsTest {
             new TabNote(1, 0, 0, null), // A
             new TabNote(1, 2, 1, null)  // B
         );
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.C);
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.C, Guitar.STANDARD);
         assertEquals(Interval.SIX,   intervals.get(0).interval());
         assertEquals(Interval.SEVEN, intervals.get(1).interval());
     }
 
     @Test
-    void toIntervals_firstNoteIsAlwaysONE() {
-        List<TabNote> notes = List.of(new TabNote(4, 2, 0, null)); // A string fret 2 = B
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+    void toIntervals_firstNoteIsONE_whenRootMatchesFirstNote() {
+        List<TabNote> notes = List.of(new TabNote(4, 2, 0, null)); // B string fret 2 = C#
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.C_SHARP, Guitar.STANDARD);
         assertEquals(Interval.ONE, intervals.get(0).interval());
     }
 
     @Test
     void toIntervals_computesCorrectIntervalsFromNotes() {
-        // A string: open=A, fret2=B, fret4=C# → ONE, TWO, THREE
+        // B string: open=B, fret2=C#, fret4=D# → ONE, TWO, THREE
         List<TabNote> notes = List.of(
             new TabNote(4, 0, 0, null),
             new TabNote(4, 2, 1, null),
             new TabNote(4, 4, 2, null)
         );
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.B, Guitar.STANDARD);
         assertEquals(3, intervals.size());
         assertEquals(Interval.ONE,   intervals.get(0).interval());
         assertEquals(Interval.TWO,   intervals.get(1).interval());
@@ -89,7 +90,7 @@ class LickUtilsTest {
             new TabNote(4, 0, 0, null), // B string → B
             new TabNote(1, 0, 1, null)  // A string → A
         );
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.B, Guitar.STANDARD);
         assertEquals(Interval.FLAT_SEVEN, intervals.get(1).interval());
     }
 
@@ -99,7 +100,7 @@ class LickUtilsTest {
             new TabNote(0, 0, 2, null), // same raw columnIndex
             new TabNote(1, 0, 2, null)
         );
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes);
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.E, Guitar.STANDARD);
         assertEquals(2, intervals.size());
         assertEquals(intervals.get(0).columnIndex(), intervals.get(1).columnIndex());
     }

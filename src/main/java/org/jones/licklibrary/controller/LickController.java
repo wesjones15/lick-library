@@ -1,5 +1,7 @@
 package org.jones.licklibrary.controller;
 
+import org.jones.licklibrary.constants.Instrument;
+import org.jones.licklibrary.constants.InstrumentRegistry;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.LickResponse;
 import org.jones.licklibrary.model.UploadLickRequest;
@@ -45,13 +47,20 @@ public class LickController {
     public ResponseEntity<LickResponse> getLick(
             @PathVariable UUID id,
             @RequestParam String key,
-            @RequestParam(defaultValue = "greedy") String algo) {
+            @RequestParam(defaultValue = "greedy") String algo,
+            @RequestParam(defaultValue = "GUITAR") String instrument) {
         Note noteKey;
         try {
             noteKey = Note.valueOf(key.toUpperCase());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(lickService.getLick(id, noteKey, algo));
+        Instrument inst;
+        try {
+            inst = InstrumentRegistry.fromName(instrument);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(lickService.getLick(id, noteKey, algo, inst));
     }
 }

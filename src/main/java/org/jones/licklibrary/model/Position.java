@@ -1,15 +1,19 @@
 package org.jones.licklibrary.model;
 
+import org.jones.licklibrary.constants.Guitar;
+import org.jones.licklibrary.constants.Instrument;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public record Position(List<TabNote> notes) {
 
-    private static final String[] LABELS       = {"e", "B", "G", "D", "A", "E"};
-    private static final int[]    DISPLAY_ORDER = {5, 4, 3, 2, 1, 0};
-
     public String toTabString() {
+        return toTabString(Guitar.STANDARD);
+    }
+
+    public String toTabString(Instrument instrument) {
         if (notes == null || notes.isEmpty()) return "";
 
         List<Integer> slots = notes.stream()
@@ -33,8 +37,12 @@ public record Position(List<TabNote> notes) {
                     .put(note.columnIndex(), note);
         }
 
-        String[] rows = new String[6];
-        for (int s = 0; s < 6; s++) {
+        int stringCount = instrument.stringCount();
+        String[] labels = instrument.labels();
+        int[] displayOrder = instrument.displayOrder();
+
+        String[] rows = new String[stringCount];
+        for (int s = 0; s < stringCount; s++) {
             Map<Integer, TabNote> stringNotes = byString.getOrDefault(s, Map.of());
             StringBuilder sb = new StringBuilder();
             sb.append('-');
@@ -62,9 +70,9 @@ public record Position(List<TabNote> notes) {
         }
 
         StringBuilder result = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < stringCount; i++) {
             if (result.length() > 0) result.append('\n');
-            result.append(LABELS[i]).append('|').append(rows[DISPLAY_ORDER[i]]).append('|');
+            result.append(labels[i]).append('|').append(rows[displayOrder[i]]).append('|');
         }
         return result.toString();
     }

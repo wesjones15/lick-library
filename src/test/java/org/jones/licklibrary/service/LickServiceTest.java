@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Guitar;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.*;
 import org.jones.licklibrary.repository.LickRepository;
@@ -162,7 +163,7 @@ class LickServiceTest {
         when(positionCacheRepository.findByIntervalHashAndKey(hash, "A"))
             .thenReturn(Optional.of(cached));
 
-        lickService.getLick(UUID.randomUUID(), Note.A, "greedy");
+        lickService.getLick(UUID.randomUUID(), Note.A, "greedy", Guitar.STANDARD);
 
         // cache hit — positions should come from cache, not recomputed
         verify(positionCacheRepository, never()).save(any());
@@ -181,7 +182,7 @@ class LickServiceTest {
         when(positionCacheRepository.findByIntervalHashAndKey(anyString(), anyString()))
             .thenReturn(Optional.empty());
 
-        lickService.getLick(UUID.randomUUID(), Note.A, "greedy");
+        lickService.getLick(UUID.randomUUID(), Note.A, "greedy", Guitar.STANDARD);
 
         // cache miss — computed positions should be written to cache
         verify(positionCacheRepository).save(any(PositionCache.class));

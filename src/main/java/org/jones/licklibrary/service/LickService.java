@@ -1,5 +1,7 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Guitar;
+import org.jones.licklibrary.constants.Instrument;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.controller.LickNotFoundException;
 import org.jones.licklibrary.model.*;
@@ -39,8 +41,9 @@ public class LickService {
             throw new IllegalArgumentException("rawTab must not be blank");
         }
         List<TabNote> notes = parseTab(request.rawTab());
-        Note rootKey = request.inputKey() != null ? request.inputKey() : notes.get(0).toNote();
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey);
+        Note rootKey = request.inputKey() != null ? request.inputKey()
+                : Guitar.STANDARD.getNoteAt(notes.get(0).stringIndex(), notes.get(0).fret());
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, Guitar.STANDARD);
         String hash = LickUtils.hashIntervals(intervals);
 
         Optional<Lick> existing = lickRepository.findByIntervalHash(hash);
@@ -103,11 +106,11 @@ public class LickService {
             .toList();
     }
 
-    public LickResponse getLick(UUID id, Note key, String algo) {
+    public LickResponse getLick(UUID id, Note key, String algo, Instrument instrument) {
         Lick lick = lickRepository.findById(id)
             .orElseThrow(() -> new LickNotFoundException(id));
-        List<Position> positions = resolvePositions(lick, key, algo);
-        return toLickResponse(lick, positions);
+        List<Position> positions = resolvePositions(lick, key, algo, instrument);
+        return toLickResponse(lick, positions, instrument);
     }
 
     public void deleteLick(UUID id) {
@@ -115,19 +118,19 @@ public class LickService {
         lickRepository.deleteById(id);
     }
 
-    List<Position> resolvePositions(Lick lick, Note key, String algo) {
+    List<Position> resolvePositions(Lick lick, Note key, String algo, Instrument instrument) {
         int spanLimit = Math.max(4, lick.getTabSpan() != null ? lick.getTabSpan() : 4);
         PositionBuilder builder = switch (algo == null ? "" : algo.toLowerCase()) {
             case "dfs"   -> dfsBuilder;
             case "chord" -> loserBracketBuilder;
             default      -> greedyBuilder;
         };
-        return builder.build(lick.getIntervals(), key, spanLimit);
+        return builder.build(lick.getIntervals(), key, spanLimit, instrument);
     }
 
-    LickResponse toLickResponse(Lick lick, List<Position> positions) {
+    LickResponse toLickResponse(Lick lick, List<Position> positions, Instrument instrument) {
         List<PositionResponse> positionResponses = positions.stream()
-            .map(p -> new PositionResponse(p.toTabString()))
+            .map(p -> new PositionResponse(p.toTabString(instrument)))
             .toList();
         return new LickResponse(
             lick.getId(),

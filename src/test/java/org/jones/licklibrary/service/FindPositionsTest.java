@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Guitar;
 import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
@@ -46,7 +47,7 @@ class FindPositionsTest {
             new IntervalNote(Interval.FIVE,       null, 2)
         );
 
-        List<Position> positions = dfsBuilder.build(intervals, Note.A, 4);
+        List<Position> positions = dfsBuilder.build(intervals, Note.A, 4, Guitar.STANDARD);
 
         System.out.println("findPositions — A minor pentatonic fragment (A C E): " + positions.size() + " positions");
         for (Position p : positions) {
@@ -76,21 +77,21 @@ class FindPositionsTest {
 
     @Test
     void findPositions_returnsValidPositions() {
-        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4, Guitar.STANDARD);
         assertFalse(positions.isEmpty());
         positions.forEach(p -> assertEquals(3, p.notes().size()));
     }
 
     @Test
     void findPositions_filtersPositionsExceedingFourFretSpan() {
-        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4, Guitar.STANDARD);
         positions.forEach(p -> assertTrue(maxFret(p) - minFret(p) <= 4,
             "position has fret span > 4: " + p.toTabString()));
     }
 
     @Test
     void findPositions_filtersPositionsAboveMaxFret() {
-        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4, Guitar.STANDARD);
         positions.forEach(p ->
             p.notes().forEach(n -> assertTrue(n.fret() <= LickService.MAX_FRET,
                 "note above MAX_FRET in: " + p.toTabString())));
@@ -98,7 +99,7 @@ class FindPositionsTest {
 
     @Test
     void findPositions_ranksPositionsByMaxFretAscendingWithinEachStartingString() {
-        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4, Guitar.STANDARD);
         Map<Integer, Integer> lastMaxFret = new HashMap<>();
         for (Position p : positions) {
             int startString = p.notes().get(0).stringIndex();
@@ -112,7 +113,7 @@ class FindPositionsTest {
 
     @Test
     void findPositions_firstRoundHasDistinctStartingStrings() {
-        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4, Guitar.STANDARD);
         long distinctStarts = positions.stream()
             .map(p -> p.notes().get(0).stringIndex()).distinct().count();
         Set<Integer> seen = new HashSet<>();
@@ -133,10 +134,10 @@ class FindPositionsTest {
             "E|-0-2--------|--------------|--------------|------4/5-|";
 
         List<TabNote> notes = lickService.parseTab(rawTab);
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.A);
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.A, Guitar.STANDARD);
         int span = notes.stream().mapToInt(TabNote::fret).max().orElse(0)
                  - notes.stream().mapToInt(TabNote::fret).min().orElse(0);
-        List<Position> positions = dfsBuilder.build(intervals, Note.A, Math.max(4, span));
+        List<Position> positions = dfsBuilder.build(intervals, Note.A, Math.max(4, span), Guitar.STANDARD);
 
         assertFalse(positions.isEmpty());
         assertTrue(positions.size() <= LickService.MAX_POSITIONS);
@@ -146,7 +147,7 @@ class FindPositionsTest {
 
     @Test
     void findPositions_noDuplicateStringPatternsInSameRegion() {
-        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4);
+        List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4, Guitar.STANDARD);
         Set<List<Integer>> keys = new HashSet<>();
         for (Position p : positions) {
             List<Integer> key = new ArrayList<>();

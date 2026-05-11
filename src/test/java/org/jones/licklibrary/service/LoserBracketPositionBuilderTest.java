@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Guitar;
 import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
@@ -47,8 +48,8 @@ class LoserBracketPositionBuilderTest {
     void build_noChords_sameResultsAsGreedy() {
         List<IntervalNote> intervals = minorPentatonicFragment();
 
-        List<Position> loser  = loserBuilder.build(intervals, Note.A, 4);
-        List<Position> greedy = greedyBuilder.build(intervals, Note.A, 4);
+        List<Position> loser  = loserBuilder.build(intervals, Note.A, 4, Guitar.STANDARD);
+        List<Position> greedy = greedyBuilder.build(intervals, Note.A, 4, Guitar.STANDARD);
 
         Set<String> loserTabs  = loser.stream().map(Position::toTabString).collect(Collectors.toSet());
         Set<String> greedyTabs = greedy.stream().map(Position::toTabString).collect(Collectors.toSet());
@@ -59,7 +60,7 @@ class LoserBracketPositionBuilderTest {
 
     @Test
     void build_chordPartnersShareColumnIndex() {
-        List<Position> positions = loserBuilder.build(chordFragment(), Note.A, 4);
+        List<Position> positions = loserBuilder.build(chordFragment(), Note.A, 4, Guitar.STANDARD);
 
         assertFalse(positions.isEmpty());
         for (Position p : positions) {
@@ -74,7 +75,7 @@ class LoserBracketPositionBuilderTest {
 
     @Test
     void build_chordPartnersOnDifferentStrings() {
-        List<Position> positions = loserBuilder.build(chordFragment(), Note.A, 4);
+        List<Position> positions = loserBuilder.build(chordFragment(), Note.A, 4, Guitar.STANDARD);
 
         assertFalse(positions.isEmpty());
         for (Position p : positions) {
@@ -91,7 +92,7 @@ class LoserBracketPositionBuilderTest {
 
     @Test
     void build_spanConstraintRespected() {
-        List<Position> positions = loserBuilder.build(chordFragment(), Note.A, 4);
+        List<Position> positions = loserBuilder.build(chordFragment(), Note.A, 4, Guitar.STANDARD);
 
         assertFalse(positions.isEmpty());
         for (Position p : positions) {
@@ -115,7 +116,7 @@ class LoserBracketPositionBuilderTest {
             new IntervalNote(Interval.FIVE, null, 0)
         );
 
-        List<Position> positions = loserBuilder.build(intervals, Note.A, 0);
+        List<Position> positions = loserBuilder.build(intervals, Note.A, 0, Guitar.STANDARD);
 
         assertFalse(positions.isEmpty(),
             "expected positions even with tight span constraint");

@@ -1,5 +1,6 @@
 package org.jones.licklibrary.service;
 
+import org.jones.licklibrary.constants.Instrument;
 import org.jones.licklibrary.constants.Interval;
 import org.jones.licklibrary.constants.Note;
 import org.jones.licklibrary.model.IntervalNote;
@@ -18,11 +19,7 @@ public class LickUtils {
 
     private LickUtils() {}
 
-    public static List<IntervalNote> toIntervals(List<TabNote> notes) {
-        return toIntervals(notes, notes.get(0).toNote());
-    }
-
-    public static List<IntervalNote> toIntervals(List<TabNote> notes, Note rootKey) {
+    public static List<IntervalNote> toIntervals(List<TabNote> notes, Note rootKey, Instrument instrument) {
         List<IntervalNote> out = new ArrayList<>();
         int normalizedCol = 0;
         int lastRawCol = Integer.MIN_VALUE;
@@ -31,7 +28,7 @@ public class LickUtils {
                 normalizedCol++;
             }
             lastRawCol = tabNote.columnIndex();
-            Note note = tabNote.toNote();
+            Note note = instrument.getNoteAt(tabNote.stringIndex(), tabNote.fret());
             Interval interval = Interval.values()[(note.ordinal() - rootKey.ordinal() + 12) % 12];
             out.add(new IntervalNote(interval, tabNote.technique(), normalizedCol));
         }
@@ -48,16 +45,6 @@ public class LickUtils {
 
     public static double proximityScore(TabNote from, TabNote to) {
         return Math.hypot(from.fret() - to.fret(), from.stringIndex() - to.stringIndex());
-    }
-
-    public static String toNoteString(List<TabNote> tabnotes) {
-        StringBuilder sb = new StringBuilder();
-        for (TabNote tabnote : tabnotes) {
-            Note note = tabnote.toNote();
-            sb.append(note.toString());
-            sb.append(" ").append(tabnote.technique());
-        }
-        return sb.toString();
     }
 
     public static String hashIntervals(List<IntervalNote> intervals) {
