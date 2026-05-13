@@ -6,5 +6,6 @@ public record SongSummaryResponse(
         UUID id,
         String title,
         String artist,
-        String originalKey
+        String originalKey,
+        boolean canReparse
 ) {}

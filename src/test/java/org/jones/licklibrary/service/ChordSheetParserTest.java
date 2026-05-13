@@ -97,4 +97,24 @@ class ChordSheetParserTest {
     void numColumnsIsReasonable() {
         assertThat(result.numColumns()).isBetween(2, 3);
     }
+
+    @Test
+    void parenthesizedChordsIdentifiedAsChordLine() {
+        // Leading D prevents the line matching the metadata pattern ^\(.*\)$
+        String raw = "D   (G)   Em\nThese are the lyrics\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        assertThat(r.chordLines()).isNotEmpty();
+        ChordLyric first = r.chordLines().get(0);
+        assertThat(first.chords()).contains("(G)");
+        assertThat(first.lyrics()).contains("These are the lyrics");
+    }
+
+    @Test
+    void parentheticalQualifierChordsIdentifiedAsChordLine() {
+        String raw = " G(add9)   D\nSome lyrics here\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        ChordLyric first = r.chordLines().get(0);
+        assertThat(first.chords()).contains("G(add9)");
+        assertThat(first.lyrics()).contains("Some lyrics");
+    }
 }

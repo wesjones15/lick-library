@@ -32,6 +32,9 @@ public class Song {
     @Column(name = "num_columns")
     private int numColumns = 2;
 
+    @Column(name = "raw_chord_sheet", columnDefinition = "TEXT")
+    private String rawChordSheet;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -57,6 +60,9 @@ public class Song {
 
     public int getNumColumns() { return numColumns; }
     public void setNumColumns(int numColumns) { this.numColumns = numColumns; }
+
+    public String getRawChordSheet() { return rawChordSheet; }
+    public void setRawChordSheet(String rawChordSheet) { this.rawChordSheet = rawChordSheet; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

@@ -72,18 +72,32 @@ public class ChordTransposer {
 
     private String transposeChordPart(String part, int semitones) {
         if (part.isEmpty()) return part;
-        String root;
-        String suffix;
-        if (part.length() > 1 && (part.charAt(1) == '#' || part.charAt(1) == 'b')) {
-            root = part.substring(0, 2);
-            suffix = part.substring(2);
+
+        // Outer wrapping parens: (G) → transpose inside, re-wrap
+        if (part.startsWith("(") && part.endsWith(")") && part.length() > 2) {
+            return "(" + transposeChordPart(part.substring(1, part.length() - 1), semitones) + ")";
+        }
+
+        // Trailing parenthetical qualifier: G(add9) → transpose chord, keep qualifier
+        String qualifier = "";
+        String chord = part;
+        int qualStart = part.indexOf('(');
+        if (qualStart > 0) {
+            qualifier = part.substring(qualStart);
+            chord = part.substring(0, qualStart);
+        }
+
+        String root, suffix;
+        if (chord.length() > 1 && (chord.charAt(1) == '#' || chord.charAt(1) == 'b')) {
+            root = chord.substring(0, 2);
+            suffix = chord.substring(2);
         } else {
-            root = part.substring(0, 1);
-            suffix = part.substring(1);
+            root = chord.substring(0, 1);
+            suffix = chord.substring(1);
         }
         try {
             Note shifted = NoteParser.parse(root).shift(semitones);
-            return noteDisplay(shifted) + suffix;
+            return noteDisplay(shifted) + suffix + qualifier;
         } catch (IllegalArgumentException e) {
             return part;
         }

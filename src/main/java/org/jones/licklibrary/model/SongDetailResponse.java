@@ -11,5 +11,6 @@ public record SongDetailResponse(
         Integer capo,
         Integer tempo,
         List<ChordLyric> chordLines,
-        int numColumns
+        int numColumns,
+        boolean canReparse
 ) {}

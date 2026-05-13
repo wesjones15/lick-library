@@ -49,7 +49,9 @@ public class ChordSheetParser {
     private boolean isChordLine(String line) {
         if (line.isBlank()) return false;
         for (String token : line.trim().split("\\s+")) {
-            if (!CHORD_TOKEN.matcher(token).matches()) return false;
+            String cleaned = token.replaceAll("^\\((.+)\\)$", "$1").replaceAll("\\(.*?\\)", "");
+            if (cleaned.isEmpty()) continue;
+            if (!CHORD_TOKEN.matcher(cleaned).matches()) return false;
         }
         return true;
     }

@@ -42,6 +42,15 @@ public class SongController {
         return songService.getSong(id, semitones);
     }
 
+    @PostMapping("/{id}/reparse")
+    public ResponseEntity<SongDetailResponse> reparseSong(@PathVariable UUID id) {
+        try {
+            return ResponseEntity.ok(songService.reparseSong(id));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteSong(@PathVariable UUID id) {

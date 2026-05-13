@@ -33,7 +33,17 @@ public class SongService {
         song.setTempo(request.tempo());
         song.setChordLines(result.chordLines());
         song.setNumColumns(result.numColumns());
+        song.setRawChordSheet(request.rawChordSheet());
         return toSummary(songRepository.save(song));
+    }
+
+    public SongDetailResponse reparseSong(UUID id) {
+        Song song = songRepository.findById(id).orElseThrow(() -> new SongNotFoundException(id));
+        if (song.getRawChordSheet() == null) throw new IllegalStateException("No raw chord sheet stored for this song");
+        ChordSheetParser.ParseResult result = chordSheetParser.parse(song.getRawChordSheet());
+        song.setChordLines(result.chordLines());
+        song.setNumColumns(result.numColumns());
+        return toDetail(songRepository.save(song), result.chordLines());
     }
 
     public List<SongSummaryResponse> getAllSongs() {
@@ -54,13 +64,15 @@ public class SongService {
     }
 
     private SongSummaryResponse toSummary(Song song) {
-        return new SongSummaryResponse(song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey());
+        return new SongSummaryResponse(song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
+                song.getRawChordSheet() != null);
     }
 
     private SongDetailResponse toDetail(Song song, List<ChordLyric> chordLines) {
         return new SongDetailResponse(
                 song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
-                song.getCapo(), song.getTempo(), chordLines, song.getNumColumns()
+                song.getCapo(), song.getTempo(), chordLines, song.getNumColumns(),
+                song.getRawChordSheet() != null
         );
     }
 }
