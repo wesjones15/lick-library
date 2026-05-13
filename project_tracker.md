@@ -344,3 +344,59 @@
 - `src/api/client.ts` — `getLick` gains `instrument` and `customTuning` params; sends `?tuning=` for custom, `?instrument=` for named; throws `Error(\`${res.status}\`)` so callers can detect 400
 - `src/pages/LibraryPage.tsx` — imports `useInstrument` + `InstrumentSelector`; selector shown above lick list as passive preference (no re-fetch; persists selection for DetailPage)
 - `src/pages/DetailPage.tsx` — imports `useInstrument` + `InstrumentSelector`; `appliedTuning` state replaces debounce; useEffect deps `[id, key, algo, instrument, appliedTuning]`; guard skips fetch when CUSTOM + empty applied tuning; `instrumentError` state for 400 responses; `INSTRUMENT_LABELS` map; "Positions in A — Bass" header format; controls row uses `flex flex-wrap items-start gap-3`
+
+---
+
+## Session 13
+
+### Decisions Made
+- **Persistent navbar + Layout** (idea 23) — `Layout.tsx` wraps all pages with a shared top nav; `NAV_LINKS` array drives links so adding new pages requires no nav edits. Nav links: Licks + Songs.
+- **Metronome** (idea 22) — navbar widget with Web Audio API lookahead scheduling; BPM +/− buttons + tap tempo; click sound generated via `AudioContext` oscillator + exponential decay. Runs in the navbar so it persists across page navigation.
+- **Songs feature — backend** (ideas 16, 24, 25) — full chord sheet pipeline: upload → parse → store → transpose → serve.
+  - `Song` entity: `id`, `title`, `artist`, `key` (`originalKey`), `tempo`, `capo`, `rawChordSheet`, `chordLines` (JSON via converter), `createdAt`
+  - `ChordSheetParser`: CHORD_TOKEN regex detects chord lines; `pairLines()` pairs chord rows with their lyric rows; `isChordLine()` strips parenthesized qualifiers before matching; font sizes computed from chord density; `breakLine()` splits overlong lines
+  - `ChordTransposer`: token-scan approach; NC/N.C. passthrough; slash chord handling; space budget management; wraps `(G)` outer parens and preserves `G(add9)` qualifiers; negative semitone fix: `((semitones % 12) + 12) % 12`
+  - `SongController`: POST `/api/song`, GET `/api/song`, GET `/api/song/{id}?semitones=`, DELETE `/api/song/{id}`, POST `/api/song/{id}/reparse`
+  - `SongService`: `uploadSong`, `getSong` (with transpose), `getAllSongs`, `deleteSong`, `reparseSong`; `rawChordSheet` saved at upload for re-parse; `canReparse` flag on both summary and detail responses
+- **Parenthesized chord fix** — `(G)` was misidentified as a lyric line. `isChordLine()` now strips outer parens (`^\((.+)\)$→$1`) then inner qualifiers (`\(.*?\)→""`) before testing against CHORD_TOKEN. `transposeChordPart()` re-wraps `(G)` and preserves `G(add9)`.
+- **Re-parse endpoint** (idea 30) — `POST /api/song/{id}/reparse` re-runs `ChordSheetParser` on the stored `rawChordSheet`; returns 409 if `rawChordSheet` is null. `canReparse` flag drives UI visibility.
+- **LAN access** — `CorsConfig` changed to `allowedOriginPatterns("*")`; Vite config: `server: { host: true, allowedHosts: true }`; `BASE_URL` changed from `localhost` hardcode to `window.location.hostname` so iPad fetches from the Mac's IP.
+
+### Implemented — Backend
+- `model/Song.java`, `model/ChordLyric.java`, `model/ChordLyricListConverter.java`
+- `model/SongSummaryResponse.java`, `model/SongDetailResponse.java` — both carry `canReparse`
+- `service/ChordSheetParser.java`, `service/ChordTransposer.java`
+- `service/SongService.java`, `controller/SongController.java`
+- `config/CorsConfig.java` — `allowedOriginPatterns("*")`
+- `ChordSheetParserTest.java` — `parenthesizedChordsIdentifiedAsChordLine`, `parentheticalQualifierChordsIdentifiedAsChordLine`
+
+### Implemented — Frontend
+- `src/api/client.ts` — `SongSummary`, `SongDetail` types; `getAllSongs`, `getSong`, `uploadSong`, `deleteSong`, `reparseSong`; `BASE_URL` uses `window.location.hostname`
+- `src/pages/SongsPage.tsx` — song library list; "Re-parse" toggle button reveals ↺ icon per eligible card
+- `src/pages/SongDetailPage.tsx` — song header (title, artist, BPM); transpose + capo widget; `ChordSheet` component
+- `src/pages/SongUploadPage.tsx` — upload form at `/songs/upload`; navigates to `/songs` on success
+- `src/components/SongCard.tsx` — re-parse ↺ → ✓ on success; delete ×; navigate on click
+- `src/components/SongList.tsx`, `src/components/ChordSheet.tsx`
+- `src/main.tsx` — routes: `/songs`, `/songs/upload`, `/song/:id`
+- `src/components/Layout.tsx` — NAV_LINKS with Songs link
+- `vite.config.ts` — `server: { host: true, allowedHosts: true }`
+
+---
+
+## Session 14
+
+### Decisions Made
+- **Idea 27: Song upload on its own page** — upload form moved from SongsPage to a dedicated `/songs/upload` route (`SongUploadPage.tsx`); "Upload" button on SongsPage navigates there; success navigates back to `/songs`.
+- **Idea 26: Flatten song detail header** — title, artist, and controls all in one horizontal row; BPM inline under artist; capo display removed from header (handled by the capo widget). Chord sheet gets more vertical space with reduced top padding.
+- **Capo-aware transpose widget** (idea 29) — two groups side by side separated by a vertical divider:
+  - **Capo** (left): [−] digit [+], clamped 0–11, initialized from `song.capo ?? 0` on load
+  - **Transpose** (right): [−] dual-key-display [+], with reset below; reset uses `invisible` (not conditional render) to prevent layout shift
+  - Dual key display: **shape** = `keyLabel(originalKey, semitones - capo)` (what you physically play), **sound** = `keyLabel(originalKey, semitones)` (what it sounds like)
+  - Semitone delta (`0`, `+N`, `-N`) shown in `text-xs text-gray-300` between the shape and sound columns
+- **Re-parse UX** (idea 30) — "Re-parse" toggle on SongsPage reveals ↺ icon per eligible card (only when `song.canReparse`); ↺ becomes ✓ on success via local `reparsed` state; icon is always rendered (invisible when toggle is off) to prevent layout shift.
+
+### Implemented — Frontend
+- `src/pages/SongUploadPage.tsx` — new page (idea 27)
+- `src/pages/SongsPage.tsx` — reparsing toggle + onReparse refresh (idea 30)
+- `src/components/SongCard.tsx` — ↺/✓ re-parse button; `reparsed` local state
+- `src/pages/SongDetailPage.tsx` — flattened header (idea 26); capo-aware transpose widget with dual key display, semitone delta, and invisible reset (idea 29)
