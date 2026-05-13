@@ -83,10 +83,10 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 
 21. frontend. add a separate page and a navbar to get between the licks and this. this page will have a guitar neck display and take mic input. you select key and mode and it will overlay the scale there on he guitar neck. it will hear the mic input and interpret the pitch and use that to highlight the corresponding note on the guitar neck.
 
-22. metronome modal that can be added to any page on the site, maybe it lives in the navbar as a little widget
+(done) 22. metronome modal that can be added to any page on the site, maybe it lives in the navbar as a little widget
 -- [machine note] use Web Audio API AudioWorklet for timing, not setInterval — setInterval drifts noticeably at fast tempos. visual pulse should be tied to the audio clock, not a separate timer.
 
-23. create a navbar on top of site for desktop displays (we can look at mobile/vertical later) it should be designed to accommodate new buttons as we add features. for now, site name, and licks button that takes you to the lick library/upload screen.
+(done) 23. create a navbar on top of site for desktop displays (we can look at mobile/vertical later) it should be designed to accommodate new buttons as we add features. for now, site name, and licks button that takes you to the lick library/upload screen.
 
 24. feature addition to 16. transpose up and down. should update chord lines in the song object as displayed to user.
 -- needs to account for sharps/flats getting added/removed during transposition
