@@ -104,6 +104,34 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 -- perhaps when breaking, compare word and chord and err on making lines shorter during breaking without splitting a chord or a word
 -- since this is only done at upload time, doesn't matter that this is a heavy task
 
+26. enhancement for song sheet: The title card should be flatter and spread horizontally more. the song content area should be taller
+
+27. the upload song form should be its own page. upload button should be on songs page tho.
+
+28. fix two gaps in the chord sheet parser (idea 25 follow-up)
+
+gap 1 — font size not recomputed after line breaking (significant)
+-- current behavior: when a lyric/chord pair is too long to fit at the minimum font size (6px),
+   it gets broken into two halves, but both halves are assigned MIN_FONT_SIZE (6.0) permanently.
+-- correct behavior: after all over-long lines have been broken, recompute the global font size
+   across the full resulting list. the halves are shorter now so the minimum across all pairs
+   will be larger, and the whole sheet should render at a bigger, more readable size.
+-- fix: two-pass approach in ChordSheetParser.applyFontSizes:
+     1. first pass — identify and break all pairs that exceed charLimit; collect results as a flat list
+     2. recompute globalFontSize as the minimum font size across that flat list
+     3. second pass — apply the recomputed globalFontSize to every non-spacer pair
+
+gap 2 — chord boundary not checked during line break (minor)
+-- current behavior: the break point is determined by the last word boundary in the lyrics string only.
+   if the break point happens to fall in the middle of a chord token in the chord string (e.g. "G/B"
+   or "Cmaj7" spans the split index), that chord gets silently truncated on the first half.
+-- correct behavior: after finding the lyrics word boundary, also check the chord string at the
+   same index. if the chord string is mid-token at that index (i.e. the char before breakAt is not
+   a space in the chord string), walk breakAt backward until both strings are at a clean boundary.
+   take the more conservative (shorter) of the two — never split a word or a chord.
+-- fix: in ChordSheetParser.breakLine(), after finding the lyrics breakAt index, walk back further
+   while chords.charAt(breakAt - 1) != ' ', taking the minimum of the lyrics and chord boundaries.
+
 MACHINE GUIDED SUPPLEMENT TO IDEA BUCKET:
 
 # Feature Notes
