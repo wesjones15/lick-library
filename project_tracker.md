@@ -400,3 +400,30 @@
 - `src/pages/SongsPage.tsx` — reparsing toggle + onReparse refresh (idea 30)
 - `src/components/SongCard.tsx` — ↺/✓ re-parse button; `reparsed` local state
 - `src/pages/SongDetailPage.tsx` — flattened header (idea 26); capo-aware transpose widget with dual key display, semitone delta, and invisible reset (idea 29)
+
+---
+
+## Session 15
+
+### Decisions Made
+- **Idea 34: Semitone wrap** — transpose counter wraps back to 0 when it hits ±12 (full octave = back to original key). Pressing + at +11 or − at −11 resets to 0 instead of continuing to ±12.
+- **Idea 35: No layout shift on transpose** — removed the inline "Transposing…" `<p>` that was the sole cause of the chord sheet jumping on every transpose fetch. Replaced with an `opacity-50` fade on the `ChordSheet` while loading; `className` prop added to `ChordSheet` to support this. Old content stays in place; new content fades in when the fetch resolves.
+- **Idea 36: BPM click starts metronome** — `bpm` and `isPlaying` lifted from local `Metronome` state into a new `MetronomeContext`. `MetronomeProvider` wraps the router in `main.tsx`. `Metronome.tsx` consumes the context (adds `useEffect` to sync `bpmInput` when context `bpm` changes from outside). The BPM display in `SongDetailPage` is now a button: clicking sets context `bpm` to `song.tempo` and `setIsPlaying(true)`.
+- **Idea 38: Bold chords + hover chord diagram** — two-part feature:
+  - **Bold rendering**: `ChordSheet.tsx` splits each chord line by whitespace, renders chord tokens as `<ChordToken>` (bold, `display: inline-block`). NC/N.C. rendered plain (not bold). `whiteSpace: 'pre'` on the parent div preserves spacing.
+  - **Hover voicings**: `ChordToken` fetches voicings from `GET /api/chord?root=E&quality=m` on `mouseEnter`; result cached in a module-level `Map` so re-hover is instant. Popover appears below the chord name (`top: 100%`) with voicing tab + `‹ N/M ›` navigation. Unknown chords (backend returns `[]`) show `???`. NC/N.C. excluded from `ChordToken` entirely.
+  - **Backend**: `ChordService` defines a static `CHORD_QUALITIES` map (14 entries: major, minor, 7th, maj7, m7, sus2, sus4, dim, aug, add9, 6, m6, dim7, m7b5). `getVoicings(Note, String, Instrument)` wraps the interval list as simultaneous `IntervalNote`s (all `columnIndex=0`), runs `LoserBracketPositionBuilder`, returns rendered tab strings. No DB storage — voicings are computed on demand.
+  - **Frontend chord parser**: `src/utils/parseChordName.ts` — splits chord name into root (mapped to Java `Note` enum name) + quality suffix; strips slash bass (`G/B` → `G`); returns `null` for NC/N.C.
+
+### Implemented — Backend
+- `controller/ChordController.java` — `GET /api/chord?root=&quality=&instrument=`; validates root via `Note.valueOf()`, instrument via `InstrumentRegistry`; 400 on unknown quality
+- `service/ChordService.java` — `CHORD_QUALITIES` static map; `getVoicings(Note, String, Instrument)`; `knowsQuality(String)`
+
+### Implemented — Frontend
+- `src/contexts/MetronomeContext.tsx` — new; `MetronomeProvider` + `useMetronomeContext` hook
+- `src/main.tsx` — wrapped with `MetronomeProvider`
+- `src/components/Metronome.tsx` — consumes `MetronomeContext` for `bpm`/`isPlaying`; `useEffect` syncs `bpmInput` on external BPM change
+- `src/pages/SongDetailPage.tsx` — BPM span → clickable button (idea 36); semitone wrap ±12 (idea 34); `ChordSheet` gets `className` for opacity fade (idea 35); removed "Transposing…" inline paragraph
+- `src/components/ChordSheet.tsx` — `ChordToken` component; `renderChords()` helper; `className` prop on root div; `voicingCache` module-level map
+- `src/utils/parseChordName.ts` — new; root+quality parser with Note enum mapping
+- `src/api/client.ts` — `getChordVoicings(root, quality)` function

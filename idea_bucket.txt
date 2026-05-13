@@ -88,7 +88,7 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 
 (done) 23. create a navbar on top of site for desktop displays (we can look at mobile/vertical later) it should be designed to accommodate new buttons as we add features. for now, site name, and licks button that takes you to the lick library/upload screen.
 
-24. feature addition to 16. transpose up and down. should update chord lines in the song object as displayed to user.
+(done) 24. feature addition to 16. transpose up and down. should update chord lines in the song object as displayed to user.
 -- needs to account for sharps/flats getting added/removed during transposition
 -- if chord has suffix, and sharp is added in transposition, then a space must be removed AFTER the suffix.
 -- there must always be at least 1 space between chords.
@@ -104,9 +104,9 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 -- perhaps when breaking, compare word and chord and err on making lines shorter during breaking without splitting a chord or a word
 -- since this is only done at upload time, doesn't matter that this is a heavy task
 
-26. enhancement for song sheet: The title card should be flatter and spread horizontally more. the song content area should be taller
+(done) 26. enhancement for song sheet: The title card should be flatter and spread horizontally more. the song content area should be taller
 
-27. the upload song form should be its own page. upload button should be on songs page tho.
+(done) 27. the upload song form should be its own page. upload button should be on songs page tho.
 
 28. fix two gaps in the chord sheet parser (idea 25 follow-up)
 
@@ -131,6 +131,41 @@ gap 2 — chord boundary not checked during line break (minor)
    take the more conservative (shorter) of the two — never split a word or a chord.
 -- fix: in ChordSheetParser.breakLine(), after finding the lyrics breakAt index, walk back further
    while chords.charAt(breakAt - 1) != ' ', taking the minimum of the lyrics and chord boundaries.
+
+(done) 29. i want the capo part to be moved over to near the transposition tool. i want the transpose tool to say transpose in little font, above the widget. idk the raw key part confuses me when the song is capoed. lets make capo adjsutable too. like key of B in capo 4 will yield leading chord of G
+
+(done) 30. add a tool to rerun logic for existing song sheets. trigger via button on front end. purpose is to update songs after song parser logic is updated.
+
+31. add warning box to confirm song deletion
+
+32. deleted songs go to recycling db, where they can be recovered.
+
+33. add users. make account. account creation loop should require the admin get a 2fa. users can upload songs, view songs, make and view playlists. users can only delete their own songs. admin can delete anything
+
+(done) (done) 34. the transpose number should go back to zero when we hit the original key again
+
+(done) 35. can we prevent the song text from jumping when we transpose? it is distracting
+
+(done) 36. clicking bpm under song name should trigger metronome to start at that tempo
+
+37. metronome should get options for single tone and 3/4
+
+(done) 38. chords should be bold like (but NC should not) I want to add a chord display on hover. should show the chord as tab. may need a db of chords to pull from.
+
+39. add reset button for capo also
+
+40. add global playlists. add playlist tab in navbar, list of playlist name, number of songs, creator,
+-- clicking song from playlist gives you back to playlist button (or shows above song name PlaylistName with a hyperlink)
+-- maybe songs in playlist show Next -> which loads next song in playlist (also back button)
+-- in playlist, you set the key/capo you play the song in, songs in playlist prioritize that key over default
+
+41. update chord display to handle G/B slash chords.
+
+42. show chords button on song title bar. on click shows list of all chords for song,
+
+43. update chord building logic to use real and common voicings.
+-- perhaps allow user to provide voicings on upload?
+
 
 MACHINE GUIDED SUPPLEMENT TO IDEA BUCKET:
 
