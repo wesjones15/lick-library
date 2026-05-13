@@ -6,7 +6,7 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 -- this should be implemented with an abstract class/method because for each algo, the input and output types will be the same.
 -- [codebase note] findPositions, buildPositions, dfsPositions, and findCandidates are all instance methods on LickService right now — they'd need to be extracted into a PositionBuilder strategy class to do this cleanly. The API would need an ?algo= param. Moderately scoped refactor but cleaner long-term.
 
-2. add other instruments. create instrument abstract class which defines common features and requirements of instruments. then add Ukelele, Lap Steel, Mandolin, Banjo tunings and layouts. we can select output instrument and use the same position logic to create tabs for other instruments. The front end will need a selector to choose the output instrument.
+(done) 2. add other instruments. create instrument abstract class which defines common features and requirements of instruments. then add Ukelele, Lap Steel, Mandolin, Banjo tunings and layouts. we can select output instrument and use the same position logic to create tabs for other instruments. The front end will need a selector to choose the output instrument.
 --banjo 5th string starts at fret 5.
 --i want instrument to be implemented by Guitar, Ukulele, Banjo(add todo for
         dealing with 5th string quirks, don't plan about it yet), Bass, Mandolin. I
@@ -34,6 +34,8 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 
 8. since the skeleton is here, I want to implement the full CAGED scales for each mode (well for ionian, and everything else is the same with adjusted root note). this can tie into licks. maybe it will turn into a utility for building licks or soloing in different modes.
 -- [codebase note] The interval math is all there. CAGED is 5 fixed fingering patterns for the pentatonic/diatonic scale — you'd be generating positions for a full scale shape rather than a lick sequence. Could reuse findNeckPositions + findCandidates to populate a full 5–7 note pattern.
+-- perhaps we implement by defining a sequence of all notes: 1,b2,2,b3,3,4,b5,5,b6,6,b7,7. and we define ionian(M) by the interval deltas. and we build the modes by iterating over the 12 notes by interval delta.
+-- this is complicated by how i think about these modes. I only learned CAGED with respect to major scale, and i mentally shift when i play minor for example, instead of shifting by note, i shift so like i play the major scale but i mentally consider that the root for minor is just the 6th for major, so i don't have to learn a new scale. but i want to discuss this, as the reason for creating this app at all is to help me learn this stuff.
 
 9. what would it take for this webapp to be optimized for 2025 ipad air. I would like to save the 'site' as a shortcut on my home screen, so that when i click on it, it opens as its own app, not as a browser tab.
 -- [codebase note] Pure frontend config — manifest.json, apple-touch-icon, viewport meta, display: standalone. Vite has a PWA plugin (vite-plugin-pwa) that handles most of the boilerplate. No backend touches needed.
@@ -41,6 +43,217 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 10. i don't want this personally, but maybe it would be wise to consider what changes should be implemented to make the webapp robust and have security, users, other shit such that it would be impressive as a personal project to interviewers. this is less valuable in my eyes than the functional aspects of this app.
 -- [codebase note] JWT auth, Spring Security, CORS policy, rate limiting, user-scoped repositories. The H2 file DB would need to become Postgres. Standard Spring Boot stack — none of it is hard, just overhead. Worth doing last if at all.
 
-11. a new feature could be adding parallel harmony. input: short tab or phrase. output: tab of a harmony that 'rhymes' or otherwise pairs with the input tab. the 2 tabs should complement one another if played in parallel.
+11. a new feature could be adding a harmony. input: short tab or phrase. output: tab of a harmony that 'rhymes' or otherwise pairs with the input tab. it should not be an exact match just shifted, it should take a different journey like the beatles. the 2 tabs should complement one another if played in parallel.
 -- [codebase note] More tractable than it sounds given the interval-first design. For a given mode the diatonic scale steps are known — harmony a 3rd up means shifting each note up by 2 scale degrees while staying in mode. You'd transform List<IntervalNote> → List<IntervalNote> by mapping each interval to its diatonic 3rd, then feed through the existing position pipeline. The hard part is deciding what "rhymes" means for non-diatonic or chromatic phrases.
 
+12. allow user to change input instrument for tab upload. this would maybe remove the need for TabNote entirely if the parseTab method gets retooled to work for any tuning/instrument
+
+13. containerize frontend and backend and deploy to a hosting service.
+
+(done) 14. set up github upstream. upload frontend and backend to my personal github
+
+15. I want to add a predictor. User provides the key, mode, start of the tab? maybe also provide the chord progression the tab fits over. then we output a sequence of notes that follows the progression or complements the other melody. this may tie into the harmony feature. could use penta or dia tonic caged shapes to make jumps. perhaps prioritize certain phrases in generation.
+-- this would be on another front end screen. get to from navbar
+
+16. Single Screen Song Chord Sheet Display
+-- a chord sheet is a monospaced font document which displays the song lyrics line by line, with corresponding chord changes on the line above the relevant lyrics.
+-- create database for song chord sheets. unique id (hash), formatted song chord sheet string (i want this column to contain the object of the chord sheet for each song, whether we land on raw text, object notation, or an image of some kind for the output result)
+-- create database for songs: songname, artist, key, mode, tempo, capo, unique_id (to pair with other db)(song name is not a unique field, we shouldn't rely on any field here for hash id)
+-- add a page on the front end to list available tabs by showing artist and song name.
+-- add page that displays one page song chord sheet as defined below.
+-- one-pager: should use font like roboto or courier new. pairs of chord row and lyric row should always share same font size. depending on song size, we want the output displayed in 2 or 3 columns. lyric/chord pairs should not cause line breaks, and should be shrunk to prevent such from occurring. they should use the largest font size that avoids line breaks and avoids making the tab too big to fit on one page. tab content should fill browser window and be as big as possible while all showing at once on screen.
+-- we need to be able to intake the tabs somehow. make an upload flow that lets users upload a txt of a guitar tab, as well as other relevant info on the song, and it is processed in the backend, to fit one-pager requirements, and gets added to the databases. (do i just mean tables under a shared db, my lingo might be off)
+-- upload button near top of tab list page should take you to upload song page.
+-- the processing happens in the back end once, on upload. my current onepagers is stored as screenshots. because these aren't meant to be zoomed. they are purpose built to fill the screen. ideally i would store them as images, but i want to be able to add transposition to it later, so chord lines need to be defined separate to lyric lines.
+-- would it make sense to define these as java pojos
+   -- a chordlyric object: with string chords, string lyrics, double font-size (most font sizes will be between 5-8 i think)
+   -- decorators like [Intro],[Verse],[Bridge],[Chorus] etc should be considered lyrics and have a chordline full of spaces.
+   -- a songdetails object
+   -- container object that holds ordered list of chordlyric objects, and  songdetails object ( or it just contains what song details would have contained, maybe the list just goes on songdetails instead of here)
+   -- [machine note] the chords string uses leading spaces to encode chord positions. never trim leading spaces — position is implicit in the string index.
+   -- [machine note] fontSize is computed by the backend at upload time against a fixed reference: iPad Air horizontal viewport. other screen sizes letterbox (empty vertical bars). frontend renders at the stored fontSize unchanged.
+
+17. in addition to implementing caged diatonic scales, we track octave of note. this may require adding attribute on InstrumentString for string gauge, I have a chart that shows octaves on standard tuned guitar and compares it to piano.
+
+18. i don't want this idea to turn into ultimate-guitar's Official tab implementation, as i want to perhaps avoid synthetic guitar playback. but perhaps we enable microphone and can follow along the user playing a tab. or maybe it identifies the note heard, and it displays live the/a position on the guitar. maybe we limit this to just standard guitar at first?
+
+19. some sort of guitar neck display, that shows notes pressed in a sequence, like notes flash on the neck as they are played, according to tab and tempo.
+
+20. with the defining caged stuff, would it also be useful to program in common intervals/jumps for traversing the neck, as provided in my guitar caged book? we can use those jumps in the predictor or harmony tool as priority candidates for next note in sequence.
+
+21. frontend. add a separate page and a navbar to get between the licks and this. this page will have a guitar neck display and take mic input. you select key and mode and it will overlay the scale there on he guitar neck. it will hear the mic input and interpret the pitch and use that to highlight the corresponding note on the guitar neck.
+
+22. metronome modal that can be added to any page on the site, maybe it lives in the navbar as a little widget
+-- [machine note] use Web Audio API AudioWorklet for timing, not setInterval — setInterval drifts noticeably at fast tempos. visual pulse should be tied to the audio clock, not a separate timer.
+
+23. create a navbar on top of site for desktop displays (we can look at mobile/vertical later) it should be designed to accommodate new buttons as we add features. for now, site name, and licks button that takes you to the lick library/upload screen.
+
+24. feature addition to 16. transpose up and down. should update chord lines in the song object as displayed to user.
+-- needs to account for sharps/flats getting added/removed during transposition
+-- if chord has suffix, and sharp is added in transposition, then a space must be removed AFTER the suffix.
+-- there must always be at least 1 space between chords.
+-- [machine note] slash chords like "G/B" — transpose both roots independently, rejoin with "/" and no spaces. length delta applies to the whole token.
+-- [machine note] if minimum 1-space gap would be violated by adding a sharp, insert a space at the same index in the lyrics string to compensate. both strings stay the same length.
+
+25. enhancement for 16. uploader could break long lines into 2 lines on its own. its tricky because the chords and spacing will need to be broken too and preserved.
+--for ChordLyric object, enforce lyric and chord are same length. do so by adding trailing spaces to the shorter of the two.
+--default behavior is shrinking font size to acccomodate longer lines, but theres gotta be a limit, so we don't make it unreadable.
+-- enforce a max line length and break at end of word before limit. break chords at same point.
+-- [machine note] after splitting a line, strip leading spaces from both strings in the second ChordLyric symmetrically — otherwise the indent eats into column width budget.
+  -- this limit should be such that when we break the line, we are able to significantly raise the font size back up for each half.
+-- perhaps when breaking, compare word and chord and err on making lines shorter during breaking without splitting a chord or a word
+-- since this is only done at upload time, doesn't matter that this is a heavy task
+
+MACHINE GUIDED SUPPLEMENT TO IDEA BUCKET:
+
+# Feature Notes
+
+## 8. Scale Backdrop / Neck Context (formerly "CAGED Scales")
+
+CAGED as a formal concept does not generalize beyond Guitar.STANDARD and does not
+need to be implemented as a named system. The useful application is a scale backdrop
+on the neck visualization: given the current playhead position, overlay all valid
+scale note positions within a fret window as dim dots on the neck.
+
+At any point in playback the system already knows:
+- Current (fret, string) from the playhead
+- Key and mode from the lick
+
+The backdrop is findNeckPositions called for every interval in the mode's sequence,
+filtered to a fret window around the current position, rendered as dim markers.
+Current note is bright, valid scale notes in window are dim, everything else empty.
+
+This is Guitar-specific by nature since it is a visual neck display. No formal CAGED
+window system needs to be defined or named in code. The fret-range filtering is already
+how spanLimit works in the builders — no new infrastructure required.
+
+Answers the practical player question: "I am here on the neck, what other notes are
+available in this mode?"
+
+Depends on: #19 (neck visualization).
+
+
+## 11. Parallel Harmony
+
+Static phrase transformation. Operates entirely in interval-space; never touches
+fingering until the final position pipeline call.
+
+Implementation:
+- Input: List<IntervalNote> (a stored lick's intervals), Mode, harmonicInterval
+  (e.g. THIRD, SIXTH)
+- Map each IntervalNote to its diatonic equivalent N scale degrees up within the mode's
+  interval sequence. This is a pure index shift on the mode's degree list, wrapping
+  at the octave.
+- Output: new List<IntervalNote> — feed directly into existing PositionBuilder pipeline
+- Add a snap-to-scale flag for handling chromatic/passing tones in the input: when true,
+  round the input note to the nearest scale degree before harmonizing; when false,
+  preserve the chromatic interval exactly.
+- Lives in LickUtils as a stateless pure function alongside toIntervals and detectMode.
+
+
+## 15. Phrase Predictor
+
+Deterministic rule engine. No AI or probabilistic components. Operates in interval-space
+over a chord progression input and emits an interval sequence fed through the existing
+position pipeline.
+
+Rules priority hierarchy (implemented as weighted candidate scoring):
+1. Chord tones on strong beats — target 1, 3, 5 (and 7) of the current chord
+2. Stepwise voice leading — prefer ±1-2 scale degrees between consecutive notes
+3. Tension/resolution directionality — certain degrees resolve in defined directions
+   per mode
+4. Passing tones on weak beats — non-chord tones permitted between strong beat targets
+
+Mode intervals are native — compute in whatever mode is active. Do not convert to
+relative Ionian internally. Aeolian computes as 1 2 b3 4 5 b6 b7 from its own root.
+Relative Ionian equivalence is a display label only.
+
+Input: key, Mode, chord progression (sequence of chord root + type mapped to intervals),
+optional seed phrase as List<IntervalNote>.
+Output: List<IntervalNote> — renderable via existing position pipeline.
+
+Guitar.STANDARD may attach a weighted hint table of idiomatic interval jumps (see #20)
+as priority candidates for step 2 without affecting the instrument-agnostic rule core.
+
+Lives in LickUtils or a dedicated PredictorService. No instrument knowledge.
+
+
+## 16. Playback Tool & Song DB
+
+Two decoupled concerns — build playback first, add the data layer separately.
+
+Metronome:
+- Web Audio API AudioWorklet for drift-free timing (not setInterval)
+- Tempo (BPM) and time signature selection
+- Visual pulse tied to the audio clock
+
+Song DB:
+- Table: song(id, title, artist, key, tempo, mode, vocal_range?)
+- Decoupled from playback implementation — add after playback is stable
+- Ties into chord sheet display as a separate feature layer
+
+
+## 17. Octave Tracking
+
+No string gauge attribute needed on Instrument. Derive absolute pitch from
+fret + string using open string offsets, then add semitones per fret.
+
+Standard tuning absolute pitches:
+  String 0 (low E) = E2, String 1 = A2, String 2 = D3,
+  String 3 = G3,   String 4 = B3,  String 5 = E4
+Absolute pitch = openStringPitch[stringIndex] + fret
+
+Add octave as a derived field on TabNote or a wrapper — computed at render time from
+the Instrument's open string absolute pitches, not stored. Each Instrument implementation
+provides its open string absolute pitches alongside existing tuning(). Gauge affects
+tone not pitch and is out of scope.
+
+
+## 18. Microphone Pitch Detection
+
+Implement as a separate Fretboard Explorer mode, not integrated into tab playback
+initially. Tab-following requires timing sync on top of pitch detection and is a
+later phase.
+
+Implementation:
+- YIN algorithm or pitchfinder.js for single-note pitch detection
+- Limit to Guitar.STANDARD, clean tone input for accuracy
+- On note detected: resolve to nearest Note enum value, display all neck positions
+  for that note via findNeckPositions
+- This is the reverse of tab display — user plays, app shows where it lives on the neck
+- Distortion and low notes degrade detection accuracy; document as known constraint
+- The existing upload pipeline hardcodes Guitar.STANDARD in parseTab + toIntervals;
+  resolve this before building tab-following on top of the audio pipeline
+
+
+## 19. Animated Neck Visualization
+
+Playhead-driven neck display. Notes flash on active fret/string positions as the
+tab plays at the current tempo.
+
+Implementation:
+- Playhead indexes into the tab's columnIndex sequence at a rate derived from BPM
+- At each columnIndex advance, highlight the corresponding TabNote positions on the neck
+- Pairs directly with the metronome from #16 — tempo is the shared clock
+- Instrument-aware: render string count and layout from the Instrument interface,
+  not hardcoded to 6 strings
+- Scale backdrop (#8) overlays dim dots for valid mode positions in the current fret
+  window — Guitar only
+
+
+## 20. Idiomatic Neck Traversal Hints
+
+Physical jump patterns from CAGED literature are Guitar.STANDARD-specific and attach
+there. These are interval relationships with idiomatic physical expressions in standard
+tuning, not universal geometry. Do not add to the Instrument interface.
+
+Implementation:
+- Define as a static structure on Guitar.STANDARD:
+  List of (intervalDelta, stringsTraversed) pairs representing common idiomatic moves
+- Consumed by the predictor (#15) as a weighted hint table for interval selection —
+  preferred candidate moves, not constraints
+- The position pipeline already handles geometry: findCandidates locates nearby
+  positions given current (fret, string) and a target interval. The hint table only
+  influences which interval to target, not how to find it.
+- Other instruments may define their own idiomatic jump tables attached to their own
+  classes if desired, but there is no shared contract for this.
