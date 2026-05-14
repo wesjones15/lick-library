@@ -312,59 +312,77 @@ Technique characters appear between notes in the same slot:
 
 ## Project structure
 
+Domain-vertical (DDD) layout. Each domain imports only from `domain/shared/` and `domain/position/` — no cross-domain imports.
+
 ```
 src/main/java/org/jones/licklibrary/
-├── controller/
-│   ├── LickController.java              REST endpoints for licks
-│   ├── LickNotFoundException.java
-│   ├── SongController.java              REST endpoints for songs
-│   └── SongNotFoundException.java
-├── service/
-│   ├── LickService.java                 Upload + lookup orchestration, tab parsing
-│   ├── LickUtils.java                   toIntervals, toAbsoluteNotes, hashIntervals, detectMode
-│   ├── SongService.java                 Song CRUD, delegates to parser + transposer
-│   ├── ChordService.java                Chord quality → interval maps; voicings via LoserBracket
-│   ├── ChordSheetParser.java            Raw text → List<ChordLyric>; font sizing, line breaking
-│   ├── ChordTransposer.java             Transposes ChordLyric list by N semitones
-│   ├── PositionBuilder.java             Abstract base: findNeckPositions, findCandidates
-│   ├── GreedyPositionBuilder.java
-│   ├── DfsPositionBuilder.java
-│   └── LoserBracketPositionBuilder.java
-├── model/
-│   ├── Lick.java                        JPA entity
-│   ├── TabNote.java                     record — raw parsed note
-│   ├── IntervalNote.java                record — interval + technique + columnIndex
-│   ├── IntervalNoteListConverter.java   JPA converter for List<IntervalNote>
-│   ├── Position.java                    record — List<TabNote> + toTabString()
-│   ├── LickResponse.java                API response (summary and detail shapes)
-│   ├── UploadLickRequest.java
-│   ├── PositionResponse.java
-│   ├── PositionCache.java               JPA entity (reserved for caching)
-│   ├── Mode.java                        enum
-│   ├── Song.java                        JPA entity
-│   ├── ChordLyric.java                  record — chords, lyrics, fontSize
-│   ├── ChordLyricListConverter.java     JPA converter (JSON via Jackson)
-│   ├── UploadSongRequest.java
-│   ├── SongDetailResponse.java
-│   └── SongSummaryResponse.java
-├── constants/
-│   ├── Note.java                        enum — 12-tone chromatic scale
-│   ├── Interval.java                    enum — scale degrees with display names
-│   ├── Instrument.java                  interface
-│   ├── Guitar.java                      STANDARD, DROP_D, OPEN_G, OPEN_D, DADGAD
-│   ├── Bass.java
-│   ├── Ukulele.java
-│   ├── Mandolin.java
-│   ├── Banjo.java
-│   ├── CustomInstrument.java            built from tuning string at request time
-│   ├── InstrumentRegistry.java          name → Instrument lookup
-│   └── NoteParser.java                  "C#" / "Bb" → Note enum
-├── repository/
-│   ├── LickRepository.java
-│   ├── SongRepository.java
-│   └── PositionCacheRepository.java
-└── config/
-    └── CorsConfig.java                  allows all origins on /api/**
+├── core/
+│   ├── config/CorsConfig.java           allows GET POST DELETE from localhost:5173
+│   └── exception/ResourceNotFoundException.java  @ResponseStatus(NOT_FOUND)
+│
+└── domain/
+    ├── shared/                          shared kernel — imported by all domains
+    │   ├── Note.java                    enum — 12-tone chromatic scale
+    │   ├── Interval.java                enum — scale degrees with display names
+    │   ├── Mode.java                    enum — IONIAN … LOCRIAN
+    │   ├── TabNote.java                 record — raw parsed note
+    │   ├── IntervalNote.java            record — interval + technique + columnIndex
+    │   ├── Position.java                record — List<TabNote> + toTabString(Instrument)
+    │   ├── Instrument.java              interface
+    │   ├── InstrumentRegistry.java      name → Instrument lookup
+    │   ├── NoteParser.java              "C#" / "Bb" → Note enum
+    │   └── instrument/
+    │       ├── Guitar.java              STANDARD, DROP_D, OPEN_G, OPEN_D, DADGAD
+    │       ├── Bass.java
+    │       ├── Ukulele.java
+    │       ├── Mandolin.java
+    │       ├── Banjo.java
+    │       └── CustomInstrument.java    built from tuning string at request time
+    │
+    ├── position/                        position-finding infrastructure
+    │   ├── PositionCache.java           JPA entity (reserved for caching)
+    │   ├── PositionCacheRepository.java
+    │   ├── LickUtils.java               toIntervals, toAbsoluteNotes, hashIntervals, detectMode
+    │   └── builder/
+    │       ├── PositionBuilder.java     abstract base: findNeckPositions, findCandidates
+    │       ├── GreedyPositionBuilder.java
+    │       ├── DfsPositionBuilder.java
+    │       └── LoserBracketPositionBuilder.java
+    │
+    ├── lick/
+    │   ├── Lick.java                    JPA entity
+    │   ├── LickController.java          REST endpoints: POST/GET/DELETE /api/lick
+    │   ├── LickRepository.java
+    │   ├── LickService.java             upload + lookup orchestration, tab parsing
+    │   ├── IntervalNoteListConverter.java  JPA converter for List<IntervalNote>
+    │   └── dto/
+    │       ├── LickResponse.java
+    │       ├── PositionResponse.java
+    │       └── UploadLickRequest.java
+    │
+    ├── song/
+    │   ├── Song.java                    JPA entity
+    │   ├── SongController.java          REST endpoints: POST/GET/DELETE /api/song
+    │   ├── SongRepository.java
+    │   ├── SongService.java
+    │   ├── dto/
+    │   │   ├── SongDetailResponse.java
+    │   │   ├── SongSummaryResponse.java
+    │   │   └── UploadSongRequest.java
+    │   └── parsing/
+    │       ├── ChordLyric.java          record — chords, lyrics, fontSize
+    │       ├── ChordLyricListConverter.java  JPA converter (JSON via Jackson)
+    │       ├── ChordSheetParser.java    raw text → List<ChordLyric>; font sizing, line breaking
+    │       └── ChordTransposer.java     transposes ChordLyric list by N semitones
+    │
+    └── chord/
+        ├── ChordQuality.java            JPA entity — chord suffix
+        ├── ChordShape.java              JPA entity — CAGED template frets
+        ├── ChordQualityRepository.java
+        ├── ChordShapeRepository.java
+        ├── ChordService.java            chord quality maps; voicings via shape transposition
+        ├── ChordShapeSeed.java          seeds 70 CAGED shapes on first boot
+        └── ChordController.java         GET /api/chord
 ```
 
 ---

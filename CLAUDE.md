@@ -15,46 +15,79 @@ Spring Boot backend for a guitar lick library. Upload a tab to store its interva
 
 ## Project Structure
 
+Domain-vertical layout (DDD). Each domain (`lick/`, `song/`, `chord/`) imports only from `domain/shared/` and `domain/position/` — no cross-domain imports.
+
 ```
 src/main/java/org/jones/licklibrary/
-├── controller/
-│   ├── LickController.java              # REST endpoints
-│   └── LickNotFoundException.java       # @ResponseStatus(NOT_FOUND)
-├── service/
-│   ├── LickService.java                 # pipeline orchestration, DB interaction, tab parsing
-│   ├── LickUtils.java                   # stateless helpers: toIntervals, toAbsoluteNotes, proximityScore, hashIntervals, detectMode
-│   ├── PositionBuilder.java             # abstract base: findNeckPositions, findCandidates, MAX_FRET, MAX_POSITIONS
-│   ├── GreedyPositionBuilder.java       # single-pass nearest-neighbour
-│   ├── DfsPositionBuilder.java          # depth-first search with diversity dedup + round-robin
-│   └── LoserBracketPositionBuilder.java # two-pass: melody first, chord partners second
-├── model/
-│   ├── TabNote.java                     # record: stringIndex, fret, columnIndex, technique
-│   ├── IntervalNote.java                # record: interval, technique, columnIndex
-│   ├── IntervalNoteListConverter.java   # JPA converter + toDisplayString()
-│   ├── Lick.java                        # DB entity
-│   ├── LickResponse.java                # API response record
-│   ├── UploadLickRequest.java           # record: rawTab, mode?, inputKey?
-│   ├── PositionResponse.java            # record: tabString
-│   ├── Mode.java                        # enum: IONIAN DORIAN PHRYGIAN LYDIAN MIXOLYDIAN AEOLIAN LOCRIAN
-│   ├── Position.java                    # record: List<TabNote> + toTabString(Instrument)
-│   └── PositionCache.java               # DB entity (reserved for future caching)
-├── repository/
-│   ├── LickRepository.java              # JPA repo, lookup by interval hash
-│   └── PositionCacheRepository.java
-├── constants/
-│   ├── Note.java                        # enum: C C_SHARP D D_SHARP E F F_SHARP G G_SHARP A B_FLAT B
-│   ├── Interval.java                    # enum with displayName() and fromDisplayName()
-│   ├── Instrument.java                  # interface: tuning, labels, displayOrder, stringCount, getNoteAt, minFret
-│   ├── Guitar.java                      # implements Instrument; STANDARD DROP_D OPEN_G OPEN_D DADGAD
-│   ├── Bass.java                        # implements Instrument; STANDARD (E A D G, 4 strings)
-│   ├── Ukulele.java                     # implements Instrument; STANDARD (G C E A, 4 strings)
-│   ├── Mandolin.java                    # implements Instrument; STANDARD (G D A E, 4 strings)
-│   ├── Banjo.java                       # implements Instrument; STANDARD (D G B D G, 5 strings; 5th-string minFret TODO)
-│   ├── CustomInstrument.java            # implements Instrument; built from Note[] at request time
-│   ├── InstrumentRegistry.java          # name string → Instrument instance
-│   └── NoteParser.java                  # "C#" / "Bb" / "A#" → Note enum
-└── config/
-    └── CorsConfig.java                  # allows GET POST DELETE from localhost:5173
+├── core/
+│   ├── config/
+│   │   └── CorsConfig.java              # allows GET POST DELETE from localhost:5173
+│   └── exception/
+│       └── ResourceNotFoundException.java  # @ResponseStatus(NOT_FOUND), replaces domain-specific exceptions
+│
+├── domain/
+│   ├── shared/                          # shared kernel — imported by all domains
+│   │   ├── Note.java                    # enum: C C_SHARP D D_SHARP E F F_SHARP G G_SHARP A B_FLAT B
+│   │   ├── Interval.java                # enum with displayName() and fromDisplayName()
+│   │   ├── Mode.java                    # enum: IONIAN DORIAN PHRYGIAN LYDIAN MIXOLYDIAN AEOLIAN LOCRIAN
+│   │   ├── TabNote.java                 # record: stringIndex, fret, columnIndex, technique
+│   │   ├── IntervalNote.java            # record: interval, technique, columnIndex
+│   │   ├── Position.java                # record: List<TabNote> + toTabString(Instrument)
+│   │   ├── Instrument.java              # interface: tuning, labels, displayOrder, stringCount, getNoteAt, minFret
+│   │   ├── InstrumentRegistry.java      # name string → Instrument instance
+│   │   ├── NoteParser.java              # "C#" / "Bb" / "A#" → Note enum
+│   │   └── instrument/
+│   │       ├── Guitar.java              # STANDARD DROP_D OPEN_G OPEN_D DADGAD
+│   │       ├── Bass.java                # STANDARD (E A D G, 4 strings)
+│   │       ├── Ukulele.java             # STANDARD (G C E A, 4 strings)
+│   │       ├── Mandolin.java            # STANDARD (G D A E, 4 strings)
+│   │       ├── Banjo.java               # STANDARD (D G B D G, 5 strings; 5th-string minFret TODO)
+│   │       └── CustomInstrument.java    # built from Note[] at request time
+│   │
+│   ├── position/                        # position-finding infrastructure
+│   │   ├── PositionCache.java           # DB entity (reserved for future caching)
+│   │   ├── PositionCacheRepository.java
+│   │   ├── LickUtils.java               # stateless helpers: toIntervals, toAbsoluteNotes, proximityScore, hashIntervals, detectMode
+│   │   └── builder/
+│   │       ├── PositionBuilder.java     # abstract base: findNeckPositions, findCandidates, MAX_FRET, MAX_POSITIONS
+│   │       ├── GreedyPositionBuilder.java   # single-pass nearest-neighbour
+│   │       ├── DfsPositionBuilder.java      # depth-first search with diversity dedup + round-robin
+│   │       └── LoserBracketPositionBuilder.java  # two-pass: melody first, chord partners second
+│   │
+│   ├── lick/
+│   │   ├── Lick.java                    # DB entity
+│   │   ├── LickController.java          # REST endpoints: POST/GET/DELETE /api/lick
+│   │   ├── LickRepository.java          # JPA repo, lookup by interval hash
+│   │   ├── LickService.java             # pipeline orchestration, DB interaction, tab parsing
+│   │   ├── IntervalNoteListConverter.java  # JPA converter + toDisplayString()
+│   │   └── dto/
+│   │       ├── LickResponse.java        # API response record
+│   │       ├── PositionResponse.java    # record: tabString
+│   │       └── UploadLickRequest.java   # record: rawTab, mode?, inputKey?
+│   │
+│   ├── song/
+│   │   ├── Song.java                    # DB entity
+│   │   ├── SongController.java          # REST endpoints: POST/GET/DELETE /api/song
+│   │   ├── SongRepository.java
+│   │   ├── SongService.java
+│   │   ├── dto/
+│   │   │   ├── SongDetailResponse.java
+│   │   │   ├── SongSummaryResponse.java
+│   │   │   └── UploadSongRequest.java
+│   │   └── parsing/
+│   │       ├── ChordLyric.java          # record: chords, lyrics, fontSize
+│   │       ├── ChordLyricListConverter.java  # JPA JSON converter
+│   │       ├── ChordSheetParser.java    # parses raw chord sheet into ChordLyric pairs
+│   │       └── ChordTransposer.java     # transposes chord tokens by semitone count
+│   │
+│   └── chord/
+│       ├── ChordQuality.java            # DB entity: chord suffix
+│       ├── ChordShape.java              # DB entity: CAGED template frets
+│       ├── ChordQualityRepository.java
+│       ├── ChordShapeRepository.java
+│       ├── ChordService.java            # transpose shapes + format tab output
+│       ├── ChordShapeSeed.java          # seeds CAGED shapes on first boot
+│       └── ChordController.java         # GET /api/chord?root=A&quality=m7&instrument=GUITAR
 ```
 
 ---
