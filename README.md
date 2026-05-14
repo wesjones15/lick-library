@@ -159,7 +159,7 @@ GET /api/chord?root=A&quality=m7&instrument=GUITAR
 | `quality` | *(required)* | Chord quality (see table below) |
 | `instrument` | `GUITAR` | Named instrument preset |
 
-Returns `List<String>` — ASCII tab voicings computed on the fly via `LoserBracketPositionBuilder`. Unknown quality → 400.
+Returns `List<String>` — ASCII tab voicings. For `instrument=GUITAR`, returns up to 5 real CAGED shapes transposed to the requested root. For other instruments, returns an empty list until shapes are seeded for them. Unknown quality → 400.
 
 | `quality=` | Chord |
 |---|---|
@@ -411,6 +411,30 @@ src/main/java/org/jones/licklibrary/
 | `positions_json` | TEXT | |
 
 UNIQUE on `(interval_hash, note_key)`. Table exists but is not actively used — positions are recomputed on every request.
+
+### `chord_quality` entity
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | PK |
+| `suffix` | VARCHAR | UNIQUE — `""`, `"m"`, `"7"`, `"maj7"`, … |
+
+14 rows seeded on first startup. `suffix` matches the `quality=` request param accepted by `GET /api/chord`.
+
+### `chord_shape` entity
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | PK |
+| `chord_quality_id` | UUID | FK → `chord_quality` |
+| `shape_name` | VARCHAR | `CAGED_E`, `CAGED_A`, `CAGED_G`, `CAGED_C`, `CAGED_D` |
+| `template_frets` | TEXT | JSON array — `"x"` muted, `-1` stays open, `0+` fretted (offset added on transpose) |
+| `root_string` | INTEGER | Index into instrument tuning (0 = lowest string) |
+| `instrument` | VARCHAR | `"GUITAR"` — matches `InstrumentRegistry` key |
+| `source` | VARCHAR | `"system"` for seed rows; `"song:{id}"` for future custom voicings |
+| `label` | VARCHAR | Nullable — for future admin UI |
+
+70 rows seeded on first startup (5 CAGED shapes × 14 qualities). `GET /api/chord?instrument=GUITAR` transposes the matching template to the requested root and formats it as an ASCII tab string. Other instruments return an empty list until shapes are seeded for them.
 
 ---
 

@@ -386,13 +386,15 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 43. Chord voicing improvements (real voicings, visual display)</summary>
+<details>
+<summary>[x] 43. Chord voicing improvements (real voicings, visual display)</summary>
 
-- Update chord building logic to use real and common voicings
-- Allow user to provide voicings on upload
-- Visual grid display as alternative to ASCII tab in popover
-- Consider whether backend chord logic should use TabNote instead of IntervalNote
+- ChordQuality and ChordShape JPA entities; 70 seed rows (5 CAGED shapes × 14 qualities)
+- ChordShapeSeed ApplicationRunner seeds on first startup (idempotent)
+- transposeShape: offsets fretted values so root lands on correct fret; muted ("x") and stay-open (-1) values unchanged
+- formatShape: renders int[] to ASCII tab matching Position.toTabString() output format
+- GET /api/chord?instrument=GUITAR returns real CAGED fingerings; other instruments return empty list
+- Visual grid display deferred; user-submitted voicings deferred to idea 47
 
 </details>
 
@@ -413,4 +415,24 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 <summary>[ ] 46. add ability to include tab snippets in chord sheets</summary>
 
 - add GuitarTabLine as object in chordsheet, since some chordsheets include riffs. these can have chord labels above, or not. but will be like 6 lines and we already know how to detect.
+</details>
+
+<details open>
+<summary>[ ] 47. allow user to upload missing voicings for chords</summary>
+
+- if chord displays as ???, then clicking on ??? will open a modal for adding a new chord. submit button will save voicing to chord.
+- there will need to be a way to delete voicings, not on song page, maybe a chords tab in navbar to manage and view chords
+- maybe user submitted voicings get prioritized in chord voicing list, and are displayed first on hover.
+</details>
+
+<details open>
+<summary>[ ] 48. change chord display from ASCII to pretty diagram</summary>
+
+- chords should be shown as an image rather than ascii
+</details>
+
+<details open>
+<summary>[ ] 49. create cache db of chord voicings to avoid need for rerunning chord calculations</summary>
+
+- this feature is heavy if no users, but if we scale, it will be beneficial to reduce overhead
 </details>
