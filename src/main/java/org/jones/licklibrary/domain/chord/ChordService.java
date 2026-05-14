@@ -6,6 +6,8 @@ import org.jones.licklibrary.domain.shared.Note;
 import org.jones.licklibrary.domain.shared.instrument.Guitar;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,6 +46,7 @@ public class ChordService {
         List<ChordShape> shapes = shapeRepo.findByChordQuality_SuffixAndInstrument(quality, instrumentName.toUpperCase());
         return shapes.stream()
             .map(s -> transposeShape(s, root))
+            .sorted(Comparator.comparingInt(ChordService::minFret))
             .map(frets -> formatShape(frets, instrument))
             .collect(Collectors.toList());
     }
@@ -96,6 +99,14 @@ public class ChordService {
             result.append(labels[i]).append('|').append(row).append('|');
         }
         return result.toString();
+    }
+
+    private static int minFret(int[] frets) {
+        return Arrays.stream(frets)
+            .filter(f -> f != -2)
+            .map(f -> f == -1 ? 0 : f)
+            .min()
+            .orElse(0);
     }
 
     static int[] parseTemplateFrets(String json) {
