@@ -2,6 +2,7 @@ The current state of the app is a react vite frontend and a java spring boot bac
 
 The purpose of this file is to hold ideas in memory so we can easily refer to them in claude code ui.
 
+key: [ ]  = open, [x] = complete, [~] = deferred
 ---
 
 <details>
@@ -73,11 +74,14 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 <details open>
 <summary>[ ] 8. Scale / CAGED neck learning tool</summary>
 
-- Full CAGED/diatonic scales for each mode as a learning tool; third vertical on the site
-- Could reuse findNeckPositions + findCandidates to populate full 5–7 note patterns
+- Full CAGED/diatonic scales for each mode as a learning tool; additional vertical on the site
 - Define interval sequence for each mode, build scale positions per key
 - Depends on #19 (neck visualization) for the visual neck display component
 - Question: how to present modes — as shifted major or from own root? Open design discussion
+- scrap above, maybe caged scales just get added as a third vertical for the site, as a learning tool for the user.
+  - what is the digital equivalent of the paper scale cards i learned from?
+  - we can use the little maths i figured out about scales in this somehow
+  - like how diatonic ionian G shape is composed of pentatonic G C and D overlayed in the same section
 
 </details>
 
@@ -397,4 +401,16 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 
 - Update README on frontend and backend to reflect new feature set
 
+</details>
+
+<details open>
+<summary>[ ] 45. song metadata update form</summary>
+
+- button to page with form to submit an update request to song details. allow user to submit revision to song attributes. perhaps future allow user to update individual ChordLyric blocks. updates go to a queue where admin can review and approve. upon approval, db entries update. perhaps line gets reparsed
+</details>
+
+<details open>
+<summary>[ ] 46. add ability to include tab snippets in chord sheets</summary>
+
+- add GuitarTabLine as object in chordsheet, since some chordsheets include riffs. these can have chord labels above, or not. but will be like 6 lines and we already know how to detect.
 </details>

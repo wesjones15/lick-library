@@ -1,6 +1,6 @@
 # Lick Library — Backend
 
-A Spring Boot service for storing and exploring guitar licks. Upload a tab once; retrieve playable positions in any key on any instrument.
+A Spring Boot service for storing and exploring guitar licks and song chord sheets. Upload a tab once; retrieve playable positions in any key on any instrument. Upload a chord sheet; transpose it to any key on the fly.
 
 ---
 
@@ -83,6 +83,103 @@ Returns 204.
 
 ---
 
+### Upload a song
+
+```
+POST /api/song
+Content-Type: application/json
+
+{
+  "title":         "Blackbird",
+  "artist":        "The Beatles",
+  "originalKey":   "G",
+  "capo":          2,         // optional
+  "tempo":         92,        // optional
+  "rawChordSheet": "..."      // plain-text chord sheet
+}
+```
+
+The raw chord sheet is parsed into a list of `ChordLyric` pairs (chord row + lyric row). Font size is auto-computed based on line length and column count (2 or 3 columns).
+
+---
+
+### List all songs
+
+```
+GET /api/song
+```
+
+Returns all songs as summary objects (`id`, `title`, `artist`, `originalKey`).
+
+---
+
+### Get a song
+
+```
+GET /api/song/{id}?semitones=0
+```
+
+| Param | Default | Description |
+|---|---|---|
+| `semitones` | `0` | Transpose the chord sheet by this many semitones at response time |
+
+Returns the full song including `chordLines` (list of ChordLyric), `numColumns`, `capo`, `tempo`, and `originalKey`.
+
+---
+
+### Re-parse a song
+
+```
+POST /api/song/{id}/reparse
+```
+
+Re-runs the chord sheet parser on the stored `rawChordSheet`. Useful after parser logic updates. Returns the updated song detail.
+
+---
+
+### Delete a song
+
+```
+DELETE /api/song/{id}
+```
+
+Returns 204.
+
+---
+
+### Get chord voicings
+
+```
+GET /api/chord?root=A&quality=m7&instrument=GUITAR
+```
+
+| Param | Default | Description |
+|---|---|---|
+| `root` | *(required)* | Root note: `A`, `C_SHARP`, `B_FLAT`, etc. |
+| `quality` | *(required)* | Chord quality (see table below) |
+| `instrument` | `GUITAR` | Named instrument preset |
+
+Returns `List<String>` — ASCII tab voicings computed on the fly via `LoserBracketPositionBuilder`. Unknown quality → 400.
+
+| `quality=` | Chord |
+|---|---|
+| *(empty string)* | Major |
+| `m` | Minor |
+| `7` | Dominant 7th |
+| `maj7` | Major 7th |
+| `m7` | Minor 7th |
+| `sus2` | Suspended 2nd |
+| `sus4` | Suspended 4th |
+| `dim` | Diminished |
+| `aug` | Augmented |
+| `add9` | Add 9 |
+| `6` | Major 6th |
+| `m6` | Minor 6th |
+| `dim7` | Diminished 7th |
+| `m7b5` | Half-diminished |
+
+---
+
 ## Instruments
 
 | `instrument=` value | Tuning (low → high) | Strings |
@@ -110,7 +207,7 @@ Single-pass nearest-neighbour. For each root candidate on the neck, picks the cl
 Depth-first search from each root candidate. Explores the N closest candidates per note (N scales down for longer licks to bound the search), then deduplicates by string-pattern + fret-bin so only genuinely distinct fingerings survive. Results are interleaved by starting string for variety.
 
 ### `chord`
-Loser-bracket two-pass algorithm. First pass places the melodic line greedily. Second pass fits simultaneously-played notes (same column in the tab) near their companion notes on adjacent strings. The only algorithm that correctly handles chords; partial positions are returned when a chord partner can't fit the span.
+Loser-bracket two-pass algorithm. First pass places the melodic line greedily. Second pass fits simultaneously-played notes (same column in the tab) near their companion notes on adjacent strings. The only algorithm that correctly handles chords; partial positions are returned when a chord partner can't fit the span. Also used internally by `ChordService` to generate voicings.
 
 All algorithms filter out positions with any note above fret 15 or with a span exceeding the lick's original fret range (minimum 4 frets).
 
@@ -163,6 +260,30 @@ String                 — column-aligned ASCII tab using instrument's string la
 
 ---
 
+## Chord sheet pipeline
+
+```
+rawChordSheet (plain text)
+  │
+  ▼  ChordSheetParser.parse
+List<ChordLyric>       — chord row + lyric row pairs, section headers, spacers
+  │                       font size auto-computed per pair; long lines broken at word boundaries
+  ▼  persist Song
+```
+
+```
+GET /api/song/{id}?semitones=N
+  │
+  ▼  fetch Song
+  │
+  ▼  ChordTransposer.transpose(chordLines, semitones)
+List<ChordLyric>       — all chord tokens shifted N semitones; slash chords handled per-root
+  │
+  ▼  SongDetailResponse
+```
+
+---
+
 ## Tab format
 
 Positions are rendered as standard ASCII tab. String labels reflect the actual tuning:
@@ -194,43 +315,56 @@ Technique characters appear between notes in the same slot:
 ```
 src/main/java/org/jones/licklibrary/
 ├── controller/
-│   ├── LickController.java          REST endpoints
-│   └── LickNotFoundException.java
+│   ├── LickController.java              REST endpoints for licks
+│   ├── LickNotFoundException.java
+│   ├── SongController.java              REST endpoints for songs
+│   └── SongNotFoundException.java
 ├── service/
-│   ├── LickService.java             Upload + lookup orchestration, tab parsing
-│   ├── LickUtils.java               toIntervals, toAbsoluteNotes, hashIntervals, detectMode
-│   ├── PositionBuilder.java         Abstract base: findNeckPositions, findCandidates
+│   ├── LickService.java                 Upload + lookup orchestration, tab parsing
+│   ├── LickUtils.java                   toIntervals, toAbsoluteNotes, hashIntervals, detectMode
+│   ├── SongService.java                 Song CRUD, delegates to parser + transposer
+│   ├── ChordService.java                Chord quality → interval maps; voicings via LoserBracket
+│   ├── ChordSheetParser.java            Raw text → List<ChordLyric>; font sizing, line breaking
+│   ├── ChordTransposer.java             Transposes ChordLyric list by N semitones
+│   ├── PositionBuilder.java             Abstract base: findNeckPositions, findCandidates
 │   ├── GreedyPositionBuilder.java
 │   ├── DfsPositionBuilder.java
 │   └── LoserBracketPositionBuilder.java
 ├── model/
-│   ├── Lick.java                    JPA entity
-│   ├── TabNote.java                 record — raw parsed note
-│   ├── IntervalNote.java            record — interval + technique + columnIndex
-│   ├── IntervalNoteListConverter.java  JPA converter for List<IntervalNote>
-│   ├── Position.java                record — List<TabNote> + toTabString()
-│   ├── LickResponse.java            API response (summary and detail shapes)
+│   ├── Lick.java                        JPA entity
+│   ├── TabNote.java                     record — raw parsed note
+│   ├── IntervalNote.java                record — interval + technique + columnIndex
+│   ├── IntervalNoteListConverter.java   JPA converter for List<IntervalNote>
+│   ├── Position.java                    record — List<TabNote> + toTabString()
+│   ├── LickResponse.java                API response (summary and detail shapes)
 │   ├── UploadLickRequest.java
 │   ├── PositionResponse.java
-│   ├── PositionCache.java           JPA entity (reserved for caching)
-│   └── Mode.java                    enum
+│   ├── PositionCache.java               JPA entity (reserved for caching)
+│   ├── Mode.java                        enum
+│   ├── Song.java                        JPA entity
+│   ├── ChordLyric.java                  record — chords, lyrics, fontSize
+│   ├── ChordLyricListConverter.java     JPA converter (JSON via Jackson)
+│   ├── UploadSongRequest.java
+│   ├── SongDetailResponse.java
+│   └── SongSummaryResponse.java
 ├── constants/
-│   ├── Note.java                    enum — 12-tone chromatic scale
-│   ├── Interval.java                enum — scale degrees with display names
-│   ├── Instrument.java              interface
-│   ├── Guitar.java                  STANDARD, DROP_D, OPEN_G, OPEN_D, DADGAD
+│   ├── Note.java                        enum — 12-tone chromatic scale
+│   ├── Interval.java                    enum — scale degrees with display names
+│   ├── Instrument.java                  interface
+│   ├── Guitar.java                      STANDARD, DROP_D, OPEN_G, OPEN_D, DADGAD
 │   ├── Bass.java
 │   ├── Ukulele.java
 │   ├── Mandolin.java
 │   ├── Banjo.java
-│   ├── CustomInstrument.java        built from tuning string at request time
-│   ├── InstrumentRegistry.java      name → Instrument lookup
-│   └── NoteParser.java              "C#" / "Bb" → Note enum
+│   ├── CustomInstrument.java            built from tuning string at request time
+│   ├── InstrumentRegistry.java          name → Instrument lookup
+│   └── NoteParser.java                  "C#" / "Bb" → Note enum
 ├── repository/
 │   ├── LickRepository.java
+│   ├── SongRepository.java
 │   └── PositionCacheRepository.java
 └── config/
-    └── CorsConfig.java              allows localhost:5173
+    └── CorsConfig.java                  allows all origins on /api/**
 ```
 
 ---
@@ -249,6 +383,23 @@ src/main/java/org/jones/licklibrary/
 | `tab_span` | INTEGER | max fret − min fret of original tab; used as span limit |
 | `endpoint_degree` | VARCHAR(16) | Reserved for solo chaining |
 | `created_at` | TIMESTAMP | |
+
+### `Song` entity
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | PK |
+| `title` | VARCHAR | |
+| `artist` | VARCHAR | |
+| `original_key` | VARCHAR | |
+| `capo` | INTEGER | |
+| `tempo` | INTEGER | |
+| `chord_lines` | TEXT | JSON list of ChordLyric objects |
+| `num_columns` | INTEGER | 2 or 3, computed at parse time |
+| `raw_chord_sheet` | TEXT | Original upload; used by reparse |
+| `created_at` | TIMESTAMP | |
+
+`ChordLyric` record: `chords` (String), `lyrics` (String), `fontSize` (double). Section headers and spacers are stored as ChordLyric rows with empty fields.
 
 ### `position_cache` entity
 
@@ -277,5 +428,6 @@ Tests use an in-memory H2 database (`jdbc:h2:mem:testdb`, `create-drop`) so they
 
 - **Banjo 5th-string drone** — the fifth string starts at fret 5, not fret 0. `minFret()` override not yet implemented; positions involving string 5 may be incorrect.
 - **Position cache not wired** — the `position_cache` table exists but `resolvePositions` does not read from it; positions are recomputed on every `GET /api/lick/{id}` call.
-- **Pagination** — `GET /api/lick` returns all licks with no paging.
+- **Pagination** — `GET /api/lick` and `GET /api/song` return all records with no paging.
 - **Simultaneous notes in DFS** — `DfsPositionBuilder` iterates notes sequentially; chords are only handled correctly by `LoserBracketPositionBuilder` (`algo=chord`).
+- **Upload instrument** — tab parsing always uses `Guitar.STANDARD`; the upload endpoint does not accept an instrument parameter.
