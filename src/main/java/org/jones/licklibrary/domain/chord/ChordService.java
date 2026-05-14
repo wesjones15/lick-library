@@ -29,7 +29,11 @@ public class ChordService {
         Map.entry("6",     List.of(Interval.ONE, Interval.THREE, Interval.FIVE, Interval.SIX)),
         Map.entry("m6",    List.of(Interval.ONE, Interval.FLAT_THREE, Interval.FIVE, Interval.SIX)),
         Map.entry("dim7",  List.of(Interval.ONE, Interval.FLAT_THREE, Interval.FLAT_FIVE, Interval.SIX)),
-        Map.entry("m7b5",  List.of(Interval.ONE, Interval.FLAT_THREE, Interval.FLAT_FIVE, Interval.FLAT_SEVEN))
+        Map.entry("m7b5",  List.of(Interval.ONE, Interval.FLAT_THREE, Interval.FLAT_FIVE, Interval.FLAT_SEVEN)),
+        Map.entry("/4",   List.of()),
+        Map.entry("m/3",  List.of()),
+        Map.entry("7/4",  List.of()),
+        Map.entry("/7",   List.of())
     );
 
     private final ChordShapeRepository shapeRepo;
