@@ -20,7 +20,7 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 (done) 3. For the position logic, I want to add a third option which is based on greedy. It will do greedy based on single-note-at-a-time approach. if a repeat columnIndex is encountered, that IntervalNote is added to a "loser bracket" List. Once the first pass is complete, the loser bracket notes are iterated thru and then placed with consideration for where the parallel note is located
 -- [codebase note] This directly addresses a documented known limitation in CLAUDE.md: "buildPosition iterates absoluteNotes sequentially, which breaks for notes sharing a columnIndex; needs chord-aware handling." The loser bracket idea is a clean way to handle it. Would slot in as algorithm 3 under the abstraction from idea 1.
 
-4. Should I go all the way and just full on add the transposition tool from Ultimate Guitar? we already have the logic built out. This would need to be in conjunction with a feature that displays guitar chord sheets in addition to tabs. I think it could be useful. OMG i could make a web ui for my one-pager tabs. with transposition added. i can automate font size to shrink per line to prevent line breaks, but it would have to match with the chord line above, font wise.
+(done) 4. Should I go all the way and just full on add the transposition tool from Ultimate Guitar? we already have the logic built out. This would need to be in conjunction with a feature that displays guitar chord sheets in addition to tabs. I think it could be useful. OMG i could make a web ui for my one-pager tabs. with transposition added. i can automate font size to shrink per line to prevent line breaks, but it would have to match with the chord line above, font wise.
 -- [codebase note] The transposition math is fully built — converting to intervals and back to any key is exactly what the lookup pipeline already does. The chord sheet rendering (chord names floating above lyric lines, auto font sizing) is a completely separate domain and a large scope expansion. Strong core but effectively two distinct features bundled together.
 
 5. all our algorithms have trouble with longer phrases. perhaps we break long, far traveling phrases up, either at measures or at | or some point we agree upon, to open up options.
@@ -30,12 +30,16 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 -- [codebase note] Approach is designed: detect cursor sitting on a closing | (followed by \n or end of string), insert a - before each line's closing | on all 6 lines simultaneously, recalculate cursor position, then proceed with the overwrite. Paste is already safe — onChange fires for paste and bypasses handleKeyDown entirely, so pasted tabs land in state as-is.
 
 (done) 7. we need to update the tab parsing logic to look at a few steps ahead at a time, in order to account for 2 digit frets and techniques.
--- [codebase note] There's already a TODO comment in LickService.parseTab (lines 68–71) calling this out exactly. The fix is a one-line lookahead: when a digit is found at position j, check if j+1 is also a digit, combine and skip j+1.
+-- [codebase note] There's already a TO-DO comment in LickService.parseTab (lines 68–71) calling this out exactly. The fix is a one-line lookahead: when a digit is found at position j, check if j+1 is also a digit, combine and skip j+1.
 
 8. since the skeleton is here, I want to implement the full CAGED scales for each mode (well for ionian, and everything else is the same with adjusted root note). this can tie into licks. maybe it will turn into a utility for building licks or soloing in different modes.
 -- [codebase note] The interval math is all there. CAGED is 5 fixed fingering patterns for the pentatonic/diatonic scale — you'd be generating positions for a full scale shape rather than a lick sequence. Could reuse findNeckPositions + findCandidates to populate a full 5–7 note pattern.
 -- perhaps we implement by defining a sequence of all notes: 1,b2,2,b3,3,4,b5,5,b6,6,b7,7. and we define ionian(M) by the interval deltas. and we build the modes by iterating over the 12 notes by interval delta.
 -- this is complicated by how i think about these modes. I only learned CAGED with respect to major scale, and i mentally shift when i play minor for example, instead of shifting by note, i shift so like i play the major scale but i mentally consider that the root for minor is just the 6th for major, so i don't have to learn a new scale. but i want to discuss this, as the reason for creating this app at all is to help me learn this stuff.
+-- scrap above, maybe caged scales just get added as a third vertical for the site, as a learning tool for the user.
+  -- what is the digital equivalent of the paper scale cards i learned from?
+  -- we can use the little maths i figured out about scales in this somehow
+    -- like how diatonic ionian G shape is composed of pentatonic G C and D overlayed in the same section
 
 9. what would it take for this webapp to be optimized for 2025 ipad air. I would like to save the 'site' as a shortcut on my home screen, so that when i click on it, it opens as its own app, not as a browser tab.
 -- [codebase note] Pure frontend config — manifest.json, apple-touch-icon, viewport meta, display: standalone. Vite has a PWA plugin (vite-plugin-pwa) that handles most of the boilerplate. No backend touches needed.
@@ -55,7 +59,7 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 15. I want to add a predictor. User provides the key, mode, start of the tab? maybe also provide the chord progression the tab fits over. then we output a sequence of notes that follows the progression or complements the other melody. this may tie into the harmony feature. could use penta or dia tonic caged shapes to make jumps. perhaps prioritize certain phrases in generation.
 -- this would be on another front end screen. get to from navbar
 
-16. Single Screen Song Chord Sheet Display
+(done) 16. Single Screen Song Chord Sheet Display
 -- a chord sheet is a monospaced font document which displays the song lyrics line by line, with corresponding chord changes on the line above the relevant lyrics.
 -- create database for song chord sheets. unique id (hash), formatted song chord sheet string (i want this column to contain the object of the chord sheet for each song, whether we land on raw text, object notation, or an image of some kind for the output result)
 -- create database for songs: songname, artist, key, mode, tempo, capo, unique_id (to pair with other db)(song name is not a unique field, we shouldn't rely on any field here for hash id)
@@ -109,28 +113,26 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 (done) 27. the upload song form should be its own page. upload button should be on songs page tho.
 
 28. fix two gaps in the chord sheet parser (idea 25 follow-up)
-
-gap 1 — font size not recomputed after line breaking (significant)
--- current behavior: when a lyric/chord pair is too long to fit at the minimum font size (6px),
-   it gets broken into two halves, but both halves are assigned MIN_FONT_SIZE (6.0) permanently.
--- correct behavior: after all over-long lines have been broken, recompute the global font size
-   across the full resulting list. the halves are shorter now so the minimum across all pairs
-   will be larger, and the whole sheet should render at a bigger, more readable size.
--- fix: two-pass approach in ChordSheetParser.applyFontSizes:
+-- gap 1 — font size not recomputed after line breaking (significant)
+  -- current behavior: when a lyric/chord pair is too long to fit at the minimum font size (6px),
+     it gets broken into two halves, but both halves are assigned MIN_FONT_SIZE (6.0) permanently.
+  -- correct behavior: after all over-long lines have been broken, recompute the global font size
+     across the full resulting list. the halves are shorter now so the minimum across all pairs
+     will be larger, and the whole sheet should render at a bigger, more readable size.
+  -- fix: two-pass approach in ChordSheetParser.applyFontSizes:
      1. first pass — identify and break all pairs that exceed charLimit; collect results as a flat list
      2. recompute globalFontSize as the minimum font size across that flat list
      3. second pass — apply the recomputed globalFontSize to every non-spacer pair
-
-gap 2 — chord boundary not checked during line break (minor)
--- current behavior: the break point is determined by the last word boundary in the lyrics string only.
-   if the break point happens to fall in the middle of a chord token in the chord string (e.g. "G/B"
-   or "Cmaj7" spans the split index), that chord gets silently truncated on the first half.
--- correct behavior: after finding the lyrics word boundary, also check the chord string at the
-   same index. if the chord string is mid-token at that index (i.e. the char before breakAt is not
-   a space in the chord string), walk breakAt backward until both strings are at a clean boundary.
-   take the more conservative (shorter) of the two — never split a word or a chord.
--- fix: in ChordSheetParser.breakLine(), after finding the lyrics breakAt index, walk back further
-   while chords.charAt(breakAt - 1) != ' ', taking the minimum of the lyrics and chord boundaries.
+-- gap 2 — chord boundary not checked during line break (minor)
+  -- current behavior: the break point is determined by the last word boundary in the lyrics string only.
+     if the break point happens to fall in the middle of a chord token in the chord string (e.g. "G/B"
+     or "Cmaj7" spans the split index), that chord gets silently truncated on the first half.
+  -- correct behavior: after finding the lyrics word boundary, also check the chord string at the
+     same index. if the chord string is mid-token at that index (i.e. the char before breakAt is not
+     a space in the chord string), walk breakAt backward until both strings are at a clean boundary.
+     take the more conservative (shorter) of the two — never split a word or a chord.
+  -- fix: in ChordSheetParser.breakLine(), after finding the lyrics breakAt index, walk back further
+     while chords.charAt(breakAt - 1) != ' ', taking the minimum of the lyrics and chord boundaries.
 
 (done) 29. i want the capo part to be moved over to near the transposition tool. i want the transpose tool to say transpose in little font, above the widget. idk the raw key part confuses me when the song is capoed. lets make capo adjsutable too. like key of B in capo 4 will yield leading chord of G
 
@@ -142,7 +144,7 @@ gap 2 — chord boundary not checked during line break (minor)
 
 33. add users. make account. account creation loop should require the admin get a 2fa. users can upload songs, view songs, make and view playlists. users can only delete their own songs. admin can delete anything
 
-(done) (done) 34. the transpose number should go back to zero when we hit the original key again
+(done) 34. the transpose number should go back to zero when we hit the original key again
 
 (done) 35. can we prevent the song text from jumping when we transpose? it is distracting
 
@@ -161,11 +163,15 @@ gap 2 — chord boundary not checked during line break (minor)
 
 41. update chord display to handle G/B slash chords.
 
-42. show chords button on song title bar. on click shows list of all chords for song,
+42. add show chords button on song title bar. on click shows list of all chords for song,
 
 43. update chord building logic to use real and common voicings.
 -- perhaps allow user to provide voicings on upload?
+-- make the display modal a little wider, show shape instead of numbers?
+  -- this can be alt display instead of replacing the current tab syntax
+-- would it make more sense for the backend chord logic to use tabNote instead of intervalNote?
 
+44. update readme on frontend and backend to reflect new feature set
 
 MACHINE GUIDED SUPPLEMENT TO IDEA BUCKET:
 
