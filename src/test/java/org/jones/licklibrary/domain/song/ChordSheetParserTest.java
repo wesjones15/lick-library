@@ -95,7 +95,89 @@ class ChordSheetParserTest {
 
     @Test
     void numColumnsIsReasonable() {
-        assertThat(result.numColumns()).isBetween(2, 3);
+        assertThat(result.numColumns()).isBetween(1, 4);
+    }
+
+    @Test
+    void sampleSongFitsThreeColumnsWithinContentHeight() {
+        assertThat(result.numColumns()).isEqualTo(3);
+
+        double fontSize = result.chordLines().stream()
+                .filter(cl -> !cl.chords().isBlank() || !cl.lyrics().isBlank())
+                .mapToDouble(ChordLyric::fontSize)
+                .findFirst()
+                .orElseThrow();
+        assertThat(fontSize).isBetween(6.0, 12.0);
+
+        int pairsPerCol = (int) Math.ceil((double) result.chordLines().size() / result.numColumns());
+        double estimatedHeight = pairsPerCol * 2.5 * fontSize;
+        assertThat(estimatedHeight).isLessThanOrEqualTo(620.0);
+    }
+
+    @Test
+    void shortSongFitsInOneColumn() {
+        String raw = "G  Em  C  D\nFirst verse lyrics here\n\nG  Em  C  D\nSecond verse lyrics\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        assertThat(r.numColumns()).isEqualTo(1);
+    }
+
+    @Test
+    void longSongUsesMultipleColumns() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 60; i++) {
+            sb.append("G  Em  C  D\nVerse lyrics line ").append(i).append("\n");
+        }
+        ChordSheetParser.ParseResult r = parser.parse(sb.toString());
+        assertThat(r.numColumns()).isGreaterThanOrEqualTo(3);
+    }
+
+    @Test
+    void pipeSeparatorsRecognizedAsChordLine() {
+        String raw = "| G Am | F C |\nSome lyrics here\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        ChordLyric first = r.chordLines().get(0);
+        assertThat(first.chords()).contains("G");
+        assertThat(first.lyrics()).contains("Some lyrics");
+    }
+
+    @Test
+    void hyphenSeparatorsRecognizedAsChordLine() {
+        String raw = "C - G/B - Am - G\nSome lyrics here\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        ChordLyric first = r.chordLines().get(0);
+        assertThat(first.chords()).contains("C");
+        assertThat(first.chords()).contains("G/B");
+        assertThat(first.lyrics()).contains("Some lyrics");
+    }
+
+    @Test
+    void trailingAsterisksRecognizedAsChordLine() {
+        String raw = "G Gm* D\nSome lyrics\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        ChordLyric first = r.chordLines().get(0);
+        assertThat(first.chords()).contains("Gm*");
+        assertThat(first.lyrics()).contains("Some lyrics");
+    }
+
+    @Test
+    void pureAnnotationLineIsLyricLine() {
+        // (Verse 2) must not be the first line, which would be stripped as metadata;
+        // in the middle of a sheet it normalizes to blank after paren-removal → lyric row
+        String raw = "G Em\nfirst line\n(Verse 2)\nSome lyrics here\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        boolean annotationIsInLyrics = r.chordLines().stream()
+                .anyMatch(cl -> cl.lyrics().contains("Verse 2"));
+        assertThat(annotationIsInLyrics).isTrue();
+    }
+
+    @Test
+    void parentheticalAnnotationDoesNotBlockChordLineDetection() {
+        String raw = "G (or Bm) Em D\nSome lyrics here\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        ChordLyric first = r.chordLines().get(0);
+        assertThat(first.chords()).contains("G");
+        assertThat(first.chords()).contains("(or Bm)");
+        assertThat(first.lyrics()).contains("Some lyrics");
     }
 
     @Test

@@ -301,7 +301,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 70. chord upload for ??? is failing for G/F#</summary>
+<summary>[x] 70. chord upload for ??? is failing for G/F#</summary>
 
 - is this because we have not defined a G with quality /7 ?
 - chord upload for existing chords works (tested with adding missing B7 voicing)
@@ -313,6 +313,53 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 - Warning/confirmation box before song deletion
 
+</details>
+
+<details>
+<summary>[x] 25. Chord parser gaps (font recompute + boundary)</summary>
+
+- Long line auto-break: chord/lyric pair too long → split into two halves; enforce same length via trailing spaces
+- Default behavior: shrink font, but enforce minimum readable size and max line length; break at last word before limit
+- After splitting, strip leading spaces from both strings in second ChordLyric symmetrically
+- Err on shorter lines during breaking without splitting a chord or a word
+
+</details>
+
+<details>
+<summary>[x] 28. Chord sheet parser gaps (font + boundary)</summary>
+
+- Gap 1 — font size not recomputed after line breaking: after breaking over-long pairs, recompute globalFontSize across full resulting list; halves are shorter so minimum will be larger → more readable
+- Fix: two-pass in ChordSheetParser.applyFontSizes — first break all over-long pairs, recompute globalFontSize, then apply to every non-spacer pair
+- Gap 2 — chord boundary not checked during break: if split index falls mid-token in chord string (e.g. "G/B"), chord gets silently truncated
+- Fix: in ChordSheetParser.breakLine(), after finding lyrics word boundary, walk back while chords.charAt(breakAt - 1) != ' '; take the more conservative (shorter) of lyrics and chord boundaries
+
+</details>
+
+<details>
+<summary>[x] 57. handle |,-,* chars in chordline</summary>
+
+- | G#m7  G#m | Gm7 | is not parsed as chords in a tab, so we need to fix that.
+- (G)              C - G/B - Am - G isn't recognized as a chordline
+  - discuss: should i just not allow hyphen in chordline
+-      D (or Bm)    E                A       A 
+  - should this be allowed?
+- E                            E                E              A (coda riff)
+  - should this be allowed? how can we handle this without defining chordlines explicitly.
+  - chordsheet upload is pretty simple and it should stay that way.
+- D F#7 G Gm**
+  - allow asterisks in chordlines, but don't parse or bold them
+- should words be allowed just in paren in a chordline?
+  - sometimes lyrics have parentheses too
+  - sometimes chords are in paren
+  - any character in a chordline that isnt part of a chord should be non-bold and black font
+
+</details>
+<details>
+<summary>[x] 62. fix display for long chord sheets</summary>
+
+- entry for vampire doesn't fit onscreen properly.
+- update parsing to allow for more columns, smaller font
+-
 </details>
 
 
@@ -362,26 +409,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 - Select key and mode; overlay scale positions as dim dots on the neck
 - Mic input identifies pitch live and highlights corresponding note on neck
 - Depends on #18 (mic pitch detection) and #19 (neck visualization)
-
-</details>
-
-<details>
-<summary>[ ] 25. Chord parser gaps (font recompute + boundary)</summary>
-
-- Long line auto-break: chord/lyric pair too long → split into two halves; enforce same length via trailing spaces
-- Default behavior: shrink font, but enforce minimum readable size and max line length; break at last word before limit
-- After splitting, strip leading spaces from both strings in second ChordLyric symmetrically
-- Err on shorter lines during breaking without splitting a chord or a word
-
-</details>
-
-<details>
-<summary>[ ] 28. Chord sheet parser gaps (font + boundary)</summary>
-
-- Gap 1 — font size not recomputed after line breaking: after breaking over-long pairs, recompute globalFontSize across full resulting list; halves are shorter so minimum will be larger → more readable
-- Fix: two-pass in ChordSheetParser.applyFontSizes — first break all over-long pairs, recompute globalFontSize, then apply to every non-spacer pair
-- Gap 2 — chord boundary not checked during break: if split index falls mid-token in chord string (e.g. "G/B"), chord gets silently truncated
-- Fix: in ChordSheetParser.breakLine(), after finding lyrics word boundary, walk back while chords.charAt(breakAt - 1) != ' '; take the more conservative (shorter) of lyrics and chord boundaries
 
 </details>
 
@@ -437,26 +464,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 57. handle |,-,* chars in chordline</summary>
-
-- | G#m7  G#m | Gm7 | is not parsed as chords in a tab, so we need to fix that.
-- (G)              C - G/B - Am - G isn't recognized as a chordline
-  - discuss: should i just not allow hyphen in chordline
--      D (or Bm)    E                A       A 
-  - should this be allowed?
-- E                            E                E              A (coda riff)
-  - should this be allowed? how can we handle this without defining chordlines explicitly.
-  - chordsheet upload is pretty simple and it should stay that way.
-- D F#7 G Gm**
-  - allow asterisks in chordlines, but don't parse or bold them
-- should words be allowed just in paren in a chordline?
-  - sometimes lyrics have parentheses too
-  - sometimes chords are in paren
-  - any character in a chordline that isnt part of a chord should be non-bold and black font
-
-</details>
-
-<details>
 <summary>[ ] 59. Songs Library enhancement</summary>
 
 - make list sortable and filterable.
@@ -464,14 +471,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
   - filter by artist
   - sort by key
 - pagination
-</details>
-
-<details>
-<summary>[ ] 62. fix display for long chord sheets</summary>
-
-- entry for vampire doesn't fit onscreen properly.
-- update parsing to allow for more columns, smaller font
--
 </details>
 
 <details>
@@ -526,6 +525,15 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 - currently all song keys are assumed to be Major. need to add support for minor key etc.
 - i'm a nerd for relative minor relative major so maybe that gets considered later on in Music Theory section
+</details>
+
+<details>
+<summary>[ ] 73. song parser needs another pass</summary>
+
+- I am observing a relatively short song get parsed over-eagerly.
+  - expectation: fewer, longer columns
+  - current: song is shrunk to fit 4 columns, but each column is so short, that it covers only a third of the length of the page
+- the point of the parser is to make the biggest font, and the fewest columns, while still fitting the whole song on one page without scrolling
 </details>
 
 

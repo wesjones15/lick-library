@@ -15,11 +15,14 @@ public class ChordSheetParser {
             "^(NC|N\\.C\\.|[A-G][#b]?[a-zA-Z0-9]*(/[A-G][#b]?[a-zA-Z0-9]*)?)$"
     );
 
-    private static final double CONTENT_WIDTH   = 1100.0;
+    private static final double CONTENT_WIDTH    = 1100.0;
+    private static final double CONTENT_HEIGHT   = 620.0;  // iPad Air landscape minus navbar + header
     private static final double CHAR_WIDTH_RATIO = 0.6;
-    private static final double MAX_FONT_SIZE   = 12.0;
-    private static final double MIN_FONT_SIZE   = 6.0;
+    private static final double LINE_HEIGHT_FACTOR = 2.5;  // 2 lines × leading-tight (1.25)
+    private static final double MAX_FONT_SIZE    = 12.0;
+    private static final double MIN_FONT_SIZE    = 6.0;
     private static final double DEFAULT_FONT_SIZE = 8.0;
+    private static final int    MAX_COLUMNS      = 4;
 
     public record ParseResult(List<ChordLyric> chordLines, int numColumns) {}
 
@@ -27,7 +30,7 @@ public class ChordSheetParser {
         String[] lines = rawText.split("\n");
         List<String> stripped = stripMetadata(lines);
         List<ChordLyric> pairs = pairLines(stripped);
-        int numColumns = pairs.size() <= 20 ? 2 : pairs.size() <= 45 ? 3 : 4;
+        int numColumns = selectColumns(pairs);
         double columnWidth = CONTENT_WIDTH / numColumns;
         List<ChordLyric> sized = applyFontSizes(pairs, columnWidth);
         return new ParseResult(sized, numColumns);
@@ -102,36 +105,24 @@ public class ChordSheetParser {
         return s + " ".repeat(len - s.length());
     }
 
+    private int selectColumns(List<ChordLyric> pairs) {
+        for (int n = 1; n <= MAX_COLUMNS; n++) {
+            double colWidth = CONTENT_WIDTH / n;
+            double charLimit = colWidth / (MIN_FONT_SIZE * CHAR_WIDTH_RATIO);
+            List<ChordLyric> broken = breakOversized(pairs, charLimit);
+            double fontSize = computeGlobalFontSize(broken, colWidth);
+            int pairsPerCol = (int) Math.ceil((double) broken.size() / n);
+            if (pairsPerCol * LINE_HEIGHT_FACTOR * fontSize <= CONTENT_HEIGHT) {
+                return n;
+            }
+        }
+        return MAX_COLUMNS;
+    }
+
     private List<ChordLyric> applyFontSizes(List<ChordLyric> pairs, double columnWidth) {
         double charLimit = columnWidth / (MIN_FONT_SIZE * CHAR_WIDTH_RATIO);
-
-        // Step 1: break oversized pairs first
-        List<ChordLyric> broken = new ArrayList<>();
-        for (ChordLyric pair : pairs) {
-            if (pair.chords().isBlank() && pair.lyrics().isBlank()) {
-                broken.add(new ChordLyric("", "", DEFAULT_FONT_SIZE));
-                continue;
-            }
-            int maxLen = Math.max(pair.chords().length(), pair.lyrics().length());
-            if (maxLen > charLimit) {
-                broken.addAll(breakLine(pair, (int) charLimit, MIN_FONT_SIZE));
-            } else {
-                broken.add(pair);
-            }
-        }
-
-        // Step 2: recompute globalFontSize from post-break list (shorter halves allow larger font)
-        double globalFontSize = MAX_FONT_SIZE;
-        for (ChordLyric pair : broken) {
-            if (pair.chords().isBlank() && pair.lyrics().isBlank()) continue;
-            int maxLen = Math.max(pair.chords().length(), pair.lyrics().length());
-            if (maxLen == 0) continue;
-            double size = columnWidth / (maxLen * CHAR_WIDTH_RATIO);
-            globalFontSize = Math.min(globalFontSize, size);
-        }
-        globalFontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, globalFontSize));
-
-        // Step 3: apply globalFontSize uniformly to all non-spacer pairs
+        List<ChordLyric> broken = breakOversized(pairs, charLimit);
+        double globalFontSize = computeGlobalFontSize(broken, columnWidth);
         List<ChordLyric> result = new ArrayList<>();
         for (ChordLyric pair : broken) {
             if (pair.chords().isBlank() && pair.lyrics().isBlank()) {
@@ -141,6 +132,34 @@ public class ChordSheetParser {
             }
         }
         return result;
+    }
+
+    private List<ChordLyric> breakOversized(List<ChordLyric> pairs, double charLimit) {
+        List<ChordLyric> result = new ArrayList<>();
+        for (ChordLyric pair : pairs) {
+            if (pair.chords().isBlank() && pair.lyrics().isBlank()) {
+                result.add(new ChordLyric("", "", DEFAULT_FONT_SIZE));
+                continue;
+            }
+            int maxLen = Math.max(pair.chords().length(), pair.lyrics().length());
+            if (maxLen > charLimit) {
+                result.addAll(breakLine(pair, (int) charLimit, MIN_FONT_SIZE));
+            } else {
+                result.add(pair);
+            }
+        }
+        return result;
+    }
+
+    private double computeGlobalFontSize(List<ChordLyric> broken, double columnWidth) {
+        double size = MAX_FONT_SIZE;
+        for (ChordLyric pair : broken) {
+            if (pair.chords().isBlank() && pair.lyrics().isBlank()) continue;
+            int maxLen = Math.max(pair.chords().length(), pair.lyrics().length());
+            if (maxLen == 0) continue;
+            size = Math.min(size, columnWidth / (maxLen * CHAR_WIDTH_RATIO));
+        }
+        return Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, size));
     }
 
     private List<ChordLyric> breakLine(ChordLyric pair, int charLimit, double fontSize) {
