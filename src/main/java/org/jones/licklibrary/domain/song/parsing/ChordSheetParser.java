@@ -16,13 +16,15 @@ public class ChordSheetParser {
     );
 
     private static final double CONTENT_WIDTH    = 1100.0;
-    private static final double CONTENT_HEIGHT   = 620.0;  // iPad Air landscape minus navbar + header
+    private static final double CONTENT_HEIGHT   = 660.0;  // iPad Air landscape minus navbar + header
     private static final double CHAR_WIDTH_RATIO = 0.6;
     private static final double LINE_HEIGHT_FACTOR = 2.5;  // 2 lines × leading-tight (1.25)
-    private static final double MAX_FONT_SIZE    = 12.0;
-    private static final double MIN_FONT_SIZE    = 6.0;
+    private static final double MAX_FONT_SIZE    = 20.0;
+    private static final double MIN_FONT_SIZE    = 8.0;
     private static final double DEFAULT_FONT_SIZE = 8.0;
     private static final int    MAX_COLUMNS      = 4;
+
+    private record ColumnPlan(int numColumns, double effectiveFont) {}
 
     public record ParseResult(List<ChordLyric> chordLines, int numColumns) {}
 
@@ -30,10 +32,10 @@ public class ChordSheetParser {
         String[] lines = rawText.split("\n");
         List<String> stripped = stripMetadata(lines);
         List<ChordLyric> pairs = pairLines(stripped);
-        int numColumns = selectColumns(pairs);
-        double columnWidth = CONTENT_WIDTH / numColumns;
-        List<ChordLyric> sized = applyFontSizes(pairs, columnWidth);
-        return new ParseResult(sized, numColumns);
+        ColumnPlan plan = selectColumnPlan(pairs);
+        double columnWidth = CONTENT_WIDTH / plan.numColumns();
+        List<ChordLyric> sized = applyFontSizes(pairs, columnWidth, plan.effectiveFont());
+        return new ParseResult(sized, plan.numColumns());
     }
 
     private List<String> stripMetadata(String[] lines) {
@@ -105,24 +107,25 @@ public class ChordSheetParser {
         return s + " ".repeat(len - s.length());
     }
 
-    private int selectColumns(List<ChordLyric> pairs) {
+    private ColumnPlan selectColumnPlan(List<ChordLyric> pairs) {
         for (int n = 1; n <= MAX_COLUMNS; n++) {
             double colWidth = CONTENT_WIDTH / n;
             double charLimit = colWidth / (MIN_FONT_SIZE * CHAR_WIDTH_RATIO);
             List<ChordLyric> broken = breakOversized(pairs, charLimit);
-            double fontSize = computeGlobalFontSize(broken, colWidth);
+            double widthFont = computeGlobalFontSize(broken, colWidth);
             int pairsPerCol = (int) Math.ceil((double) broken.size() / n);
-            if (pairsPerCol * LINE_HEIGHT_FACTOR * fontSize <= CONTENT_HEIGHT) {
-                return n;
+            double heightFont = CONTENT_HEIGHT / (pairsPerCol * LINE_HEIGHT_FACTOR);
+            double effectiveFont = Math.min(widthFont, heightFont);
+            if (effectiveFont >= MIN_FONT_SIZE) {
+                return new ColumnPlan(n, effectiveFont);
             }
         }
-        return MAX_COLUMNS;
+        return new ColumnPlan(MAX_COLUMNS, MIN_FONT_SIZE);
     }
 
-    private List<ChordLyric> applyFontSizes(List<ChordLyric> pairs, double columnWidth) {
+    private List<ChordLyric> applyFontSizes(List<ChordLyric> pairs, double columnWidth, double globalFontSize) {
         double charLimit = columnWidth / (MIN_FONT_SIZE * CHAR_WIDTH_RATIO);
         List<ChordLyric> broken = breakOversized(pairs, charLimit);
-        double globalFontSize = computeGlobalFontSize(broken, columnWidth);
         List<ChordLyric> result = new ArrayList<>();
         for (ChordLyric pair : broken) {
             if (pair.chords().isBlank() && pair.lyrics().isBlank()) {

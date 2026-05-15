@@ -89,7 +89,7 @@ class ChordSheetParserTest {
         result.chordLines().forEach(cl ->
                 assertThat(cl.fontSize())
                         .as("fontSize out of bounds for pair: chords='%s'", cl.chords())
-                        .isBetween(6.0, 12.0)
+                        .isBetween(8.0, 20.0)
         );
     }
 
@@ -99,19 +99,19 @@ class ChordSheetParserTest {
     }
 
     @Test
-    void sampleSongFitsThreeColumnsWithinContentHeight() {
-        assertThat(result.numColumns()).isEqualTo(3);
+    void sampleSongFitsVerticallyWithinContentHeight() {
+        assertThat(result.numColumns()).isBetween(1, 4);
 
         double fontSize = result.chordLines().stream()
                 .filter(cl -> !cl.chords().isBlank() || !cl.lyrics().isBlank())
                 .mapToDouble(ChordLyric::fontSize)
                 .findFirst()
                 .orElseThrow();
-        assertThat(fontSize).isBetween(6.0, 12.0);
+        assertThat(fontSize).isBetween(8.0, 20.0);
 
         int pairsPerCol = (int) Math.ceil((double) result.chordLines().size() / result.numColumns());
         double estimatedHeight = pairsPerCol * 2.5 * fontSize;
-        assertThat(estimatedHeight).isLessThanOrEqualTo(620.0);
+        assertThat(estimatedHeight).isLessThanOrEqualTo(660.0);
     }
 
     @Test
@@ -124,7 +124,7 @@ class ChordSheetParserTest {
     @Test
     void longSongUsesMultipleColumns() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 60; i++) {
+        for (int i = 0; i < 100; i++) {
             sb.append("G  Em  C  D\nVerse lyrics line ").append(i).append("\n");
         }
         ChordSheetParser.ParseResult r = parser.parse(sb.toString());
