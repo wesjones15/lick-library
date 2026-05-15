@@ -27,7 +27,7 @@ public class ChordSheetParser {
         String[] lines = rawText.split("\n");
         List<String> stripped = stripMetadata(lines);
         List<ChordLyric> pairs = pairLines(stripped);
-        int numColumns = pairs.size() <= 30 ? 2 : 3;
+        int numColumns = pairs.size() <= 20 ? 2 : pairs.size() <= 45 ? 3 : 4;
         double columnWidth = CONTENT_WIDTH / numColumns;
         List<ChordLyric> sized = applyFontSizes(pairs, columnWidth);
         return new ParseResult(sized, numColumns);
@@ -43,10 +43,15 @@ public class ChordSheetParser {
 
     private boolean isChordLine(String line) {
         if (line.isBlank()) return false;
-        for (String token : line.trim().split("\\s+")) {
-            String cleaned = token.replaceAll("^\\((.+)\\)$", "$1").replaceAll("\\(.*?\\)", "");
-            if (cleaned.isEmpty()) continue;
-            if (!CHORD_TOKEN.matcher(cleaned).matches()) return false;
+        String normalized = line
+            .replaceAll("\\(.*?\\)", " ")   // remove (...) annotation groups
+            .replaceAll("[|*]", " ")         // | and * → space
+            .replaceAll("\\s+-\\s+", " ")   // " - " chord separators → space
+            .trim();
+        if (normalized.isBlank()) return false;
+        for (String token : normalized.split("\\s+")) {
+            if (token.isEmpty()) continue;
+            if (!CHORD_TOKEN.matcher(token).matches()) return false;
         }
         return true;
     }
@@ -98,8 +103,26 @@ public class ChordSheetParser {
     }
 
     private List<ChordLyric> applyFontSizes(List<ChordLyric> pairs, double columnWidth) {
-        double globalFontSize = MAX_FONT_SIZE;
+        double charLimit = columnWidth / (MIN_FONT_SIZE * CHAR_WIDTH_RATIO);
+
+        // Step 1: break oversized pairs first
+        List<ChordLyric> broken = new ArrayList<>();
         for (ChordLyric pair : pairs) {
+            if (pair.chords().isBlank() && pair.lyrics().isBlank()) {
+                broken.add(new ChordLyric("", "", DEFAULT_FONT_SIZE));
+                continue;
+            }
+            int maxLen = Math.max(pair.chords().length(), pair.lyrics().length());
+            if (maxLen > charLimit) {
+                broken.addAll(breakLine(pair, (int) charLimit, MIN_FONT_SIZE));
+            } else {
+                broken.add(pair);
+            }
+        }
+
+        // Step 2: recompute globalFontSize from post-break list (shorter halves allow larger font)
+        double globalFontSize = MAX_FONT_SIZE;
+        for (ChordLyric pair : broken) {
             if (pair.chords().isBlank() && pair.lyrics().isBlank()) continue;
             int maxLen = Math.max(pair.chords().length(), pair.lyrics().length());
             if (maxLen == 0) continue;
@@ -108,16 +131,11 @@ public class ChordSheetParser {
         }
         globalFontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, globalFontSize));
 
+        // Step 3: apply globalFontSize uniformly to all non-spacer pairs
         List<ChordLyric> result = new ArrayList<>();
-        double charLimit = columnWidth / (MIN_FONT_SIZE * CHAR_WIDTH_RATIO);
-        for (ChordLyric pair : pairs) {
+        for (ChordLyric pair : broken) {
             if (pair.chords().isBlank() && pair.lyrics().isBlank()) {
                 result.add(new ChordLyric("", "", DEFAULT_FONT_SIZE));
-                continue;
-            }
-            int maxLen = Math.max(pair.chords().length(), pair.lyrics().length());
-            if (maxLen > charLimit) {
-                result.addAll(breakLine(pair, (int) charLimit, MIN_FONT_SIZE));
             } else {
                 result.add(new ChordLyric(pair.chords(), pair.lyrics(), globalFontSize));
             }
@@ -129,21 +147,31 @@ public class ChordSheetParser {
         String lyrics = pair.lyrics();
         String chords = pair.chords();
 
-        int breakAt = Math.min(charLimit, lyrics.length());
-        while (breakAt > 0 && breakAt < lyrics.length() && lyrics.charAt(breakAt - 1) != ' ') {
-            breakAt--;
+        // Find word break in lyrics
+        int lyricsBreak = Math.min(charLimit, lyrics.length());
+        while (lyricsBreak > 0 && lyricsBreak < lyrics.length() && lyrics.charAt(lyricsBreak - 1) != ' ') {
+            lyricsBreak--;
         }
-        if (breakAt == 0) breakAt = Math.min(charLimit, lyrics.length());
+        if (lyricsBreak == 0) lyricsBreak = Math.min(charLimit, lyrics.length());
 
-        String lyrics1 = lyrics.substring(0, breakAt);
+        // Find word break in chords independently to avoid truncating mid-token
+        int chordsBreak = Math.min(charLimit, chords.length());
+        while (chordsBreak > 0 && chordsBreak < chords.length() && chords.charAt(chordsBreak - 1) != ' ') {
+            chordsBreak--;
+        }
+        if (chordsBreak == 0) chordsBreak = Math.min(charLimit, chords.length());
+
+        // Use the more conservative break to ensure neither string is cut mid-token
+        int breakAt = Math.min(lyricsBreak, chordsBreak);
+
+        String lyrics1 = lyrics.substring(0, Math.min(breakAt, lyrics.length()));
         String lyrics2 = lyrics.length() > breakAt ? lyrics.substring(breakAt) : "";
         String chords1 = chords.length() >= breakAt ? chords.substring(0, breakAt) : padRight(chords, breakAt);
         String chords2 = chords.length() > breakAt ? chords.substring(breakAt) : "";
 
-        int strip = 0;
-        while (strip < lyrics2.length() && lyrics2.charAt(strip) == ' ') strip++;
-        lyrics2 = lyrics2.substring(strip);
-        chords2 = chords2.length() > strip ? chords2.substring(strip) : "";
+        // Strip leading spaces from each second half independently
+        lyrics2 = lyrics2.stripLeading();
+        chords2 = chords2.stripLeading();
 
         List<ChordLyric> out = new ArrayList<>();
         if (!lyrics1.isBlank() || !chords1.isBlank()) {

@@ -308,6 +308,13 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 - other uncommon qualities are causing errors as well
 </details>
 
+<details>
+<summary>[x] 31. Delete confirmation dialog</summary>
+
+- Warning/confirmation box before song deletion
+
+</details>
+
 
 </details>
 
@@ -375,13 +382,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 - Fix: two-pass in ChordSheetParser.applyFontSizes — first break all over-long pairs, recompute globalFontSize, then apply to every non-spacer pair
 - Gap 2 — chord boundary not checked during break: if split index falls mid-token in chord string (e.g. "G/B"), chord gets silently truncated
 - Fix: in ChordSheetParser.breakLine(), after finding lyrics word boundary, walk back while chords.charAt(breakAt - 1) != ' '; take the more conservative (shorter) of lyrics and chord boundaries
-
-</details>
-
-<details>
-<summary>[ ] 31. Delete confirmation dialog</summary>
-
-- Warning/confirmation box before song deletion
 
 </details>
 
