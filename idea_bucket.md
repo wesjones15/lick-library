@@ -267,6 +267,47 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
+<details>
+<summary>[x] 45. song metadata update form</summary>
+
+- button to page with form to submit an update request to song details. allow user to submit revision to song attributes.
+  - Label: "Manage" or some icon
+    - manage icon is clickable in song card from list, and on song toolbar
+  - on Manage song page, allow user to submit changes to tempo, artist, songname, key.
+    - submit button will become clickable if user modifies any above field (these text fields are prepopulated) and submission updates values in db
+    - Update Song Chart button exposes big text field to edit the raw guitartab input.
+      - the song attribute fields hide to make room for this field. there is a back button to restore them.
+      - submit button is greyed unless there is change
+      - clicking submit updates db for this song. triggers reparse.
+    - Manage Chords button
+      - this will hide other fields, expose back button to return.
+      - manage chords will list all detected chords for song, and allow user to select that chord and add a voicing for it, using modal from the ??? feature. these voicings will have source:user
+        - since we're using the existing modal, chord updates are submitted per chord, rather than a batch.
+    - Delete Song button
+      - pop up confirmation dialogue "Are you sure? This action cannot be undone."
+      - remove delete button from song list itself
+</details>
+
+<details>
+<summary>[x] 69. fix capo/transpose widget again</summary>
+
+- case: capo 2, key A, chords start with G -> capo:2,shape:G,sound:A
+  - if capo is moved down by 1 -> capo:1,shape:G,sound:G# (chords unchanged)
+  - if capo is moved up by 1 -> capo:3,shape:G,sound:A (chords unchanged)
+  - if transpose +1 -> capo:2,shape:G#,sound:Bb (chords transposed +1)
+  - if transpose -1 -> capo:2,shape:F#,sound:G# (chords transposed -1)
+- currently, shape is getting adjusted by default capo, and it shouldn't
+- changing transpose should not reset the capo.
+</details>
+
+<details>
+<summary>[ ] 70. chord upload for ??? is failing for G/F#</summary>
+
+- is this because we have not defined a G with quality /7 ?
+- chord upload for existing chords works (tested with adding missing B7 voicing)
+- other uncommon qualities are causing errors as well
+</details>
+
 
 </details>
 
@@ -369,27 +410,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 45. song metadata update form</summary>
-
-- button to page with form to submit an update request to song details. allow user to submit revision to song attributes.
-  - Label: "Manage" or some icon
-    - manage icon is clickable in song card from list, and on song toolbar
-  - on Manage song page, allow user to submit changes to tempo, artist, songname, key. 
-    - submit button will become clickable if user modifies any above field (these text fields are prepopulated) and submission updates values in db
-    - Update Song Chart button exposes big text field to edit the raw guitartab input. 
-      - the song attribute fields hide to make room for this field. there is a back button to restore them. 
-      - submit button is greyed unless there is change
-      - clicking submit updates db for this song. triggers reparse.
-    - Manage Chords button 
-      - this will hide other fields, expose back button to return. 
-      - manage chords will list all detected chords for song, and allow user to select that chord and add a voicing for it, using modal from the ??? feature. these voicings will have source:user
-        - since we're using the existing modal, chord updates are submitted per chord, rather than a batch.
-    - Delete Song button
-      - pop up confirmation dialogue "Are you sure? This action cannot be undone."
-      - remove delete button from song list itself
-</details>
-
-<details>
 <summary>[ ] 46. add ability to include tab snippets in chord sheets</summary>
 
 - add GuitarTabLine as object in chordsheet, since some chordsheets include riffs. these can have chord labels above, or not. but will be like 6 lines and we already know how to detect.
@@ -486,12 +506,26 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 <details>
 <summary>[ ] 68. stub out additional details for song page</summary>
-
-- Manage: page to update song metadata
+- Manage: page to update song metadata (right align)
 - Tuning: just display the tuning for the song near where the bpm is?
   - let user change tuning to half step down ?
 - View: user can toggle multi-column view or scrolling view
 - Show Chords: displays all chords and voicings for (current key of) song
+</details>
+
+<details>
+<summary>[ ] 71. enhancement for manage page</summary>
+
+- text field for Update Song Chart should prepopulate with rawTab from song
+- Manage Chords page should show the present voicings
+  - Manage Chords should also permit addition of transposed voicings
+</details>
+
+<details>
+<summary>[ ] 72. Multi-Mode Key Support</summary>
+
+- currently all song keys are assumed to be Major. need to add support for minor key etc.
+- i'm a nerd for relative minor relative major so maybe that gets considered later on in Music Theory section
 </details>
 
 

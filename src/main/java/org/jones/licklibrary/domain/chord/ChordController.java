@@ -64,10 +64,6 @@ public class ChordController {
             return ResponseEntity.badRequest().build();
         }
 
-        if (!chordService.knowsQuality(quality)) {
-            return ResponseEntity.badRequest().build();
-        }
-
         List<String> voicings = chordService.getVoicings(rootNote, quality, inst, instrument);
         return ResponseEntity.ok(voicings);
     }
