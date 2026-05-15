@@ -60,12 +60,15 @@ public class ChordService {
         return result;
     }
 
+    private record ShapeResult(int[] frets, boolean isUser) {}
+
     public List<String> getVoicings(Note root, String quality, Instrument instrument, String instrumentName) {
         List<ChordShape> shapes = shapeRepo.findByChordQuality_SuffixAndInstrument(quality, instrumentName.toUpperCase());
         return shapes.stream()
-            .map(s -> transposeShape(s, root))
-            .sorted(Comparator.comparingInt(ChordService::minFret))
-            .map(frets -> formatShape(frets, instrument))
+            .map(s -> new ShapeResult(transposeShape(s, root), "user".equals(s.getSource())))
+            .sorted(Comparator.comparingInt((ShapeResult r) -> r.isUser() ? 0 : 1)
+                              .thenComparingInt(r -> minFret(r.frets())))
+            .map(r -> formatShape(r.frets(), instrument))
             .collect(Collectors.toList());
     }
 
