@@ -12,4 +12,8 @@ public interface ChordShapeRepository extends JpaRepository<ChordShape, UUID> {
 
     @Query("SELECT DISTINCT s.chordQuality.suffix FROM ChordShape s WHERE s.instrument = :instrument")
     List<String> findDistinctQualitiesByInstrument(@Param("instrument") String instrument);
+
+    boolean existsByShapeNameAndInstrument(String shapeName, String instrument);
+
+    boolean existsByShapeNameAndChordQuality_SuffixAndInstrument(String shapeName, String suffix, String instrument);
 }

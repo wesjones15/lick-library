@@ -1,5 +1,6 @@
 package org.jones.licklibrary.domain.chord;
 
+import org.jones.licklibrary.domain.chord.dto.ChordVoicingResponse;
 import org.jones.licklibrary.domain.chord.dto.UploadChordRequest;
 import org.jones.licklibrary.domain.shared.Instrument;
 import org.jones.licklibrary.domain.shared.Interval;
@@ -51,25 +52,29 @@ public class ChordService {
         return CHORD_QUALITIES.containsKey(quality);
     }
 
-    public Map<String, List<Integer[]>> getAllVoicings(Note root, Instrument instrument, String instrumentName) {
+    public Map<String, List<ChordVoicingResponse>> getAllVoicings(Note root, Instrument instrument, String instrumentName) {
         List<String> suffixes = shapeRepo.findDistinctQualitiesByInstrument(instrumentName.toUpperCase());
-        Map<String, List<Integer[]>> result = new LinkedHashMap<>();
+        Map<String, List<ChordVoicingResponse>> result = new LinkedHashMap<>();
         for (String suffix : suffixes) {
             result.put(suffix, getVoicings(root, suffix, instrument, instrumentName));
         }
         return result;
     }
 
-    private record ShapeResult(int[] frets, boolean isUser) {}
+    private record ShapeResult(String id, int[] frets, boolean isUser) {}
 
-    public List<Integer[]> getVoicings(Note root, String quality, Instrument instrument, String instrumentName) {
+    public List<ChordVoicingResponse> getVoicings(Note root, String quality, Instrument instrument, String instrumentName) {
         List<ChordShape> shapes = shapeRepo.findByChordQuality_SuffixAndInstrument(quality, instrumentName.toUpperCase());
         return shapes.stream()
-            .map(s -> new ShapeResult(transposeShape(s, root), "user".equals(s.getSource())))
+            .map(s -> new ShapeResult(s.getId().toString(), transposeShape(s, root), "user".equals(s.getSource())))
             .sorted(Comparator.comparingInt((ShapeResult r) -> r.isUser() ? 0 : 1)
                               .thenComparingInt(r -> minFret(r.frets())))
-            .map(r -> toDisplayFrets(r.frets()))
+            .map(r -> new ChordVoicingResponse(r.id(), toDisplayFrets(r.frets())))
             .collect(Collectors.toList());
+    }
+
+    public void deleteVoicing(UUID id) {
+        shapeRepo.deleteById(id);
     }
 
     private static Integer[] toDisplayFrets(int[] raw) {

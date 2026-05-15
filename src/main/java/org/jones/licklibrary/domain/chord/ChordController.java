@@ -1,5 +1,6 @@
 package org.jones.licklibrary.domain.chord;
 
+import org.jones.licklibrary.domain.chord.dto.ChordVoicingResponse;
 import org.jones.licklibrary.domain.chord.dto.UploadChordRequest;
 import org.jones.licklibrary.domain.shared.Instrument;
 import org.jones.licklibrary.domain.shared.InstrumentRegistry;
@@ -17,13 +18,15 @@ import java.util.UUID;
 public class ChordController {
 
     private final ChordService chordService;
+    private final ChordShapeSeed chordShapeSeed;
 
-    public ChordController(ChordService chordService) {
+    public ChordController(ChordService chordService, ChordShapeSeed chordShapeSeed) {
         this.chordService = chordService;
+        this.chordShapeSeed = chordShapeSeed;
     }
 
     @GetMapping("/all")
-    public ResponseEntity<Map<String, List<Integer[]>>> getAllChordVoicings(
+    public ResponseEntity<Map<String, List<ChordVoicingResponse>>> getAllChordVoicings(
         @RequestParam String root,
         @RequestParam(defaultValue = "GUITAR") String instrument
     ) {
@@ -45,7 +48,7 @@ public class ChordController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Integer[]>> getChordVoicings(
+    public ResponseEntity<List<ChordVoicingResponse>> getChordVoicings(
         @RequestParam String root,
         @RequestParam(defaultValue = "") String quality,
         @RequestParam(defaultValue = "GUITAR") String instrument
@@ -64,7 +67,7 @@ public class ChordController {
             return ResponseEntity.badRequest().build();
         }
 
-        List<Integer[]> voicings = chordService.getVoicings(rootNote, quality, inst, instrument);
+        List<ChordVoicingResponse> voicings = chordService.getVoicings(rootNote, quality, inst, instrument);
         return ResponseEntity.ok(voicings);
     }
 
@@ -76,5 +79,17 @@ public class ChordController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteVoicing(@PathVariable UUID id) {
+        chordService.deleteVoicing(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reseed")
+    public ResponseEntity<Void> reseed() {
+        chordShapeSeed.reseedMissing();
+        return ResponseEntity.ok().build();
     }
 }
