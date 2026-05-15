@@ -45,8 +45,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 5. Multi-measure phrase segmentation</summary>
+<details>
+<summary>[~] 5. Multi-measure phrase segmentation</summary>
 
 - Long phrases split at `|` boundaries before running position builders
 - parseTab currently strips `|` — would need to emit measure-break markers during parsing
@@ -71,7 +71,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 8. Scale / CAGED neck learning tool</summary>
 
 - Full CAGED/diatonic scales for each mode as a learning tool; additional vertical on the site
@@ -85,8 +85,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 9. iPad PWA (home screen shortcut)</summary>
+<details>
+<summary>[~] 9. iPad PWA (home screen shortcut)</summary>
 
 - Pure frontend config: manifest.json, apple-touch-icon, viewport meta, display: standalone
 - Vite PWA plugin (vite-plugin-pwa) handles most boilerplate
@@ -95,8 +95,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 10. Auth & security hardening</summary>
+<details>
+<summary>[~] 10. Auth & security hardening</summary>
 
 - JWT auth, Spring Security, CORS policy, rate limiting, user-scoped repositories
 - H2 → Postgres migration required
@@ -104,8 +104,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 11. Parallel harmony generator</summary>
+<details>
+<summary>[~] 11. Parallel harmony generator</summary>
 
 - Static phrase transformation in interval-space
 - Input: List\<IntervalNote\>, Mode, harmonicInterval (e.g. THIRD, SIXTH)
@@ -115,7 +115,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 12. Upload instrument selection</summary>
 
 - Allow user to change input instrument for tab upload
@@ -124,8 +124,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 13. Containerize and deploy</summary>
+<details>
+<summary>[~] 13. Containerize and deploy</summary>
 
 - Containerize frontend and backend
 - Deploy to a hosting service
@@ -139,8 +139,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 15. Phrase predictor</summary>
+<details>
+<summary>[~] 15. Phrase predictor</summary>
 
 - Deterministic rule engine; no AI/probabilistic components
 - Input: key, Mode, chord progression, optional seed phrase
@@ -161,8 +161,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 17. Octave tracking</summary>
+<details>
+<summary>[~] 17. Octave tracking</summary>
 
 - Derive absolute pitch from fret + string using open string offsets + semitones per fret
 - No string gauge attribute needed — gauge affects tone not pitch
@@ -171,8 +171,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 18. Microphone pitch detection</summary>
+<details>
+<summary>[~] 18. Microphone pitch detection</summary>
 
 - YIN algorithm or pitchfinder.js for single-note pitch detection
 - Limit to Guitar.STANDARD + clean tone input for accuracy
@@ -182,7 +182,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 19. Animated neck visualization</summary>
 
 - Playhead-driven neck display; notes flash on active fret/string at tempo
@@ -192,8 +192,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 20. CAGED idiomatic jump hints</summary>
+<details>
+<summary>[~] 20. CAGED idiomatic jump hints</summary>
 
 - Guitar.STANDARD-specific static structure: list of (intervalDelta, stringsTraversed) pairs
 - Consumed by predictor (#15) as weighted hint table for interval selection
@@ -202,7 +202,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 21. Scale overlay + mic input page</summary>
 
 - Separate navbar page combining neck display and mic input
@@ -239,7 +239,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 25. Chord parser gaps (font recompute + boundary)</summary>
 
 - Long line auto-break: chord/lyric pair too long → split into two halves; enforce same length via trailing spaces
@@ -263,7 +263,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 28. Chord sheet parser gaps (font + boundary)</summary>
 
 - Gap 1 — font size not recomputed after line breaking: after breaking over-long pairs, recompute globalFontSize across full resulting list; halves are shorter so minimum will be larger → more readable
@@ -291,22 +291,22 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 31. Delete confirmation dialog</summary>
 
 - Warning/confirmation box before song deletion
 
 </details>
 
-<details open>
-<summary>[ ] 32. Song recycle bin</summary>
+<details>
+<summary>[~] 32. Song recycle bin</summary>
 
 - Deleted songs go to a recycle DB where they can be recovered
 
 </details>
 
-<details open>
-<summary>[ ] 33. Users, auth, playlists</summary>
+<details>
+<summary>[~] 33. Users, auth, playlists</summary>
 
 - Account creation with admin-gated 2FA
 - Users can upload songs, view songs, make and view playlists
@@ -337,7 +337,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 37. Metronome time signature options</summary>
 
 - Options for single tone (no accent) and 3/4 time
@@ -355,14 +355,14 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 39. Capo reset button</summary>
 
 - Reset button for capo (parallel to transpose reset)
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 40. Global playlists</summary>
 
 - Playlist tab in navbar; list shows playlist name, song count, creator
@@ -372,15 +372,16 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 41. Slash chord display fix (G/B hover diagram)</summary>
+<details>
+<summary>[x] 41. Slash chord display fix (G/B hover diagram)</summary>
 
-- Update chord hover to handle slash chords — strip bass note, look up root chord quality
+- add slash chords to chord db. treat them separate in frontend when transposing, for simplicity. but treat them as one chord when clicking to view chord
+- ridealong fix: parentheses shouldnt be bold
 
 </details>
 
-<details open>
-<summary>[ ] 42. Show all chords button on song page</summary>
+<details>
+<summary>[ ] 42. Add "Show Chords" button on song page</summary>
 
 - Button on song title bar; on click shows list of all chords in the song
 
@@ -398,41 +399,171 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details open>
-<summary>[ ] 44. Update frontend and backend READMEs</summary>
+<details>
+<summary>[x] 44. Update frontend and backend READMEs</summary>
 
 - Update README on frontend and backend to reflect new feature set
 
 </details>
 
-<details open>
+<details>
 <summary>[ ] 45. song metadata update form</summary>
 
-- button to page with form to submit an update request to song details. allow user to submit revision to song attributes. perhaps future allow user to update individual ChordLyric blocks. updates go to a queue where admin can review and approve. upon approval, db entries update. perhaps line gets reparsed
+- button to page with form to submit an update request to song details. allow user to submit revision to song attributes. 
+- perhaps future allow user to update individual ChordLyric blocks. updates go to a queue where admin can review and approve. 
+  - perhaps the user chooses to update the song attributes or the song content, and then gets access to the raw text input that gets parsed into the tab? 
+- upon approval, db entries update. perhaps line gets reparsed
 </details>
 
-<details open>
+<details>
 <summary>[ ] 46. add ability to include tab snippets in chord sheets</summary>
 
 - add GuitarTabLine as object in chordsheet, since some chordsheets include riffs. these can have chord labels above, or not. but will be like 6 lines and we already know how to detect.
 </details>
 
-<details open>
+<details>
 <summary>[ ] 47. allow user to upload missing voicings for chords</summary>
 
-- if chord displays as ???, then clicking on ??? will open a modal for adding a new chord. submit button will save voicing to chord.
+- if chord displays as ???, then clicking on ??? will open a modal for adding a new chord. clicking add new chord will take you to the add chord voicing page defined in idea 51. submit button will save voicing to chord.
 - there will need to be a way to delete voicings, not on song page, maybe a chords tab in navbar to manage and view chords
 - maybe user submitted voicings get prioritized in chord voicing list, and are displayed first on hover.
+- chords tab will allow user to upload voicings and source will be user, rather than song in such a case.
+- maybe we allow some way of adding a voicing for a chord that already has valid voicings, but i don't want to crowd the ui
 </details>
 
-<details open>
+<details>
 <summary>[ ] 48. change chord display from ASCII to pretty diagram</summary>
 
 - chords should be shown as an image rather than ascii
+- perhaps use js library: svguitar
 </details>
 
-<details open>
-<summary>[ ] 49. create cache db of chord voicings to avoid need for rerunning chord calculations</summary>
+<details>
+<summary>[~] 49. create cache db of chord voicings to avoid need for rerunning chord calculations</summary>
 
 - this feature is heavy if no users, but if we scale, it will be beneficial to reduce overhead
+</details>
+
+<details>
+<summary>[x] 50. update chord voicings modal on front end</summary>
+
+- sort chord voicings by lowest fret, so open and common voicings are first in list
+- the arrows should loop, so back on first voicing will take you to last voicing etc
+</details>
+
+<details>
+<summary>[x] 51. add "chords\ngallery" tab to navbar</summary>
+
+- chord page lets user select key and shows all voicings of all chords of all quality for that root note
+- display chord and voicing modals in a grid (similar to the hover modal in song, which lets you cycle voicings)
+</details>
+
+<details>
+<summary>[ ] 52. add Home page with features clickable in page body</summary>
+
+- clicking Lick Library in navbar should take user to home page, where the different navbar options are displayed in more detail in the page body
+</details>
+
+<details>
+<summary>[x] 53. refactor backend using Domain-Driven Design philosophy</summary>
+
+- this will segregate the different verticals in the app, reducing tokens and context
+- instead of searching the full repo, first just use the readme.md and claude.md
+</details>
+
+<details>
+<summary>[x] 54. refactor frontend using Feature-Sliced Design philosophy</summary>
+
+- this will segregate the different verticals in the app, reducing tokens and context
+</details>
+
+<details>
+<summary>[ ] 55. add alternate chordsheet view that doubles the font size, and displays as a single scrolling column</summary>
+
+- user triggers scrolling with a button. 
+- perhaps song should get artifact of list of timestamps for chorus verse etc, and scrolling will jump to these points after a timer instead of scrolling slowly the whole time
+- maybe a steady scroll option too, incase auto is whacky.
+</details>
+
+<details>
+<summary>[ ] 56. chord page enhancement - progressions</summary>
+
+- chord page could also have option to show user chord progressions for certain keys. based off of interval, circle of fifths kinda stuff, mode, etc
+</details>
+
+<details>
+<summary>[ ] 57. handle |,-,* chars in chordline</summary>
+
+- | G#m7  G#m | Gm7 | is not parsed as chords in a tab, so we need to fix that.
+- (G)              C - G/B - Am - G isn't recognized as a chordline
+  - discuss: should i just not allow hyphen in chordline
+-      D (or Bm)    E                A       A 
+  - should this be allowed?
+- E                            E                E              A (coda riff)
+  - should this be allowed? how can we handle this without defining chordlines explicitly.
+  - chordsheet upload is pretty simple and it should stay that way.
+- D F#7 G Gm**
+  - allow asterisks in chordlines, but don't parse or bold them
+- should words be allowed just in paren in a chordline? 
+  - sometimes lyrics have parentheses too
+  - sometimes chords are in paren
+  - any character in a chordline that isnt part of a chord should be non-bold and black font
+
+</details>
+
+<details>
+<summary>[x] 58. upload chords page</summary>
+
+- add page with form for user to upload a new chord voicing.
+- should seamlessly support new voicing for existing chord, and new chord altogether
+- you get here by clicking add chord in Chord Gallery page
+- this form will also be used as a modal elsewhere so prep it for that
+</details>
+
+<details>
+<summary>[ ] 59. Songs Library enhancement</summary>
+
+- make list sortable and filterable.
+  - alphabetical by artist, by song
+  - filter by artist
+  - sort by key
+- pagination
+</details>
+
+<details>
+<summary>[ ] 60. bug with capo and transpose tool</summary>
+
+- changing capo number seems to update the wrong note value, the one labeled shape is updating, but it should be changing sound
+</details>
+
+<details>
+<summary>[~] 61. super edge case: songs with bpm changes</summary>
+
+- update bpm display for song to list multiple clickable bpms
+  - the way to actually add mutliple bpms will be only exposed in song metadata update card (idea 45)
+- consider bpm in autoscroll?
+- make bpm refs in song itself clickable and they update metronome?
+</details>
+
+<details>
+<summary>[ ] 62. fix display for long chord sheets</summary>
+
+- entry for vampire doesn't fit onscreen properly. 
+- update parsing to allow for more columns, smaller font
+- 
+</details>
+
+<details>
+<summary>[ ] 63. redesign song card in Song Library</summary>
+
+- maybe a square card, let song name have line break if needed, shrink font if really big
+- artist still small and gray underneath. still show song key, maybe add song tempo. 
+- x button remains but should have confirmation dialogue instead of just deleting
+- organize square cards in a grid
+</details>
+
+<details>
+<summary>[ ] 50. </summary>
+
+- 
 </details>

@@ -1,5 +1,6 @@
 package org.jones.licklibrary.domain.chord;
 
+import org.jones.licklibrary.domain.chord.dto.UploadChordRequest;
 import org.jones.licklibrary.domain.shared.Instrument;
 import org.jones.licklibrary.domain.shared.Interval;
 import org.jones.licklibrary.domain.shared.Note;
@@ -11,6 +12,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,9 +40,11 @@ public class ChordService {
     );
 
     private final ChordShapeRepository shapeRepo;
+    private final ChordQualityRepository qualityRepo;
 
-    public ChordService(ChordShapeRepository shapeRepo) {
+    public ChordService(ChordShapeRepository shapeRepo, ChordQualityRepository qualityRepo) {
         this.shapeRepo = shapeRepo;
+        this.qualityRepo = qualityRepo;
     }
 
     public boolean knowsQuality(String quality) {
@@ -132,5 +136,72 @@ public class ChordService {
             result[i] = part.equals("x") ? -2 : Integer.parseInt(part);
         }
         return result;
+    }
+
+    public UUID uploadChord(UploadChordRequest req) {
+        Note root;
+        try {
+            root = Note.valueOf(req.root().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown root note: " + req.root());
+        }
+
+        List<String> rawFrets = req.frets();
+        if (rawFrets == null || rawFrets.size() != 6) {
+            throw new IllegalArgumentException("Exactly 6 fret values required");
+        }
+        int[] frets = new int[6];
+        for (int i = 0; i < 6; i++) {
+            String f = rawFrets.get(i).trim();
+            if (f.equalsIgnoreCase("x")) {
+                frets[i] = -2;
+            } else {
+                try {
+                    int v = Integer.parseInt(f);
+                    if (v < 0) throw new IllegalArgumentException("Fret value must be >= 0");
+                    frets[i] = v;
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid fret value: " + f);
+                }
+            }
+        }
+
+        Note[] tuning = Guitar.STANDARD.tuning();
+        int rootString = -1;
+        for (int i = 0; i < tuning.length; i++) {
+            if (frets[i] == -2) continue;
+            if (tuning[i].shift(frets[i]) == root) {
+                rootString = i;
+                break;
+            }
+        }
+        if (rootString == -1) {
+            throw new IllegalArgumentException("No string produces the root note " + req.root() + " with the given frets");
+        }
+
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < frets.length; i++) {
+            if (i > 0) json.append(',');
+            if (frets[i] == -2) json.append('"').append('x').append('"');
+            else json.append(frets[i]);
+        }
+        json.append(']');
+
+        String suffix = req.quality() != null ? req.quality() : "";
+        ChordQuality quality = qualityRepo.findBySuffix(suffix)
+            .orElseGet(() -> qualityRepo.save(new ChordQuality(suffix)));
+
+        String instrumentName = (req.instrument() != null && !req.instrument().isBlank())
+            ? req.instrument().toUpperCase()
+            : "GUITAR";
+
+        ChordShape shape = new ChordShape();
+        shape.setChordQuality(quality);
+        shape.setTemplateFrets(json.toString());
+        shape.setRootString(rootString);
+        shape.setSource("user");
+        shape.setInstrument(instrumentName);
+        shape.setShapeName(req.shapeName());
+        return shapeRepo.save(shape).getId();
     }
 }
