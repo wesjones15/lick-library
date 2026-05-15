@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chord")
@@ -16,6 +17,28 @@ public class ChordController {
 
     public ChordController(ChordService chordService) {
         this.chordService = chordService;
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<Map<String, List<String>>> getAllChordVoicings(
+        @RequestParam String root,
+        @RequestParam(defaultValue = "GUITAR") String instrument
+    ) {
+        Note rootNote;
+        try {
+            rootNote = Note.valueOf(root.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Instrument inst;
+        try {
+            inst = InstrumentRegistry.fromName(instrument);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok(chordService.getAllVoicings(rootNote, inst, instrument));
     }
 
     @GetMapping

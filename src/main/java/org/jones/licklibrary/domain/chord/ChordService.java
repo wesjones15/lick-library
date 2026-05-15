@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,6 +45,15 @@ public class ChordService {
 
     public boolean knowsQuality(String quality) {
         return CHORD_QUALITIES.containsKey(quality);
+    }
+
+    public Map<String, List<String>> getAllVoicings(Note root, Instrument instrument, String instrumentName) {
+        List<String> suffixes = shapeRepo.findDistinctQualitiesByInstrument(instrumentName.toUpperCase());
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        for (String suffix : suffixes) {
+            result.put(suffix, getVoicings(root, suffix, instrument, instrumentName));
+        }
+        return result;
     }
 
     public List<String> getVoicings(Note root, String quality, Instrument instrument, String instrumentName) {
