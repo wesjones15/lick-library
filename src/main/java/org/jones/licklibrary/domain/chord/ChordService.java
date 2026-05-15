@@ -51,9 +51,9 @@ public class ChordService {
         return CHORD_QUALITIES.containsKey(quality);
     }
 
-    public Map<String, List<String>> getAllVoicings(Note root, Instrument instrument, String instrumentName) {
+    public Map<String, List<Integer[]>> getAllVoicings(Note root, Instrument instrument, String instrumentName) {
         List<String> suffixes = shapeRepo.findDistinctQualitiesByInstrument(instrumentName.toUpperCase());
-        Map<String, List<String>> result = new LinkedHashMap<>();
+        Map<String, List<Integer[]>> result = new LinkedHashMap<>();
         for (String suffix : suffixes) {
             result.put(suffix, getVoicings(root, suffix, instrument, instrumentName));
         }
@@ -62,14 +62,22 @@ public class ChordService {
 
     private record ShapeResult(int[] frets, boolean isUser) {}
 
-    public List<String> getVoicings(Note root, String quality, Instrument instrument, String instrumentName) {
+    public List<Integer[]> getVoicings(Note root, String quality, Instrument instrument, String instrumentName) {
         List<ChordShape> shapes = shapeRepo.findByChordQuality_SuffixAndInstrument(quality, instrumentName.toUpperCase());
         return shapes.stream()
             .map(s -> new ShapeResult(transposeShape(s, root), "user".equals(s.getSource())))
             .sorted(Comparator.comparingInt((ShapeResult r) -> r.isUser() ? 0 : 1)
                               .thenComparingInt(r -> minFret(r.frets())))
-            .map(r -> formatShape(r.frets(), instrument))
+            .map(r -> toDisplayFrets(r.frets()))
             .collect(Collectors.toList());
+    }
+
+    private static Integer[] toDisplayFrets(int[] raw) {
+        Integer[] out = new Integer[raw.length];
+        for (int i = 0; i < raw.length; i++) {
+            out[i] = (raw[i] == -2) ? null : Math.max(0, raw[i]);
+        }
+        return out;
     }
 
     static int[] transposeShape(ChordShape shape, Note root) {

@@ -23,7 +23,7 @@ public class ChordController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<Map<String, List<String>>> getAllChordVoicings(
+    public ResponseEntity<Map<String, List<Integer[]>>> getAllChordVoicings(
         @RequestParam String root,
         @RequestParam(defaultValue = "GUITAR") String instrument
     ) {
@@ -45,7 +45,7 @@ public class ChordController {
     }
 
     @GetMapping
-    public ResponseEntity<List<String>> getChordVoicings(
+    public ResponseEntity<List<Integer[]>> getChordVoicings(
         @RequestParam String root,
         @RequestParam(defaultValue = "") String quality,
         @RequestParam(defaultValue = "GUITAR") String instrument
@@ -64,7 +64,7 @@ public class ChordController {
             return ResponseEntity.badRequest().build();
         }
 
-        List<String> voicings = chordService.getVoicings(rootNote, quality, inst, instrument);
+        List<Integer[]> voicings = chordService.getVoicings(rootNote, quality, inst, instrument);
         return ResponseEntity.ok(voicings);
     }
 
