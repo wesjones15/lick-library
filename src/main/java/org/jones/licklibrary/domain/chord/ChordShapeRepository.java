@@ -16,4 +16,6 @@ public interface ChordShapeRepository extends JpaRepository<ChordShape, UUID> {
     boolean existsByShapeNameAndInstrument(String shapeName, String instrument);
 
     boolean existsByShapeNameAndChordQuality_SuffixAndInstrument(String shapeName, String suffix, String instrument);
+
+    boolean existsByTemplateFretsAndChordQuality_SuffixAndInstrument(String templateFrets, String suffix, String instrument);
 }

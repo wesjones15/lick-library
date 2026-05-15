@@ -28,7 +28,6 @@ public class ChordShapeSeed implements ApplicationRunner {
 
     public void reseedMissing() {
         reseedCagedShapes();
-        reseedSlashShapes();
     }
 
     private void seedCagedShapes() {

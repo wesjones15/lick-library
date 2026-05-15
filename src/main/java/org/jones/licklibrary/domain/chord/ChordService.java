@@ -211,6 +211,10 @@ public class ChordService {
             ? req.instrument().toUpperCase()
             : "GUITAR";
 
+        if (shapeRepo.existsByTemplateFretsAndChordQuality_SuffixAndInstrument(json.toString(), suffix, instrumentName)) {
+            throw new IllegalArgumentException("This voicing already exists for " + suffix);
+        }
+
         ChordShape shape = new ChordShape();
         shape.setChordQuality(quality);
         shape.setTemplateFrets(json.toString());
