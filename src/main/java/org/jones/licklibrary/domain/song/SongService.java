@@ -3,6 +3,7 @@ package org.jones.licklibrary.domain.song;
 import org.jones.licklibrary.core.exception.ResourceNotFoundException;
 import org.jones.licklibrary.domain.song.dto.SongDetailResponse;
 import org.jones.licklibrary.domain.song.dto.SongSummaryResponse;
+import org.jones.licklibrary.domain.song.dto.UpdateSongRequest;
 import org.jones.licklibrary.domain.song.dto.UploadSongRequest;
 import org.jones.licklibrary.domain.song.parsing.ChordLyric;
 import org.jones.licklibrary.domain.song.parsing.ChordSheetParser;
@@ -74,11 +75,28 @@ public class SongService {
                 song.getRawChordSheet() != null);
     }
 
+    public SongDetailResponse updateSong(UUID id, UpdateSongRequest req) {
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
+        if (req.title() != null && !req.title().isBlank()) song.setTitle(req.title().trim());
+        song.setArtist(req.artist() != null && !req.artist().isBlank() ? req.artist().trim() : null);
+        song.setOriginalKey(req.originalKey() != null && !req.originalKey().isBlank() ? req.originalKey() : null);
+        song.setCapo(req.capo());
+        song.setTempo(req.tempo());
+        if (req.rawChordSheet() != null) {
+            song.setRawChordSheet(req.rawChordSheet());
+            ChordSheetParser.ParseResult result = chordSheetParser.parse(req.rawChordSheet());
+            song.setChordLines(result.chordLines());
+            song.setNumColumns(result.numColumns());
+        }
+        return toDetail(songRepository.save(song), song.getChordLines());
+    }
+
     private SongDetailResponse toDetail(Song song, List<ChordLyric> chordLines) {
         return new SongDetailResponse(
                 song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
                 song.getCapo(), song.getTempo(), chordLines, song.getNumColumns(),
-                song.getRawChordSheet() != null
+                song.getRawChordSheet() != null, song.getRawChordSheet()
         );
     }
 }

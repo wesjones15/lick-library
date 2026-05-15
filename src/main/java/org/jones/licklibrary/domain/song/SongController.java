@@ -2,6 +2,7 @@ package org.jones.licklibrary.domain.song;
 
 import org.jones.licklibrary.domain.song.dto.SongDetailResponse;
 import org.jones.licklibrary.domain.song.dto.SongSummaryResponse;
+import org.jones.licklibrary.domain.song.dto.UpdateSongRequest;
 import org.jones.licklibrary.domain.song.dto.UploadSongRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +49,11 @@ public class SongController {
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @PutMapping("/{id}")
+    public SongDetailResponse updateSong(@PathVariable UUID id, @RequestBody UpdateSongRequest request) {
+        return songService.updateSong(id, request);
     }
 
     @DeleteMapping("/{id}")
