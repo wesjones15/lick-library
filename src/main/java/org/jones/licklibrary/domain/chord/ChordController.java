@@ -73,12 +73,12 @@ public class ChordController {
     }
 
     @PostMapping
-    public ResponseEntity<UUID> uploadChord(@RequestBody UploadChordRequest req) {
+    public ResponseEntity<?> uploadChord(@RequestBody UploadChordRequest req) {
         try {
             UUID id = chordService.uploadChord(req);
             return ResponseEntity.status(HttpStatus.CREATED).body(id);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
