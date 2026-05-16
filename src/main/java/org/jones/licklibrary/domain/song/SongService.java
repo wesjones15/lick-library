@@ -72,7 +72,7 @@ public class SongService {
 
     private SongSummaryResponse toSummary(Song song) {
         return new SongSummaryResponse(song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
-                song.getRawChordSheet() != null);
+                song.getRawChordSheet() != null, song.getTempo());
     }
 
     public SongDetailResponse updateSong(UUID id, UpdateSongRequest req) {

@@ -7,5 +7,6 @@ public record SongSummaryResponse(
         String title,
         String artist,
         String originalKey,
-        boolean canReparse
+        boolean canReparse,
+        Integer tempo
 ) {}
