@@ -32,6 +32,11 @@ public class PlaylistController {
         return playlistService.getPlaylist(id);
     }
 
+    @PatchMapping("/{id}")
+    public PlaylistSummaryResponse renamePlaylist(@PathVariable UUID id, @RequestBody CreatePlaylistRequest request) {
+        return playlistService.renamePlaylist(id, request.name());
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePlaylist(@PathVariable UUID id) {

@@ -878,12 +878,32 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 112. (Songs) pagination on song library</summary>
+<summary>[x] 112. (Songs) pagination on song library</summary>
 
 - song grid display: paginate at 16 instead of 18. 
 - song list display: also at 16
 - add "Show All" button next to pagination that shows all without paginating.
   - when show all is active, the toggle is at bottom of list/grid where pagination was
+</details>
+
+<details>
+<summary>[x] 113. (Playlist) add song ui</summary>
+
+- add an add to playlist icon to song display page in toolbar to show in all contexts where song is displayed.
+- in manage song view in Songs library page, add icon for Add To Playlist button.
+  - clicking button should open playlist modal with filtering dropdown you can type in to select playlist.
+- in playlist main page, create button should open Create Playlist modal. 
+- in playlist main page, add Manage button next to Create button, Manage will expose X button on playlist boxes. playlist name becomes text field prefilled. click manage again to save. x button has confirm before deleting. 
+- on the page for viewing details of a single playlist. 
+  - remove x button. add manage icon. manage icon should be like a gear or wrench.
+    - manage will expose Add Songs button above songs list. 
+    - manage will expose x button in each song box. with confirm before deleting.
+    - manage will expose button to type in playlist name field and then click button again to save change and toggle back. edit field icon should be pencil
+    - manage will expose delete playlist x button with confirm modal.
+    - add songs button will open an add songs modal. 
+      - text field for filter. shows songs below that match artist or songname. plus icon to add
+      - display songs as grid. or list (same logic as displaying song list elsewhere)
+      - plus button turns to green check when clicked. then turns to red x to remove song from playlist
 </details>
 
 
@@ -1018,7 +1038,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 
 <details>
-<summary>[ ] 113. </summary>
+<summary>[ ] 114. </summary>
 
 - 
 </details>

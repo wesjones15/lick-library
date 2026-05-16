@@ -44,6 +44,15 @@ public class PlaylistService {
     }
 
     @Transactional
+    public PlaylistSummaryResponse renamePlaylist(UUID id, String name) {
+        Playlist playlist = playlistRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + id));
+        playlist.setName(name);
+        playlistRepository.save(playlist);
+        return toSummary(playlist);
+    }
+
+    @Transactional
     public void deletePlaylist(UUID id) {
         Playlist playlist = playlistRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + id));
