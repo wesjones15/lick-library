@@ -545,15 +545,8 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 - add GuitarTabLine as object in chordsheet, since some chordsheets include riffs. these can have chord labels above, or not. but will be like 6 lines and we already know how to detect.
 </details>
 
-
-</details>
-
-
-<details open>
-<summary>Pending</summary>
-
 <details>
-<summary>[ ] 8. Scale / CAGED neck learning tool</summary>
+<summary>[x] 8. Scale / CAGED neck learning tool</summary>
 
 - Full CAGED/diatonic scales for each mode as a learning tool; additional vertical on the site
 - Define interval sequence for each mode, build scale positions per key
@@ -567,16 +560,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 12. Upload instrument selection</summary>
-
-- Allow user to change input instrument for tab upload
-- parseTab + toIntervals currently always use Guitar.STANDARD
-- Would potentially remove need for TabNote if parseTab is retooled for any tuning/instrument
-
-</details>
-
-<details>
-<summary>[ ] 19. Animated neck visualization</summary>
+<summary>[x] 19. Animated neck visualization</summary>
 
 - Playhead-driven neck display; notes flash on active fret/string at tempo
 - Playhead indexes into columnIndex sequence at rate derived from BPM; pairs with metronome
@@ -586,12 +570,64 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 21. Scale overlay + mic input page</summary>
+<summary>[x] 21. Scale overlay + mic input page</summary>
 
 - Separate navbar page combining neck display and mic input
 - Select key and mode; overlay scale positions as dim dots on the neck
 - Mic input identifies pitch live and highlights corresponding note on neck
 - Depends on #18 (mic pitch detection) and #19 (neck visualization)
+
+</details>
+
+<details>
+<summary>[x] 89. live neck enhancement</summary>
+
+- darken strings
+- maybe tan rectangle under strings display to give more guitar appearance.
+- when a note is selected, the pale bright yellow outline should be a thin
+  - note name should be bigger, slightly bigger when unselected, even bigger when selected
+- when live page is loaded, default to C Major perhaps instead of empty.
+</details>
+
+<details>
+<summary>[x] 90. live enhance</summary>
+
+- need to incorporate next possible note.
+- we can test without using mic input
+- clicking to select a note in the display should be treated as "note being played"
+  - only one note allowed to be selected at a time in this state
+- next possible note should use the caged intervals and jumps
+- is this where we incorporate the fun caged relational stuff or is that theory?
+  - for example G diatonic is composed of 3 pentatonic shapes overlaid: G C D
+- if the user only knows the scale as major, but they are playing a different scale, perhaps some way of converting or showing 6=1 or something, some way to understand the scale mode relations
+</details>
+
+<details>
+<summary>[x] 94. live tab enhance - note picker</summary>
+
+- next note is a little zealous.
+  - distance from note at fret/string should account for diagonal distance,
+  - fewer notes should light up. no distance greater than 4.000.
+- add a key up to the title card row of live tab. list the intervals relevant to the mode and put each number in a bubble matching their color (red is root).
+  - when a currentNote is active, that interval should be highlighted same in the key.
+  - when next notes are flashing, those intervals should be highlighted same in the key
+
+-
+</details>
+
+
+</details>
+
+
+<details open>
+<summary>Pending</summary>
+
+<details>
+<summary>[ ] 12. Upload instrument selection</summary>
+
+- Allow user to change input instrument for tab upload
+- parseTab + toIntervals currently always use Guitar.STANDARD
+- Would potentially remove need for TabNote if parseTab is retooled for any tuning/instrument
 
 </details>
 
@@ -638,29 +674,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 89. live neck enhancement</summary>
-
-- darken strings
-- maybe tan rectangle under strings display to give more guitar appearance.
-- when a note is selected, the pale bright yellow outline should be a thin
-  - note name should be bigger, slightly bigger when unselected, even bigger when selected
-- when live page is loaded, default to C Major perhaps instead of empty.
-</details>
-
-<details>
-<summary>[ ] 90. live enhance</summary>
-
-- need to incorporate next possible note. 
-- we can test without using mic input
-- clicking to select a note in the display should be treated as "note being played"
-  - only one note allowed to be selected at a time in this state
-- next possible note should use the caged intervals and jumps
-- is this where we incorporate the fun caged relational stuff or is that theory?
-  - for example G diatonic is composed of 3 pentatonic shapes overlaid: G C D
-- if the user only knows the scale as major, but they are playing a different scale, perhaps some way of converting or showing 6=1 or something, some way to understand the scale mode relations
-</details>
-
-<details>
 <summary>[ ] 91. make app HTTPS</summary>
 
 - mic doesn't work without https. can we make this app secure
@@ -680,7 +693,73 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 <details>
 <summary>[ ] 93. dynamic fret display idea</summary>
 
-- in live tab, when the being played is up the neck, the diagram should shift to center currently played note in the diagram, revealing frets further up the neck, and perhaps hiding the first few frets, but at least 12 frets should show onscreen
+- in live tab, when the being played is up the neck, the diagram should shift to center currently played note in the diagram, revealing frets further up the neck, and perhaps hiding the first few frets, 
+  - at least 12 frets should show onscreen
+- maybe frets shouldn't show uniform, but vary in size up the neck like real guitars
+</details>
+
+<details>
+<summary>[ ] 95. theory tab content</summary>
+
+- perhaps a compare modes tool, to show root on ionian is x on dorian etc.
+-  theory tab shouldn't have mic input
+</details>
+
+<details>
+<summary>[ ] 96. live neck visual polish (from 89)</summary>
+
+- Darken string lines: `#6b7280` → `#374151`
+- Add warm tan/wood `<rect>` behind string lines as fretboard surface background
+- Active note ring: change from filled pale-yellow circle to stroke-only ring (fill="none", stroke, strokeWidth)
+- Larger note name labels: unselected 1-char 7→9px, 2-char 5.5→7px; active one step larger again
+- **File:** `src/features/live/GuitarNeck.tsx`
+</details>
+
+<details>
+<summary>[ ] 97. CAGED-based next-note suggestions for Live tab (from 90)</summary>
+
+- Replace Euclidean distance filter with CAGED positional logic
+- Define 5 CAGED boxes as fret-range windows relative to the root (~4 frets wide, ~1-fret overlap)
+- When note is selected, identify its CAGED box; candidates come from that box and adjacent boxes only
+- Naturally constrains next-note highlights to playable hand positions
+- **File:** `src/features/live/LivePage.tsx`
+</details>
+
+<details>
+<summary>[ ] 98. mode relationship display for Theory tab (from 90)</summary>
+
+- Show how each mode relates to its parent Ionian key, e.g. "A Aeolian = relative minor of C Major (6th degree)"
+- User picks root + mode; page shows parent key and degree position
+- Mapping: IONIAN=1, DORIAN=2, PHRYGIAN=3, LYDIAN=4, MIXOLYDIAN=5, AEOLIAN=6, LOCRIAN=7
+- **File:** `src/features/theory/TheoryPage.tsx`
+</details>
+
+<details>
+<summary>[ ] 99. CAGED position zones on neck for Theory tab (from 8)</summary>
+
+- Overlay 5 CAGED boxes as labeled shaded regions on a static GuitarNeck
+- Semi-transparent rect per box spanning its fret range × all 6 strings, labeled C/A/G/E/D
+- User picks root key; boxes shift to correct fret positions
+- **Files:** `src/features/theory/TheoryPage.tsx`, reuse `GuitarNeck`
+</details>
+
+<details>
+<summary>[ ] 100. pentatonic-within-diatonic overlay for Theory tab (from 8)</summary>
+
+- Any diatonic CAGED box = three overlapping pentatonic shapes (e.g. G Ionian = G + C + D pentatonic)
+- Color-code or outline the three pentatonic subsets within the 7-note scale overlay
+- Implement after CAGED zones (idea 100) are working
+- **File:** `src/features/theory/TheoryPage.tsx`
+</details>
+
+<details>
+<summary>[ ] 101. animated lick playback on neck for Lick detail (from 19)</summary>
+
+- Add GuitarNeck below the tab on LickDetailPage; feed it computed positions for selected key
+- Playhead advances through columnIndex sequence at BPM from MetronomeContext
+- Active column's dots light up; play/pause button; loops
+- Depends on position data from `GET /api/lick/{id}` and existing MetronomeContext
+- **File:** `src/features/lick/LickDetailPage.tsx`, reuse `GuitarNeck`
 </details>
 
 
@@ -837,7 +916,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 
 <details>
-<summary>[ ] 94. </summary>
+<summary>[ ] 102. </summary>
 
 - 
 </details>
