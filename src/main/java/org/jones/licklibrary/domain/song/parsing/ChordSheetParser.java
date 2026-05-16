@@ -12,7 +12,7 @@ public class ChordSheetParser {
     private static final Pattern METADATA_LINE  = Pattern.compile("^\\(.*\\)$");
     private static final Pattern SECTION_LABEL  = Pattern.compile("^\\[.*\\]$");
     private static final Pattern CHORD_TOKEN    = Pattern.compile(
-            "^(NC|N\\.C\\.|[A-G][#b]?[a-zA-Z0-9]*(/[A-G][#b]?[a-zA-Z0-9]*)?)$"
+            "^(NC|N\\.C\\.|[A-G][#b]?(maj|min|m|dim|aug|sus|add)?[0-9]*(b[0-9]+)?(/[A-G][#b]?)?)$"
     );
 
     private static final double CONTENT_WIDTH    = 1100.0;
@@ -50,7 +50,7 @@ public class ChordSheetParser {
         if (line.isBlank()) return false;
         String normalized = line
             .replaceAll("\\(.*?\\)", " ")   // remove (...) annotation groups
-            .replaceAll("[|*]", " ")         // | and * → space
+            .replaceAll("[|*%]", " ")        // |, * and % → space
             .replaceAll("\\s+-\\s+", " ")   // " - " chord separators → space
             .trim();
         if (normalized.isBlank()) return false;
@@ -108,7 +108,7 @@ public class ChordSheetParser {
     }
 
     private ColumnPlan selectColumnPlan(List<ChordLyric> pairs) {
-        for (int n = 1; n <= MAX_COLUMNS; n++) {
+        for (int n = 2; n <= MAX_COLUMNS; n++) {
             double colWidth = CONTENT_WIDTH / n;
             double charLimit = colWidth / (MIN_FONT_SIZE * CHAR_WIDTH_RATIO);
             List<ChordLyric> broken = breakOversized(pairs, charLimit);
