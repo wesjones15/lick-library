@@ -5,7 +5,7 @@ import org.jones.licklibrary.domain.song.dto.SongDetailResponse;
 import org.jones.licklibrary.domain.song.dto.SongSummaryResponse;
 import org.jones.licklibrary.domain.song.dto.UpdateSongRequest;
 import org.jones.licklibrary.domain.song.dto.UploadSongRequest;
-import org.jones.licklibrary.domain.song.parsing.ChordLyric;
+import org.jones.licklibrary.domain.song.parsing.ChordSheetLine;
 import org.jones.licklibrary.domain.song.parsing.ChordSheetParser;
 import org.jones.licklibrary.domain.song.parsing.ChordTransposer;
 import org.springframework.stereotype.Service;
@@ -59,7 +59,7 @@ public class SongService {
     public SongDetailResponse getSong(UUID id, int semitones) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
-        List<ChordLyric> lines = semitones == 0
+        List<ChordSheetLine> lines = semitones == 0
                 ? song.getChordLines()
                 : chordTransposer.transpose(song.getChordLines(), semitones);
         return toDetail(song, lines);
@@ -92,7 +92,7 @@ public class SongService {
         return toDetail(songRepository.save(song), song.getChordLines());
     }
 
-    private SongDetailResponse toDetail(Song song, List<ChordLyric> chordLines) {
+    private SongDetailResponse toDetail(Song song, List<ChordSheetLine> chordLines) {
         return new SongDetailResponse(
                 song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
                 song.getCapo(), song.getTempo(), chordLines, song.getNumColumns(),

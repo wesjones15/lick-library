@@ -5,15 +5,16 @@ import org.jones.licklibrary.domain.shared.NoteParser;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class ChordTransposer {
 
-    public List<ChordLyric> transpose(List<ChordLyric> chordLines, int semitones) {
+    public List<ChordSheetLine> transpose(List<ChordSheetLine> chordLines, int semitones) {
         if (semitones == 0) return chordLines;
         int normalized = ((semitones % 12) + 12) % 12;
         return chordLines.stream()
-                .map(pair -> transposePair(pair, normalized))
+                .map(line -> line instanceof GuitarTabLine ? line : transposePair((ChordLyric) line, normalized))
                 .toList();
     }
 

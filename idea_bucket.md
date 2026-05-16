@@ -362,6 +362,189 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 -
 </details>
 
+<details>
+<summary>[x] 73. song parser needs another pass</summary>
+
+- I am observing a relatively short song get parsed over-eagerly.
+  - expectation: fewer, longer columns
+  - current: song is shrunk to fit 4 columns, but each column is so short, that it covers only a third of the length of the page
+- the point of the parser is to make the biggest font, and the fewest columns, while still fitting the whole song on one page without scrolling
+</details>
+
+<details>
+<summary>[x] 48. change chord display from ASCII to pretty diagram</summary>
+
+- chords should be shown as an image rather than ascii
+- perhaps use js library: svguitar
+</details>
+
+<details>
+<summary>[x] 65. chord voicing upload ui display</summary>
+
+- add pretty chord display right next to the fret input, showing how voicing will display on page once added
+</details>
+
+<details>
+<summary>[x] 64. chord gallery enhancement- manage/delete voicings</summary>
+
+- add Manage button/icon to top of Chord Gallery page
+- when you click manage, if you click on a chord box, it will show all voicings in a grid, and they will have X on top right of box, and clicking will trigger confirmation prompt. if confirmed, it will delete
+- how does this handle deleting voicings that were added by system? should it allow this?
+  - some default voicings are weird
+- chord gallery should pull all voicings for chord, including custom and / chords if they exist.
+</details>
+
+<details>
+<summary>[x] 76. reseed shouldn't fill out slash chords since its just guessing them</summary>
+
+- i don't want reseed to fill up with inaccurate chord charts.
+</details>
+
+
+<details>
+<summary>[x] 77. chord gallery ->manage->manage voicings enhancement</summary>
+
+- update display so the x is on right side of the voicing diagram
+- the delete yes/no dialogue should be on right side of voicing diagram. delete should be above the confirm button
+</details>
+
+<details>
+<summary>[x] 78. chord gallery - slash chords are displayed wrong</summary>
+
+- currently slash chords are displayed like G/11 when the number after the slash actually represents a note relative to the root. G/11 should display as G/F# etc.
+- reseeder shouldn't bother with slash chord generation.
+- ensure chord voicing upload flow and reseeder flow account for duplicate chord voicings
+- chord gallery should pull existing slash chords and display them correctly
+</details>
+
+<details>
+<summary>[x] 68. stub out additional details for song page</summary>
+
+- Manage: page to update song metadata (right align) (pencil icon like in songlist, maybe a little bigger)
+- Tuning: just display the tuning for the song near where the bpm is displayed (default show standard or EADGBe)
+- View button: user can toggle multi-column view or scrolling view (stub for now) (hovering button explains use)
+- Show Chords button: displays all chords and voicings for (current key of) song (stub for now)
+  - display the hover modals in a row on bottom of page
+</details>
+
+<details>
+<summary>[x] 42. Add "Show Chords" button on song page</summary>
+
+- Button on song title bar; on click shows list of all chords in the song
+
+</details>
+
+<details>
+<summary>[x] 81. </summary>
+
+- the x button in manage voicings in chord gallery by each voicing should be 5 times bigger and centered next to the chart. the delete confirm dialogue should be a single button    
+  containing "delete?" instead of what is currently there
+</details>
+
+<details>
+<summary>[x] 71. enhancement for manage page</summary>
+
+- Manage Chords page in song flow should show the chords relative to the current transposition
+- should show the chord chart display, like the one used in show chords.
+- retain add voicing button (hover label but use icon + ) (chord name is top center aligned, add icon is top right aligned)
+</details>
+
+<details>
+<summary>[x] 59. Songs Library enhancement</summary>
+
+- make list sortable and filterable.
+  - alphabetical by artist, by song
+  - filter by artist
+  - sort by key
+- pagination
+</details>
+
+<details>
+<summary>[x] 63. redesign song card in Song Library</summary>
+
+-  a square card, let song name have line break if needed, shrink font if really big
+- artist still small and gray underneath. still show song key, add song tempo. pencil icon but bigger
+- organize square cards in a grid
+</details>
+
+<details>
+<summary>[x] 74. parser pass</summary>
+
+- the current parser is great, just a few notes
+- allow % as ignored character in chordline
+- "    Ahh " is being detected as a chordline erroneously
+- perhaps short songs should still be 2 columns, this helps with show chords
+</details>
+
+<details>
+<summary>[x] 75. Manage Song API bug</summary>
+
+- when i update song metadata, and swap the artist and song name, i get error: Update failed
+</details>
+
+<details>
+<summary>[x] 83. song library manage</summary>
+
+- change reparse button to Manage
+- when manage is selected, the reparse button (now labeled reparse <icon> ) and the manage button become masive in song cards
+- hide manage button otherwise
+- when manage is on, then you cant misclick to song page
+- when manage is off, key and bpm are larger
+</details>
+
+<details>
+<summary>[x] 82. fix chord hover diagram getting cut off at bottom of song</summary>
+
+- move it up in such cases or something
+</details>
+
+<details>
+<summary>[x] 55. implement scrolling view in song display</summary>
+
+- add alternate chordsheet view that doubles the font size, and displays as a single scrolling column
+- user triggers scrolling with a button.
+- perhaps song should get artifact of list of timestamps for chorus verse etc, and scrolling will jump to these points after a timer instead of scrolling slowly the whole time
+- maybe a steady scroll option too, incase auto is whacky.
+</details>
+
+<details>
+<summary>[x] 84. enhance scrolling view for song display</summary>
+
+- for both column and scrolling view, allow a little padding at bottom, so text isnt right up on screen edge
+  - there is room to accomplish this by reducing space between song title display and song body
+- in scrolling view center the box holding the song (do not center align text)
+- restore the button's original design with view: above columns.
+  - button should not change size when toggled
+</details>
+
+<details>
+<summary>[x] 52. add Home page with features clickable in page body</summary>
+
+- clicking Lick Library in navbar should take user to home page, where the different navbar options are displayed in more detail in the page body
+</details>
+
+<details>
+<summary>[x] 85. ipad web ui</summary>
+
+- when saved as webapp on homescreen on ipad, hide addressbar,
+</details>
+
+<details>
+<summary>[x] 86. stub out planned feature verticals </summary>
+
+- in navbar and home screen, add links to the following
+  - Playlists: empty page, but in a new vertical slice so new directory
+  - Theory: empty page in new slice ..
+  - Live: empty page to be used for play along with mic input and a guitar neck visual
+- just stub the empty pages, add text field describing whats to come, for each page stub
+</details>
+
+<details>
+<summary>[x] 46. add ability to include tab snippets in chord sheets</summary>
+
+- add GuitarTabLine as object in chordsheet, since some chordsheets include riffs. these can have chord labels above, or not. but will be like 6 lines and we already know how to detect.
+</details>
+
 
 </details>
 
@@ -430,94 +613,10 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 42. Add "Show Chords" button on song page</summary>
-
-- Button on song title bar; on click shows list of all chords in the song
-
-</details>
-
-<details>
-<summary>[ ] 46. add ability to include tab snippets in chord sheets</summary>
-
-- add GuitarTabLine as object in chordsheet, since some chordsheets include riffs. these can have chord labels above, or not. but will be like 6 lines and we already know how to detect.
-</details>
-
-<details>
-<summary>[ ] 48. change chord display from ASCII to pretty diagram</summary>
-
-- chords should be shown as an image rather than ascii
-- perhaps use js library: svguitar
-</details>
-
-<details>
-<summary>[ ] 52. add Home page with features clickable in page body</summary>
-
-- clicking Lick Library in navbar should take user to home page, where the different navbar options are displayed in more detail in the page body
-</details>
-
-<details>
-<summary>[ ] 55. add alternate chordsheet view that doubles the font size, and displays as a single scrolling column</summary>
-
-- user triggers scrolling with a button.
-- perhaps song should get artifact of list of timestamps for chorus verse etc, and scrolling will jump to these points after a timer instead of scrolling slowly the whole time
-- maybe a steady scroll option too, incase auto is whacky.
-</details>
-
-<details>
-<summary>[ ] 59. Songs Library enhancement</summary>
-
-- make list sortable and filterable.
-  - alphabetical by artist, by song
-  - filter by artist
-  - sort by key
-- pagination
-</details>
-
-<details>
-<summary>[ ] 63. redesign song card in Song Library</summary>
-
-- maybe a square card, let song name have line break if needed, shrink font if really big
-- artist still small and gray underneath. still show song key, maybe add song tempo.
-- x button remains but should have confirmation dialogue instead of just deleting
-- organize square cards in a grid
-</details>
-
-<details>
-<summary>[ ] 64. chord gallery enhancement- manage/delete voicings</summary>
-
-- there will need to be a way to delete voicings, in chord gallery page.
-- how does this handle deleting voicings that were added by system? should it allow this?
--
-</details>
-
-<details>
-<summary>[ ] 65. chord voicing upload ui display</summary>
-
-- add pretty chord display right next to the fret input, showing how voicing will display on page once added
-</details>
-
-<details>
 <summary>[ ] 67. Theory tab in navbar</summary>
 
 - this will take user to a page that holds all the circle of fifths, caged, scales, live input stuff 
 - initial implementation will be a stub page that has links on home and navbar
-</details>
-
-<details>
-<summary>[ ] 68. stub out additional details for song page</summary>
-- Manage: page to update song metadata (right align)
-- Tuning: just display the tuning for the song near where the bpm is?
-  - let user change tuning to half step down ?
-- View: user can toggle multi-column view or scrolling view
-- Show Chords: displays all chords and voicings for (current key of) song
-</details>
-
-<details>
-<summary>[ ] 71. enhancement for manage page</summary>
-
-- text field for Update Song Chart should prepopulate with rawTab from song
-- Manage Chords page should show the present voicings
-  - Manage Chords should also permit addition of transposed voicings
 </details>
 
 <details>
@@ -528,16 +627,20 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 73. song parser needs another pass</summary>
+<summary>[ ] 87. chord hover modal needs to make sure its not going off screen in any direction</summary>
 
-- I am observing a relatively short song get parsed over-eagerly.
-  - expectation: fewer, longer columns
-  - current: song is shrunk to fit 4 columns, but each column is so short, that it covers only a third of the length of the page
-- the point of the parser is to make the biggest font, and the fewest columns, while still fitting the whole song on one page without scrolling
+-
+</details>
+
+<details>
+<summary>[ ] 88. theres still a little bit of space at the top of the song title toolbar that scrolls when in scroll mode, even though its supposed to be frozen </summary>
+
+-
 </details>
 
 
 </details>
+
 
 <details>
 <summary>Deferred</summary>
@@ -668,12 +771,28 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 - make bpm refs in song itself clickable and they update metronome?
 </details>
 
+<details>
+<summary>[~] 79. are slash chords overengineered?</summary>
+
+- is there any point to having the middle layer of interpretting slash chords as /11 or /4 instead of /B or whatever matches in the key?
+- i feel like we can just save them in the db directly as /B or whatever is there no?
+- if i'm wrong, i want to discuss, don't just implement
+- we should only implement if the end result cuts down on code volume significantly
+</details>
+
+<details>
+<summary>[~] 80. little view mode</summary>
+
+- add button that makes song title card a lil smaller and moves all the controls up to the navbar
+- add hidden song controls card to navbar that allows this
+</details>
+
 
 </details>
 
 
 <details>
-<summary>[ ] 50. </summary>
+<summary>[ ] 89. </summary>
 
 - 
 </details>

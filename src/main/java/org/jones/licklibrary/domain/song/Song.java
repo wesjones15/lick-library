@@ -1,7 +1,7 @@
 package org.jones.licklibrary.domain.song;
 
 import jakarta.persistence.*;
-import org.jones.licklibrary.domain.song.parsing.ChordLyric;
+import org.jones.licklibrary.domain.song.parsing.ChordSheetLine;
 import org.jones.licklibrary.domain.song.parsing.ChordLyricListConverter;
 
 import java.time.LocalDateTime;
@@ -30,7 +30,7 @@ public class Song {
 
     @Convert(converter = ChordLyricListConverter.class)
     @Column(name = "chord_lines", columnDefinition = "TEXT", nullable = false)
-    private List<ChordLyric> chordLines = new ArrayList<>();
+    private List<ChordSheetLine> chordLines = new ArrayList<>();
 
     @Column(name = "num_columns")
     private int numColumns = 2;
@@ -58,8 +58,8 @@ public class Song {
     public Integer getTempo() { return tempo; }
     public void setTempo(Integer tempo) { this.tempo = tempo; }
 
-    public List<ChordLyric> getChordLines() { return chordLines; }
-    public void setChordLines(List<ChordLyric> chordLines) { this.chordLines = chordLines; }
+    public List<ChordSheetLine> getChordLines() { return chordLines; }
+    public void setChordLines(List<ChordSheetLine> chordLines) { this.chordLines = chordLines; }
 
     public int getNumColumns() { return numColumns; }
     public void setNumColumns(int numColumns) { this.numColumns = numColumns; }
