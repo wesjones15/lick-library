@@ -5,7 +5,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "position_cache", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"interval_hash", "key"})
+    @UniqueConstraint(columnNames = {"interval_hash", "note_key"})
 })
 public class PositionCache {
 

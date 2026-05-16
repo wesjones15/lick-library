@@ -78,16 +78,16 @@ public class SongService {
     public SongDetailResponse updateSong(UUID id, UpdateSongRequest req) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
-        if (req.title() != null && !req.title().isBlank()) song.setTitle(req.title().trim());
-        song.setArtist(req.artist() != null && !req.artist().isBlank() ? req.artist().trim() : null);
-        song.setOriginalKey(req.originalKey() != null && !req.originalKey().isBlank() ? req.originalKey() : null);
-        song.setCapo(req.capo());
-        song.setTempo(req.tempo());
         if (req.rawChordSheet() != null) {
             song.setRawChordSheet(req.rawChordSheet());
             ChordSheetParser.ParseResult result = chordSheetParser.parse(req.rawChordSheet());
             song.setChordLines(result.chordLines());
             song.setNumColumns(result.numColumns());
+        } else {
+            if (req.title() != null && !req.title().isBlank()) song.setTitle(req.title().trim());
+            song.setArtist(req.artist() != null && !req.artist().isBlank() ? req.artist().trim() : null);
+            song.setOriginalKey(req.originalKey() != null && !req.originalKey().isBlank() ? req.originalKey() : null);
+            song.setTempo(req.tempo());
         }
         return toDetail(songRepository.save(song), song.getChordLines());
     }

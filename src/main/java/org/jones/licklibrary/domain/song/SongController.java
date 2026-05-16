@@ -51,7 +51,7 @@ public class SongController {
         }
     }
 
-    @PutMapping("/{id}")
+    @PostMapping("/{id}/update")
     public SongDetailResponse updateSong(@PathVariable UUID id, @RequestBody UpdateSongRequest request) {
         return songService.updateSong(id, request);
     }
