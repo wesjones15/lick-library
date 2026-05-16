@@ -99,7 +99,7 @@ Content-Type: application/json
 }
 ```
 
-The raw chord sheet is parsed into a list of `ChordLyric` pairs (chord row + lyric row). Font size is auto-computed based on line length and column count (2 or 3 columns).
+The raw chord sheet is parsed into a list of `ChordLyric` pairs (chord row + lyric row). Font size is auto-computed based on line length and column count.
 
 ---
 
@@ -109,7 +109,7 @@ The raw chord sheet is parsed into a list of `ChordLyric` pairs (chord row + lyr
 GET /api/song
 ```
 
-Returns all songs as summary objects (`id`, `title`, `artist`, `originalKey`).
+Returns all songs as summary objects (`id`, `title`, `artist`, `originalKey`, `tempo`, `canReparse`).
 
 ---
 
@@ -124,6 +124,24 @@ GET /api/song/{id}?semitones=0
 | `semitones` | `0` | Transpose the chord sheet by this many semitones at response time |
 
 Returns the full song including `chordLines` (list of ChordLyric), `numColumns`, `capo`, `tempo`, and `originalKey`.
+
+---
+
+### Update song metadata
+
+```
+POST /api/song/{id}/update
+Content-Type: application/json
+
+{
+  "title":         "Blackbird",
+  "artist":        "The Beatles",
+  "originalKey":   "G",
+  "tempo":         92
+}
+```
+
+Updates song metadata only. To update the chord chart, include `rawChordSheet` instead (metadata fields are ignored when `rawChordSheet` is present).
 
 ---
 
@@ -147,7 +165,7 @@ Returns 204.
 
 ---
 
-### Get chord voicings
+### Get chord voicings for a root + quality
 
 ```
 GET /api/chord?root=A&quality=m7&instrument=GUITAR
@@ -159,7 +177,7 @@ GET /api/chord?root=A&quality=m7&instrument=GUITAR
 | `quality` | *(required)* | Chord quality (see table below) |
 | `instrument` | `GUITAR` | Named instrument preset |
 
-Returns `List<String>` — ASCII tab voicings. For `instrument=GUITAR`, returns up to 5 real CAGED shapes transposed to the requested root. For other instruments, returns an empty list until shapes are seeded for them. Unknown quality → 400.
+Returns `List<ChordVoicingResponse>` — each with `id`, `frets` (int array), and `source`. For `instrument=GUITAR`, returns real CAGED shapes transposed to the requested root, user-uploaded shapes first. Unknown quality → 400.
 
 | `quality=` | Chord |
 |---|---|
@@ -177,6 +195,42 @@ Returns `List<String>` — ASCII tab voicings. For `instrument=GUITAR`, returns 
 | `m6` | Minor 6th |
 | `dim7` | Diminished 7th |
 | `m7b5` | Half-diminished |
+
+---
+
+### Get all chord voicings (chord gallery)
+
+```
+GET /api/chord/all?root=A&instrument=GUITAR
+```
+
+Returns all voicings for every quality for the given root, grouped as `Map<quality, List<ChordVoicingResponse>>`.
+
+---
+
+### Upload a chord voicing
+
+```
+POST /api/chord
+Content-Type: application/json
+
+{
+  "chordName": "Am7",    // parsed into root + quality
+  "frets":     [-1, 0, 2, 0, 1, 0]
+}
+```
+
+Adds a user-submitted voicing. Duplicate fret arrays for the same chord are rejected with 409.
+
+---
+
+### Delete a chord voicing
+
+```
+DELETE /api/chord/{id}
+```
+
+Returns 204.
 
 ---
 
@@ -362,7 +416,7 @@ src/main/java/org/jones/licklibrary/
     │
     ├── song/
     │   ├── Song.java                    JPA entity
-    │   ├── SongController.java          REST endpoints: POST/GET/DELETE /api/song
+    │   ├── SongController.java          REST: POST/GET/DELETE /api/song, POST /api/song/{id}/update
     │   ├── SongRepository.java
     │   ├── SongService.java
     │   ├── dto/
@@ -377,12 +431,12 @@ src/main/java/org/jones/licklibrary/
     │
     └── chord/
         ├── ChordQuality.java            JPA entity — chord suffix
-        ├── ChordShape.java              JPA entity — CAGED template frets
+        ├── ChordShape.java              JPA entity — CAGED template frets + user voicings
         ├── ChordQualityRepository.java
         ├── ChordShapeRepository.java
-        ├── ChordService.java            chord quality maps; voicings via shape transposition
-        ├── ChordShapeSeed.java          seeds 70 CAGED shapes on first boot
-        └── ChordController.java         GET /api/chord
+        ├── ChordService.java            voicings via shape transposition; upload/delete
+        ├── ChordShapeSeed.java          seeds CAGED shapes on first boot (system source only)
+        └── ChordController.java         GET /api/chord, GET /api/chord/all, POST /api/chord, DELETE /api/chord/{id}
 ```
 
 ---
@@ -413,7 +467,7 @@ src/main/java/org/jones/licklibrary/
 | `capo` | INTEGER | |
 | `tempo` | INTEGER | |
 | `chord_lines` | TEXT | JSON list of ChordLyric objects |
-| `num_columns` | INTEGER | 2 or 3, computed at parse time |
+| `num_columns` | INTEGER | computed at parse time |
 | `raw_chord_sheet` | TEXT | Original upload; used by reparse |
 | `created_at` | TIMESTAMP | |
 
@@ -437,7 +491,7 @@ UNIQUE on `(interval_hash, note_key)`. Table exists but is not actively used —
 | `id` | UUID | PK |
 | `suffix` | VARCHAR | UNIQUE — `""`, `"m"`, `"7"`, `"maj7"`, … |
 
-14 rows seeded on first startup. `suffix` matches the `quality=` request param accepted by `GET /api/chord`.
+14 rows seeded on first startup. `suffix` matches the `quality=` request param.
 
 ### `chord_shape` entity
 
@@ -446,13 +500,13 @@ UNIQUE on `(interval_hash, note_key)`. Table exists but is not actively used —
 | `id` | UUID | PK |
 | `chord_quality_id` | UUID | FK → `chord_quality` |
 | `shape_name` | VARCHAR | `CAGED_E`, `CAGED_A`, `CAGED_G`, `CAGED_C`, `CAGED_D` |
-| `template_frets` | TEXT | JSON array — `"x"` muted, `-1` stays open, `0+` fretted (offset added on transpose) |
+| `template_frets` | TEXT | JSON int array — `-1` stays open, `0+` fretted (offset on transpose) |
 | `root_string` | INTEGER | Index into instrument tuning (0 = lowest string) |
-| `instrument` | VARCHAR | `"GUITAR"` — matches `InstrumentRegistry` key |
-| `source` | VARCHAR | `"system"` for seed rows; `"song:{id}"` for future custom voicings |
-| `label` | VARCHAR | Nullable — for future admin UI |
+| `instrument` | VARCHAR | `"GUITAR"` |
+| `source` | VARCHAR | `"system"` for seed rows; `"user"` for uploaded voicings |
+| `label` | VARCHAR | Nullable |
 
-70 rows seeded on first startup (5 CAGED shapes × 14 qualities). `GET /api/chord?instrument=GUITAR` transposes the matching template to the requested root and formats it as an ASCII tab string. Other instruments return an empty list until shapes are seeded for them.
+Seeded CAGED shapes cover 14 qualities for `GUITAR` only. User-uploaded voicings are stored in the same table with `source="user"` and are returned first in voicing lists.
 
 ---
 
