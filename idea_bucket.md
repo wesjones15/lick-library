@@ -615,8 +615,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 <details>
 <summary>[ ] 67. Theory tab in navbar</summary>
 
-- this will take user to a page that holds all the circle of fifths, caged, scales, live input stuff 
-- initial implementation will be a stub page that has links on home and navbar
+- this will take user to a page that holds all the circle of fifths, caged, scales, live input stuff
 </details>
 
 <details>
@@ -636,6 +635,52 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 <summary>[ ] 88. theres still a little bit of space at the top of the song title toolbar that scrolls when in scroll mode, even though its supposed to be frozen </summary>
 
 -
+</details>
+
+<details>
+<summary>[ ] 89. live neck enhancement</summary>
+
+- darken strings
+- maybe tan rectangle under strings display to give more guitar appearance.
+- when a note is selected, the pale bright yellow outline should be a thin
+  - note name should be bigger, slightly bigger when unselected, even bigger when selected
+- when live page is loaded, default to C Major perhaps instead of empty.
+</details>
+
+<details>
+<summary>[ ] 90. live enhance</summary>
+
+- need to incorporate next possible note. 
+- we can test without using mic input
+- clicking to select a note in the display should be treated as "note being played"
+  - only one note allowed to be selected at a time in this state
+- next possible note should use the caged intervals and jumps
+- is this where we incorporate the fun caged relational stuff or is that theory?
+  - for example G diatonic is composed of 3 pentatonic shapes overlaid: G C D
+- if the user only knows the scale as major, but they are playing a different scale, perhaps some way of converting or showing 6=1 or something, some way to understand the scale mode relations
+</details>
+
+<details>
+<summary>[ ] 91. make app HTTPS</summary>
+
+- mic doesn't work without https. can we make this app secure
+</details>
+
+<details>
+<summary>[ ] 92. iphone/vertical layout update</summary>
+
+- app is geared for landscape ipad
+- on portrait mode, we should display song list as list instead of grid
+- on portrait mode, i see that the lines get cut off in scrolling song mode, the lines are cut short
+  - portrait ipad cuts lines a little
+  - portrait iphone cuts lines significantly, leaving right 3rd of screen blank.
+- maybe for all layouts, in song display, artist should still be small and grey, but it should be moved above song title
+</details>
+
+<details>
+<summary>[ ] 93. dynamic fret display idea</summary>
+
+- in live tab, when the being played is up the neck, the diagram should shift to center currently played note in the diagram, revealing frets further up the neck, and perhaps hiding the first few frets, but at least 12 frets should show onscreen
 </details>
 
 
@@ -792,7 +837,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 
 <details>
-<summary>[ ] 89. </summary>
+<summary>[ ] 94. </summary>
 
 - 
 </details>
