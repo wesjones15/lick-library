@@ -10,102 +10,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 <summary>Pending</summary>
 
 <details>
-<summary>Theory Live Unification Epic</summary>
-
-<details>
-<summary>[ ] 95. (Theory) theory tab content</summary>
-
-- perhaps a compare modes tool, to show root on ionian is x on dorian etc.
--  theory tab shouldn't have mic input
-</details>
-
-<details>
-<summary>[~] 97. (Live) CAGED-based next-note suggestions for Live tab (from 90)</summary>
-
-- Replace Euclidean distance filter with CAGED positional logic
-- Define 5 CAGED boxes as fret-range windows relative to the root (~4 frets wide, ~1-fret overlap)
-- When note is selected, identify its CAGED box; candidates come from that box and adjacent boxes only
-- Naturally constrains next-note highlights to playable hand positions
-- **File:** `src/features/live/LivePage.tsx`
-</details>
-
-<details>
-<summary>[ ] 98. (Theory) mode relationship display for Theory tab (from 90)</summary>
-
-- Show how each mode relates to its parent Ionian key, e.g. "A Aeolian = relative minor of C Major (6th degree)"
-- User picks root + mode; page shows parent key and degree position
-- Mapping: IONIAN=1, DORIAN=2, PHRYGIAN=3, LYDIAN=4, MIXOLYDIAN=5, AEOLIAN=6, LOCRIAN=7
-- **File:** `src/features/theory/TheoryPage.tsx`
-</details>
-
-<details>
-<summary>[ ] 99. (Theory) CAGED position zones on neck for Theory tab (from 8)</summary>
-
-- Overlay 5 CAGED boxes as labeled shaded regions on a static GuitarNeck
-- Semi-transparent rect per box spanning its fret range × all 6 strings, labeled C/A/G/E/D
-- User picks root key; boxes shift to correct fret positions
-- **Files:** `src/features/theory/TheoryPage.tsx`, reuse `GuitarNeck`
-</details>
-
-<details>
-<summary>[ ] 100. (Theory) pentatonic-within-diatonic overlay for Theory tab (from 8)</summary>
-
-- Any diatonic CAGED box = three overlapping pentatonic shapes (e.g. G Ionian = G + C + D pentatonic)
-- Color-code or outline the three pentatonic subsets within the 7-note scale overlay
-- Implement after CAGED zones (idea 100) are working
-- **File:** `src/features/theory/TheoryPage.tsx`
-</details>
-
-<details>
-<summary>[ ] 109. (Live) live page guitar notes display</summary>
-
-- active note should pulse more than next note
-- next note should pulse its own color instead of dark red.
-- its hard to visually discern current note from next note at a glance, the pale yellow is tough to see
-- clicking on one of the notes in the toolbar should highlight all notes of that degree!
-- include next closest own note in next note candidates.
-  - what if the nodes from the next own note glow and pulse half as bright as the first degree next nodes?
-</details>
-
-<details>
-<summary>[ ] 110. (Theory) theory page interactive guitar ui</summary>
-
-- guitar neck re used in a sub page under theory.
-- interactive diagram that shows theory stuff when you click a note.
-- omg. click notes on the neck and it builds a lick! tab output.
-  - single note at a time i guess for now
-- click a note, all instances of that note glow
-  - show common intervals. note relations
-  - now we can get into the weeds about theory
-</details>
-
-<details>
-<summary>[ ] 118. (Theory,Live) Unify theory and live pages</summary>
-
-- the more i think about it, i think the live thing should just get all the theory stuff
-- i don't see it staying distinct, especially if the pitch detector feature isn't worked out yet.
-  - i think the caged and theory stuff will be more digestable if they are part of the interactive component.
-  - caged scale overlay is already there. add a way to highlight by color, or by caged shape
-    - show chords and chord voicings overlaid onto neck depicting relevant scale underneath
-    - circle of fifths chord progressions by interval and quality notation
-      - show these progressions on the neck.
-- something about mode relations
-- something about diatonic scales being built of 3 adjacent pentatonic scales
-- i think maybe some of this stuff might get crowded, so toggle theory modes by clicking on one of a set of right aligned connected buttons naming the options on live toolbar
-  - Option: Lick Visualizer
-    - input guitar tab syntax
-    - output that sequence visualized on the guitar neck, either at once or column by column of tab
-    - potentially show how it relates to its key/mode/scale
-  - other Option will be made up of above ideas
-    - Option: circle of fifths/progressions
-      - voicings for progressions up neck without capo
-        - 
-</details>
-
-</details>
-
-
-<details>
 <summary>Songs Enhancement Epic</summary>
 
 <details>
@@ -131,6 +35,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
   - song body is too zoomed in. song line gets cut off (iphone 17 pro)
   - there is no whitespace, but the body is zoomed to fill screen with the text that is shown
   - we already tried a horizontal scrolling approach but what i want is for the text to be smaller to fit the screen 
+- maybe we just make the font smaller in iphone view (and ipad portrait scrolling view?)
 </details>
 
 <details>
@@ -143,31 +48,169 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
+<details>
+<summary>[ ] 119. (Playlist) playlist song detail view bug</summary>
+
+- in playlist song detail view, where playlist controls are exposed over song display, the save icon button to "update voicing/save offsets for song in playlist" doesn't work.
+</details>
 
 <details>
-<summary>Reverting Playlist Song Key Changes And Implementing Simple Offset Approach</summary>
+<summary>Theory Second Pass Enhancement Epic</summary>
 
 <details>
-<summary>[ ] 117. (Playlist,Songs) songs page link</summary>
+<summary>[x] 120. (Live,Theory) interval toolbar enhancement</summary>
 
-- the last 2 fixes were wrong and overengineered.
-  - when song is added to playlist via song detail page
-    - save capo offset (+/- from song's default capo value) and key offset (+/- from song's default key)
-  - when viewing songlist in playlist detail
-    - if manage is active, then add a button to change voicing offset
-    - if manage is not active, song card should look like list view from songs library
-      - the key shown in the song card should be offset by the offset value associated with the song entry in the playlist
-  - if song is opened via songlist in playlist detail, or via next/prev button in playlist song viewer, 
-    - apply playlist specific offset for that song in capo widget and transpose widget, so that the song transposes to the expected place.
-  - if song is opened from song library page, then playlist offsets are not applied to transposition.
-    - song should show in default key and capo in this case
-  - rewrite the playlist offset feature with this simpler approach in mind.
-  - original message: i think the issue was that the key displayed in the song widget in the playlist detail view is showing the key representing  shape, but when we open the modal, it is treating it as the sound value, and that is causing a weird mismatch even once the song is open. however, i noticed this change persists to the song outside of the scope of the playlist, just viewing the song from the songs vertical. to clarify, the previous change did not fix the issue i had attempted to describe, which is why i am elaborating now
-  - i have a song viewed from library that is showing capo 4 D# shape G sound but then the chords are in G because that is the default key of the song. the key is saved as G in the song metadata, so this weird behavior is a result of breaking the transpose widget in some way
+- in live tab, in live mode, when you click on an interval in the toolbar, and it glows,
+  - you can select other intervals in the toolbar and they will glow too
+- When multiple degrees are selected and glowing, the neck visual shows:
+  - All notes of all selected degrees active simultaneously
+- When multiple intervals are selected in the toolbar
+  - 'clear' button appears, deselects all, and button vanishes
+- live tab, live mode. if no intervals are selected in toolbar
+  - user can click notes on neck and it will highlight nextNotes, etc like usual
+</details>
+
+<details>
+<summary>[x] 121. (Live) Next Note Highlight Enhancement</summary>
+
+- when in live tab, and current note is selected, and nextNotes are pulsing, next own note should also pulse bright
+  - next own note should behave like the other first degree nextNotes, full bright pulsing. 
+  - second degree notes off of next own note should be half bright pulsing
+- pulsing notes shouldn't have white circle behind
+  - remove the white circle totally, the visibility is covered by brightness and pulsing
+- The pale yellow active ring should be changed slightly
+  - currentNote should pulse its own color, like the other bright notes, but the outer border of the pulse should be the pale yellow ring
+</details>
+
+<details>
+<summary>[ ] 122. (Theory/Licks) Lick Visualizer Overhaul</summary>
+
+- lick visualizer
+  - one column at a time mode should cycle columns every second
+  - toggle for mode should just show all notes from tab on neck at once. 
+  - add button to get lick from lick library.
+    - that should open modal that displays list of lick cards
+    - click a lick, it will load in the text field in lick visualizer and the guitar neck will show up automatically
+      - don't worry about showing generated position licks yet
+- "Cycle columns every second" 
+  - add toggle. 
+    - default selection is 1 col per second. 
+    - when toggled, update rate is synced with metronome
+  - add pause button for lick playback.
+    - add selectable progress bar. 
+      - progress bar is synced to raw tab. 
+      - since tab is ingested column by column, dragging the progress bar over a column will display the notes played in that column
+      - progress bar can only land on columns where notes are present.
+        - can tabs have rests or blank space? if so, need to include a symbol so it isn't skipped like the columns between notes.
+    - progress bar card can go below the lick text input field.
+      - the currently processed lick will be in that field
+        - the progress bar will be aligned under the lick so where you drag it will aligned with the column that gets selected
+- When a lick is loaded from the library modal, 
+  - lick should render in original saved key.
+  - expose controls to alter key.
+    - this will reveal position selecting flow, similar to lick modal
+- when lick is loaded from lick modal from Lick Visualizer
+  - automatically update live neck with lick rendering
+    - default is render all notes from lick at once on neck
+      - toggle will swap mode from all-at-once to playback-mode
+        - in playback mode, user can choose between 1 second speed, and metronome-sync
+- remove lick text field with buttons. select lick from library, and new lick
+  - select lick brings up lick modal. 
+  - selected lick gets rawtab displayed where lick text field is in current design
+  - new lick opens new lick modal, which you type the lick into the field, click submit, and it uploads the lick to the lick library
+    - then it automatically calls that lick and puts it in the visualizer
+- lick visualizer should not be reinterpreting the tabs inputted. 
+  - since visualizer takes input as raw tab string, we have absolute positions of every note played on the neck in the lick.
+  - use that, not the position finder.
+- Perhaps Lick Visualizer should be its own tab "Lick Visualizer" OR perhaps it should be accessible under Licks tab instead.
+  - open to discussion
+- feature to build lick by clicking on notes on the guitar neck diagram, and it produces a rawTab text that you can save
+  - maybe it can determine possible valid keys / modes that describe the lick
+    - this should account for blues notes etc and assume blues or jazz over nonstandard mode if it comes down to it.
+</details>
+
+<details>
+<summary>[ ] 123. (Theory,Live) Pentatonic Demo</summary>
+
+- does the pentatonic mode on live tab allow you to stack pentatonic scales on the chart?
+  - adding G + D + C pentatonics could be like: you've built G diatonic
+- incorporate pentatonic mode into selecting intervals thing
+  - if you are in major mode for example
+    - select pentatonic for <key>. 
+      - this will highlight the notes of that scale on neck
+      - it will light up the relevant intervals in the key
+    - select intervals in toolbar
+      - if a combination matches pentatonic notes, then the relevant pentatonic scale lights up
+- The current "Pent. Sets" toggle shows which diatonic notes belong to which of the 3 pentatonic subsets (passively). 
+  - This seems like a different feature — more active, where you select individual pentatonic scales to stack and discover the diatonic. 
+    - The feature described in this idea should replace the old pentatonic feature.
+- "Select pentatonic for key" — is the pentatonic root always the same as the main root selector, or independently choosable (so you could overlay G pent + C pent + D pent on a G neck)?
+  - we are selecting pentatonics of different roots to display a full diatonic
+- For the interval-selection → pentatonic recognition flow: does this happen automatically as you select bubbles in the toolbar (live feedback), or is it a separate mode/trigger?
+  - this happens live
+  - if you select 1 2 3 5 6 in toolbar in G major, the G pentatonic button will glow
+- pentatonic widget. starts as button for pentatonic (this lives below the neck visual)
+  - on click, button changes color to show pentatonic is active
+  - box exposed below
+    - above box is a dropdown selection for mode.
+      - this adjusts the mode of pentatonics displayed when user clicks pentatonic key in the box below.
+      - default value is major OR sync with diatonic scale mode chosen from dropdown in live toolbar.
+      - if user updates the mode in live toolbar, it updates mode selected in pentatonic widget.
+        - if user has modified mode in pentatonic widget, it no longer syncs with live toolbar
+        - reset state on refresh
+    - box contains 4w 3l grid of all 12 notes
+    - when multiple toolbar intervals are selected, and the selection builds a full pentatonic scale
+      - the key of that scale begins to glow in the grid
+      - if multiple pentatonics can be built from the interval selections, all applicable keys glow in grid
+    - if user clicks on key in box, it will glow all the notes of that pentatonic scale on the neck of the guitar.
+      - if no key/mode is selected in the guitar neck live dropdowns, 
+        - then notes of pentatonic scale should still show on neck when the associated key button is selected from the grid.
+      - if those notes aren't a part of the diatonic key/mode selected
+        - selecting key in pentatonic grid should still highlight the notes it represents
+  - maybe we remove the pentatonic mode selector and just have it permanently sync with the live toolbar mode selector?
+    - if we do this, we can extract the mode comparison stuff to a more fleshed out feature.
+</details>
+
+</details>
+
+<details>
+<summary>Theory Third Round Enhancement</summary>
+
+<details>
+<summary>[ ] 124. (Live,Theory) Separate Interactive page from mic</summary>
+
+- make the mic input lighting up guitar neck its own page and that goes on Live
+- everything else from Theory and Live go back to Theory tab
 - 
-- when add to playlist modal is open, and playlists are listed
-  - if the song is already in a playlist, the add button should be replaced with the x button to remove
-  - clicking the playlist in the playlist list should take you to the playlist details page
+</details>
+
+<details>
+<summary>[ ] 125. (Theory) Chords Feature In Theory/Live Tab</summary>
+
+- (defer)
+  - if you select 3 or 4 or whatever, it will say what chord that forms
+    - tie in circle of fifths/progressions connection
+  - Where does the chord name display? Inline in the toolbar row, below it, or somewhere on the neck?
+  - What if the selected intervals don't form a recognized chord —
+    - does it say nothing, or show something like "no chord"?
+  - "Tie in circle of fifths/progressions connection" is vague —
+    - does that mean label the chord with its diatonic function (e.g. "IV — F major"), or something more visual?
+</details>
+
+<details>
+<summary>[ ] 126. (Theory) Modes comparison</summary>
+
+- there is learning potential with a modes comparison tool
+- the idea currently isn't fleshed out
+- the theory live scope is expanding, but is also shaping into 1 big tool instead of a combo of interactables
+  - i ultimately want mode comparison to go into the main interactive tool, but
+</details>
+
+<details>
+<summary>[ ] 127. (Theory) Next Own Note Enhancement</summary>
+
+- currently nextOwnNote highlights when a note is selected, and glows/pulses the second degree candidates
+  - enhancement will allow 2-3 nextOwnNotes to be selected and also have their second degree candidates glow and pulse
 </details>
 
 </details>
@@ -376,7 +419,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 119. </summary>
+<summary>[ ] 128. </summary>
 
 - 
 </details>
