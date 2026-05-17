@@ -849,6 +849,137 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
+<details>
+<summary>Theory Second Pass Enhancement Epic / Pentatonic and Live Rewrite</summary>
+
+<details>
+<summary>[x] 120. (Live,Theory) interval toolbar enhancement</summary>
+
+- in live tab, in live mode, when you click on an interval in the toolbar, and it glows,
+    - you can select other intervals in the toolbar and they will glow too
+- When multiple degrees are selected and glowing, the neck visual shows:
+    - All notes of all selected degrees active simultaneously
+- When multiple intervals are selected in the toolbar
+    - 'clear' button appears, deselects all, and button vanishes
+- live tab, live mode. if no intervals are selected in toolbar
+    - user can click notes on neck and it will highlight nextNotes, etc like usual
+</details>
+
+<details>
+<summary>[x] 121. (Live) Next Note Highlight Enhancement</summary>
+
+- when in live tab, and current note is selected, and nextNotes are pulsing, next own note should also pulse bright
+    - next own note should behave like the other first degree nextNotes, full bright pulsing.
+    - second degree notes off of next own note should be half bright pulsing
+- pulsing notes shouldn't have white circle behind
+    - remove the white circle totally, the visibility is covered by brightness and pulsing
+- The pale yellow active ring should be changed slightly
+    - currentNote should pulse its own color, like the other bright notes, but the outer border of the pulse should be the pale yellow ring
+</details>
+
+<details>
+<summary>[x] 123. (Theory,Live) Pentatonic Demo</summary>
+
+- does the pentatonic mode on live tab allow you to stack pentatonic scales on the chart?
+    - adding G + D + C pentatonics could be like: you've built G diatonic
+- incorporate pentatonic mode into selecting intervals thing
+    - if you are in major mode for example
+        - select pentatonic for <key>.
+            - this will highlight the notes of that scale on neck
+            - it will light up the relevant intervals in the key
+        - select intervals in toolbar
+            - if a combination matches pentatonic notes, then the relevant pentatonic scale lights up
+- The current "Pent. Sets" toggle shows which diatonic notes belong to which of the 3 pentatonic subsets (passively).
+    - This seems like a different feature — more active, where you select individual pentatonic scales to stack and discover the diatonic.
+        - The feature described in this idea should replace the old pentatonic feature.
+- "Select pentatonic for key" — is the pentatonic root always the same as the main root selector, or independently choosable (so you could overlay G pent + C pent + D pent on a G neck)?
+    - we are selecting pentatonics of different roots to display a full diatonic
+- For the interval-selection → pentatonic recognition flow: does this happen automatically as you select bubbles in the toolbar (live feedback), or is it a separate mode/trigger?
+    - this happens live
+    - if you select 1 2 3 5 6 in toolbar in G major, the G pentatonic button will glow
+- pentatonic widget. starts as button for pentatonic (this lives below the neck visual)
+    - on click, button changes color to show pentatonic is active
+    - box exposed below
+        - above box is a dropdown selection for mode.
+            - this adjusts the mode of pentatonics displayed when user clicks pentatonic key in the box below.
+            - default value is major OR sync with diatonic scale mode chosen from dropdown in live toolbar.
+            - if user updates the mode in live toolbar, it updates mode selected in pentatonic widget.
+                - if user has modified mode in pentatonic widget, it no longer syncs with live toolbar
+                - reset state on refresh
+        - box contains 4w 3l grid of all 12 notes
+        - when multiple toolbar intervals are selected, and the selection builds a full pentatonic scale
+            - the key of that scale begins to glow in the grid
+            - if multiple pentatonics can be built from the interval selections, all applicable keys glow in grid
+        - if user clicks on key in box, it will glow all the notes of that pentatonic scale on the neck of the guitar.
+            - if no key/mode is selected in the guitar neck live dropdowns,
+                - then notes of pentatonic scale should still show on neck when the associated key button is selected from the grid.
+            - if those notes aren't a part of the diatonic key/mode selected
+                - selecting key in pentatonic grid should still highlight the notes it represents
+    - maybe we remove the pentatonic mode selector and just have it permanently sync with the live toolbar mode selector?
+        - if we do this, we can extract the mode comparison stuff to a more fleshed out feature.
+</details>
+
+<details>
+<summary>[x] 128. (Theory) Pentatonic Display Enhancement</summary>
+
+- in live tab, live mode
+    - if diatonic scale is selected for some mode/key
+        - if pentatonic scale is selected in some mode/key,
+            - notes in the pentatonic scale get a ring
+                - ring can nest up to 3 times to show up to 3 pentatonics displayed on neck at once
+                - color of ring
+                    - idea 1: color of ring matches the interval colors relative to pentatonic scale root note
+                        - e.g. if diatonic scale is C Major, and first pentatonic scale selected is G Major, then the pentatonic rings will red on G notes etc
+                        - if second pentatonic is selected. root note of that scale will be red for second ring
+                        - ditto for 3rd.
+                        - if a pentatonic button is deselected
+                            - if this is first or second pentatonic scale selected, rings shift down to replace removed level.
+                            - new first pentatonic will occupy lowest ring, third ring shifts to second ring etc.
+                        - ring level chosen is based on how many pentatonics are selected. logic should not care if any particular note is already pentatonic occupied, since ring position is based on pentatonic scale selection order.
+    - if user clicks note in interval toolbar, the notes should pulse, but they should not glow pale yellow, as they are not currentNote
+</details>
+
+<details>
+<summary>[x] 129. (Theory) Live Pentatonic Enhancement</summary>
+
+- the box for pentatonic button and notes grid
+    - pentatonic button should be inside the box, to the left of the Mode select.
+        - button should not move around when pentatonic is toggled, or when buttons are used
+    - synced indicator should be smaller and it should be on the row below mode dropdown, right aligned
+        - when desync occurs, the words should vanish, but the space it occupied should remain, so card doesn't resize.
+    - the dropdown for mode should be a bit smaller in width. accomplish this by changing "Natural Minor (Aeolian)" to "Aeolian (N. Minor)" also change ionian to be "Ionian (Major)"
+    - clear all should be changed to clear, and it should be in row with synced, but left aligned
+    - when pentatonic button is inactive, also hide mode and sync, as well as hide the box
+- pentatonic nested rings highlighting
+    - can each ring be bounded by thin black borders?
+- pentatonic detection from interval toolbar
+    - update logic to highlight all scales that are not ruled out based on selection
+        - use different button colors to distinct partial match from full match, yellow and orange
+- when pentatonic key button is selected, and notes outside of scale are glowing, they should display their notes
+- get rid of caged button and the caged shape highlighting, move guitar neck up a little with that space being freed up
+</details>
+
+<details>
+<summary>[x] 127. (Theory) Next Own Note Enhancement</summary>
+
+- next candidate rewrite
+    - current implementation:
+        - currentNote brightens, pulses, glows
+        - nextNote is closest of each interval in the scale, one per interval, including own note; brightens, pulses
+        - second degree next notes are shown off of nextOwnNote; pulses, half bright
+    - new implementation:
+        - currentNote brightens, pulses, glows
+        - nextNote is closest of each interval in the scale, one per interval, including own note; brightens to .8, pulses
+        - second degree next notes are next closest candidate for each interval relative to currentNote
+            - these pulse and are 2/3rds brightness
+        - third degree next notes are 3rd closest candidate for each interval relative to currentNote
+            - these pulse and are at 1/3rds brightness
+        - all degree candidates get dark enough text to discern note
+</details>
+
+
+</details>
+
 </details>
 
 

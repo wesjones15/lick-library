@@ -25,6 +25,17 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 - now that tablines are recognized in song parser and they are in tab format that is consumable by the licks parser
   - transposing song key should transpose the tabs as well using lick transpose logic.
+- on song upload, or reparse, treat detected tabline blocks in songs as licks, add to lick library, but maybe with a flag to differentiate them from user licks.
+  - loading song should load tab blocks as lick cards
+    - transposing song should transpose the tab
+    - arrows to cycle Positions for transposed
+    - if lick is deleted from lick library song licks db, 
+      - then display tabline as usual in tab if song is not transposed
+      - if song is transposed, just show error where tab was, but take up the same amount of space
+  - prevent deletion by user.
+    - song licks don't get delete buttons in the manage view, but user licks do
+  - don't show these licks in the user submitted lick library
+    - but add a toggle in the library view to show them in the list
 </details>
 
 <details>
@@ -52,125 +63,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 <summary>[ ] 119. (Playlist) playlist song detail view bug</summary>
 
 - in playlist song detail view, where playlist controls are exposed over song display, the save icon button to "update voicing/save offsets for song in playlist" doesn't work.
-</details>
-
-<details>
-<summary>Theory Second Pass Enhancement Epic</summary>
-
-<details>
-<summary>[x] 120. (Live,Theory) interval toolbar enhancement</summary>
-
-- in live tab, in live mode, when you click on an interval in the toolbar, and it glows,
-  - you can select other intervals in the toolbar and they will glow too
-- When multiple degrees are selected and glowing, the neck visual shows:
-  - All notes of all selected degrees active simultaneously
-- When multiple intervals are selected in the toolbar
-  - 'clear' button appears, deselects all, and button vanishes
-- live tab, live mode. if no intervals are selected in toolbar
-  - user can click notes on neck and it will highlight nextNotes, etc like usual
-</details>
-
-<details>
-<summary>[x] 121. (Live) Next Note Highlight Enhancement</summary>
-
-- when in live tab, and current note is selected, and nextNotes are pulsing, next own note should also pulse bright
-  - next own note should behave like the other first degree nextNotes, full bright pulsing. 
-  - second degree notes off of next own note should be half bright pulsing
-- pulsing notes shouldn't have white circle behind
-  - remove the white circle totally, the visibility is covered by brightness and pulsing
-- The pale yellow active ring should be changed slightly
-  - currentNote should pulse its own color, like the other bright notes, but the outer border of the pulse should be the pale yellow ring
-</details>
-
-<details>
-<summary>[ ] 122. (Theory/Licks) Lick Visualizer Overhaul</summary>
-
-- lick visualizer
-  - one column at a time mode should cycle columns every second
-  - toggle for mode should just show all notes from tab on neck at once. 
-  - add button to get lick from lick library.
-    - that should open modal that displays list of lick cards
-    - click a lick, it will load in the text field in lick visualizer and the guitar neck will show up automatically
-      - don't worry about showing generated position licks yet
-- "Cycle columns every second" 
-  - add toggle. 
-    - default selection is 1 col per second. 
-    - when toggled, update rate is synced with metronome
-  - add pause button for lick playback.
-    - add selectable progress bar. 
-      - progress bar is synced to raw tab. 
-      - since tab is ingested column by column, dragging the progress bar over a column will display the notes played in that column
-      - progress bar can only land on columns where notes are present.
-        - can tabs have rests or blank space? if so, need to include a symbol so it isn't skipped like the columns between notes.
-    - progress bar card can go below the lick text input field.
-      - the currently processed lick will be in that field
-        - the progress bar will be aligned under the lick so where you drag it will aligned with the column that gets selected
-- When a lick is loaded from the library modal, 
-  - lick should render in original saved key.
-  - expose controls to alter key.
-    - this will reveal position selecting flow, similar to lick modal
-- when lick is loaded from lick modal from Lick Visualizer
-  - automatically update live neck with lick rendering
-    - default is render all notes from lick at once on neck
-      - toggle will swap mode from all-at-once to playback-mode
-        - in playback mode, user can choose between 1 second speed, and metronome-sync
-- remove lick text field with buttons. select lick from library, and new lick
-  - select lick brings up lick modal. 
-  - selected lick gets rawtab displayed where lick text field is in current design
-  - new lick opens new lick modal, which you type the lick into the field, click submit, and it uploads the lick to the lick library
-    - then it automatically calls that lick and puts it in the visualizer
-- lick visualizer should not be reinterpreting the tabs inputted. 
-  - since visualizer takes input as raw tab string, we have absolute positions of every note played on the neck in the lick.
-  - use that, not the position finder.
-- Perhaps Lick Visualizer should be its own tab "Lick Visualizer" OR perhaps it should be accessible under Licks tab instead.
-  - open to discussion
-- feature to build lick by clicking on notes on the guitar neck diagram, and it produces a rawTab text that you can save
-  - maybe it can determine possible valid keys / modes that describe the lick
-    - this should account for blues notes etc and assume blues or jazz over nonstandard mode if it comes down to it.
-</details>
-
-<details>
-<summary>[ ] 123. (Theory,Live) Pentatonic Demo</summary>
-
-- does the pentatonic mode on live tab allow you to stack pentatonic scales on the chart?
-  - adding G + D + C pentatonics could be like: you've built G diatonic
-- incorporate pentatonic mode into selecting intervals thing
-  - if you are in major mode for example
-    - select pentatonic for <key>. 
-      - this will highlight the notes of that scale on neck
-      - it will light up the relevant intervals in the key
-    - select intervals in toolbar
-      - if a combination matches pentatonic notes, then the relevant pentatonic scale lights up
-- The current "Pent. Sets" toggle shows which diatonic notes belong to which of the 3 pentatonic subsets (passively). 
-  - This seems like a different feature — more active, where you select individual pentatonic scales to stack and discover the diatonic. 
-    - The feature described in this idea should replace the old pentatonic feature.
-- "Select pentatonic for key" — is the pentatonic root always the same as the main root selector, or independently choosable (so you could overlay G pent + C pent + D pent on a G neck)?
-  - we are selecting pentatonics of different roots to display a full diatonic
-- For the interval-selection → pentatonic recognition flow: does this happen automatically as you select bubbles in the toolbar (live feedback), or is it a separate mode/trigger?
-  - this happens live
-  - if you select 1 2 3 5 6 in toolbar in G major, the G pentatonic button will glow
-- pentatonic widget. starts as button for pentatonic (this lives below the neck visual)
-  - on click, button changes color to show pentatonic is active
-  - box exposed below
-    - above box is a dropdown selection for mode.
-      - this adjusts the mode of pentatonics displayed when user clicks pentatonic key in the box below.
-      - default value is major OR sync with diatonic scale mode chosen from dropdown in live toolbar.
-      - if user updates the mode in live toolbar, it updates mode selected in pentatonic widget.
-        - if user has modified mode in pentatonic widget, it no longer syncs with live toolbar
-        - reset state on refresh
-    - box contains 4w 3l grid of all 12 notes
-    - when multiple toolbar intervals are selected, and the selection builds a full pentatonic scale
-      - the key of that scale begins to glow in the grid
-      - if multiple pentatonics can be built from the interval selections, all applicable keys glow in grid
-    - if user clicks on key in box, it will glow all the notes of that pentatonic scale on the neck of the guitar.
-      - if no key/mode is selected in the guitar neck live dropdowns, 
-        - then notes of pentatonic scale should still show on neck when the associated key button is selected from the grid.
-      - if those notes aren't a part of the diatonic key/mode selected
-        - selecting key in pentatonic grid should still highlight the notes it represents
-  - maybe we remove the pentatonic mode selector and just have it permanently sync with the live toolbar mode selector?
-    - if we do this, we can extract the mode comparison stuff to a more fleshed out feature.
-</details>
-
 </details>
 
 <details>
@@ -207,10 +99,50 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 127. (Theory) Next Own Note Enhancement</summary>
+<summary>[ ] 122. (Theory/Licks) Lick Visualizer Overhaul</summary>
 
-- currently nextOwnNote highlights when a note is selected, and glows/pulses the second degree candidates
-  - enhancement will allow 2-3 nextOwnNotes to be selected and also have their second degree candidates glow and pulse
+- lick visualizer
+  - one column at a time mode should cycle columns every second
+  - toggle for mode should just show all notes from tab on neck at once.
+  - add button to get lick from lick library.
+    - that should open modal that displays list of lick cards
+    - click a lick, it will load in the text field in lick visualizer and the guitar neck will show up automatically
+      - don't worry about showing generated position licks yet
+- "Cycle columns every second"
+  - add toggle.
+    - default selection is 1 col per second.
+    - when toggled, update rate is synced with metronome
+  - add pause button for lick playback.
+    - add selectable progress bar.
+      - progress bar is synced to raw tab.
+      - since tab is ingested column by column, dragging the progress bar over a column will display the notes played in that column
+      - progress bar can only land on columns where notes are present.
+        - can tabs have rests or blank space? if so, need to include a symbol so it isn't skipped like the columns between notes.
+    - progress bar card can go below the lick text input field.
+      - the currently processed lick will be in that field
+        - the progress bar will be aligned under the lick so where you drag it will aligned with the column that gets selected
+- When a lick is loaded from the library modal,
+  - lick should render in original saved key.
+  - expose controls to alter key.
+    - this will reveal position selecting flow, similar to lick modal
+- when lick is loaded from lick modal from Lick Visualizer
+  - automatically update live neck with lick rendering
+    - default is render all notes from lick at once on neck
+      - toggle will swap mode from all-at-once to playback-mode
+        - in playback mode, user can choose between 1 second speed, and metronome-sync
+- remove lick text field with buttons. select lick from library, and new lick
+  - select lick brings up lick modal.
+  - selected lick gets rawtab displayed where lick text field is in current design
+  - new lick opens new lick modal, which you type the lick into the field, click submit, and it uploads the lick to the lick library
+    - then it automatically calls that lick and puts it in the visualizer
+- lick visualizer should not be reinterpreting the tabs inputted.
+  - since visualizer takes input as raw tab string, we have absolute positions of every note played on the neck in the lick.
+  - use that, not the position finder.
+- Perhaps Lick Visualizer should be its own tab "Lick Visualizer" OR perhaps it should be accessible under Licks tab instead.
+  - open to discussion
+- feature to build lick by clicking on notes on the guitar neck diagram, and it produces a rawTab text that you can save
+  - maybe it can determine possible valid keys / modes that describe the lick
+    - this should account for blues notes etc and assume blues or jazz over nonstandard mode if it comes down to it.
 </details>
 
 </details>
@@ -419,7 +351,7 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>[ ] 128. </summary>
+<summary>[ ] 130. </summary>
 
 - 
 </details>
