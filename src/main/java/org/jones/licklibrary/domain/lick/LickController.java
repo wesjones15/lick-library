@@ -34,14 +34,15 @@ public class LickController {
     }
 
     @GetMapping
-    public List<LickResponse> getAllLicks() {
-        return lickService.getAllLicks();
+    public List<LickResponse> getAllLicks(
+            @RequestParam(defaultValue = "false") boolean includeSongLicks) {
+        return lickService.getAllLicks(includeSongLicks);
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteLick(@PathVariable UUID id) {
-        lickService.deleteLick(id);
+    public ResponseEntity<Void> deleteLick(@PathVariable UUID id) {
+        boolean deleted = lickService.deleteLick(id);
+        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     @GetMapping("/{id}")

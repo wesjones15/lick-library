@@ -3,6 +3,7 @@ package org.jones.licklibrary.domain.song.dto;
 import org.jones.licklibrary.domain.song.parsing.ChordSheetLine;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record SongDetailResponse(
@@ -15,5 +16,6 @@ public record SongDetailResponse(
         List<ChordSheetLine> chordLines,
         int numColumns,
         boolean canReparse,
-        String rawChordSheet
+        String rawChordSheet,
+        Map<Integer, SongLickInfo> songLicks
 ) {}

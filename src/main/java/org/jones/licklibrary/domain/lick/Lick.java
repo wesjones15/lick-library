@@ -16,8 +16,11 @@ public class Lick {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "interval_hash", unique = true, nullable = false, length = 64)
+    @Column(name = "interval_hash", nullable = false, length = 64)
     private String intervalHash;
+
+    @Column(name = "auto_imported", nullable = false)
+    private boolean autoImported = false;
 
     @Convert(converter = IntervalNoteListConverter.class)
     @Column(nullable = false)
@@ -40,6 +43,8 @@ public class Lick {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public UUID getId() { return id; }
+    public boolean isAutoImported() { return autoImported; }
+    public void setAutoImported(boolean autoImported) { this.autoImported = autoImported; }
     public String getIntervalHash() { return intervalHash; }
     public void setIntervalHash(String intervalHash) { this.intervalHash = intervalHash; }
     public List<IntervalNote> getIntervals() { return intervals; }

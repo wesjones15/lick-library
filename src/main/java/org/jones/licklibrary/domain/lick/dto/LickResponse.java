@@ -10,5 +10,6 @@ public record LickResponse(
     String rawTab,
     String intervalDisplayString,
     Mode mode,
-    List<PositionResponse> positions
+    List<PositionResponse> positions,
+    boolean autoImported
 ) {}

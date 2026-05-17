@@ -56,7 +56,7 @@ public class LickService {
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, Guitar.STANDARD);
         String hash = LickUtils.hashIntervals(intervals);
 
-        Optional<Lick> existing = lickRepository.findByIntervalHash(hash);
+        Optional<Lick> existing = lickRepository.findByIntervalHashAndAutoImportedFalse(hash);
         if (existing.isPresent()) {
             return toSummaryResponse(existing.get());
         }
@@ -108,10 +108,33 @@ public class LickService {
         return out;
     }
 
+    public UUID uploadSongLick(String rawTab) {
+        List<TabNote> notes = parseTab(rawTab);
+        if (notes.isEmpty()) return null;
+        Note rootKey = Guitar.STANDARD.getNoteAt(notes.get(0).stringIndex(), notes.get(0).fret());
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, Guitar.STANDARD);
+        Mode mode = LickUtils.detectMode(intervals);
+        int tabSpan = notes.stream().mapToInt(TabNote::fret).max().orElse(0)
+                    - notes.stream().mapToInt(TabNote::fret).min().orElse(0);
+        Lick lick = new Lick();
+        lick.setIntervalHash(LickUtils.hashIntervals(intervals));
+        lick.setIntervals(intervals);
+        lick.setRawTab(rawTab);
+        lick.setMode(mode);
+        lick.setTabSpan(tabSpan);
+        lick.setAutoImported(true);
+        return lickRepository.save(lick).getId();
+    }
+
+    public void deleteAutoImportedLicks(List<UUID> ids) {
+        ids.forEach(lickRepository::deleteById);
+    }
+
     // --- Lookup pipeline ---
 
-    public List<LickResponse> getAllLicks() {
-        return lickRepository.findAll().stream()
+    public List<LickResponse> getAllLicks(boolean includeSongLicks) {
+        return (includeSongLicks ? lickRepository.findAll() : lickRepository.findAllByAutoImportedFalse())
+            .stream()
             .map(this::toSummaryResponse)
             .toList();
     }
@@ -123,9 +146,12 @@ public class LickService {
         return toLickResponse(lick, positions, instrument);
     }
 
-    public void deleteLick(UUID id) {
-        if (!lickRepository.existsById(id)) throw new ResourceNotFoundException("Lick not found: " + id);
+    public boolean deleteLick(UUID id) {
+        Lick lick = lickRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Lick not found: " + id));
+        if (lick.isAutoImported()) return false;
         lickRepository.deleteById(id);
+        return true;
     }
 
     List<Position> resolvePositions(Lick lick, Note key, String algo, Instrument instrument) {
@@ -147,7 +173,8 @@ public class LickService {
             lick.getRawTab(),
             IntervalNoteListConverter.toDisplayString(lick.getIntervals()),
             lick.getMode(),
-            positionResponses
+            positionResponses,
+            lick.isAutoImported()
         );
     }
 
@@ -157,7 +184,8 @@ public class LickService {
             lick.getRawTab(),
             IntervalNoteListConverter.toDisplayString(lick.getIntervals()),
             lick.getMode(),
-            null
+            null,
+            lick.isAutoImported()
         );
     }
 }
