@@ -22,10 +22,10 @@ public class PlaylistEntry {
     private int position;
 
     @Column(name = "override_semitones")
-    private Integer overrideSemitones;
+    private Integer keyOffset;
 
     @Column(name = "override_capo")
-    private Integer overrideCapo;
+    private Integer capoOffset;
 
     public UUID getId() { return id; }
 
@@ -38,9 +38,9 @@ public class PlaylistEntry {
     public int getPosition() { return position; }
     public void setPosition(int position) { this.position = position; }
 
-    public Integer getOverrideSemitones() { return overrideSemitones; }
-    public void setOverrideSemitones(Integer overrideSemitones) { this.overrideSemitones = overrideSemitones; }
+    public Integer getKeyOffset() { return keyOffset; }
+    public void setKeyOffset(Integer keyOffset) { this.keyOffset = keyOffset; }
 
-    public Integer getOverrideCapo() { return overrideCapo; }
-    public void setOverrideCapo(Integer overrideCapo) { this.overrideCapo = overrideCapo; }
+    public Integer getCapoOffset() { return capoOffset; }
+    public void setCapoOffset(Integer capoOffset) { this.capoOffset = capoOffset; }
 }

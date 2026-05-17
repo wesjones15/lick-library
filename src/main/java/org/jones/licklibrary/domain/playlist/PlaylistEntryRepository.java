@@ -6,4 +6,5 @@ import java.util.UUID;
 
 public interface PlaylistEntryRepository extends JpaRepository<PlaylistEntry, UUID> {
     List<PlaylistEntry> findByPlaylistOrderByPositionAsc(Playlist playlist);
+    List<PlaylistEntry> findBySongId(UUID songId);
 }

@@ -8,6 +8,9 @@ public record PlaylistEntryResponse(
         String title,
         String artist,
         int position,
-        Integer overrideSemitones,
-        Integer overrideCapo
+        int keyOffset,
+        int capoOffset,
+        String originalKey,
+        int defaultCapo,
+        Integer tempo
 ) {}

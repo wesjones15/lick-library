@@ -65,4 +65,9 @@ public class PlaylistController {
     public PlaylistDetailResponse clearEntryOverrides(@PathVariable UUID id, @PathVariable UUID entryId) {
         return playlistService.clearEntryOverrides(id, entryId);
     }
+
+    @GetMapping("/containing")
+    public List<PlaylistContainingEntry> getContaining(@RequestParam UUID songId) {
+        return playlistService.getContainingEntries(songId);
+    }
 }
