@@ -3,9 +3,9 @@ package org.jones.licklibrary.domain.chord;
 import org.jones.licklibrary.domain.chord.dto.ChordVoicingResponse;
 import org.jones.licklibrary.domain.chord.dto.UploadChordRequest;
 import org.jones.licklibrary.domain.shared.Instrument;
+import org.jones.licklibrary.domain.shared.InstrumentRegistry;
 import org.jones.licklibrary.domain.shared.Interval;
 import org.jones.licklibrary.domain.shared.Note;
-import org.jones.licklibrary.domain.shared.instrument.Guitar;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -66,7 +66,7 @@ public class ChordService {
     public List<ChordVoicingResponse> getVoicings(Note root, String quality, Instrument instrument, String instrumentName) {
         List<ChordShape> shapes = shapeRepo.findByChordQuality_SuffixAndInstrument(quality, instrumentName.toUpperCase());
         return shapes.stream()
-            .map(s -> new ShapeResult(s.getId().toString(), transposeShape(s, root), "user".equals(s.getSource())))
+            .map(s -> new ShapeResult(s.getId().toString(), transposeShape(s, root, instrument), "user".equals(s.getSource())))
             .sorted(Comparator.comparingInt((ShapeResult r) -> r.isUser() ? 0 : 1)
                               .thenComparingInt(r -> minFret(r.frets())))
             .map(r -> new ChordVoicingResponse(r.id(), toDisplayFrets(r.frets())))
@@ -85,9 +85,9 @@ public class ChordService {
         return out;
     }
 
-    static int[] transposeShape(ChordShape shape, Note root) {
+    static int[] transposeShape(ChordShape shape, Note root, Instrument instrument) {
         int[] template = parseTemplateFrets(shape.getTemplateFrets());
-        Note openNote = Guitar.STANDARD.tuning()[shape.getRootString()];
+        Note openNote = instrument.tuning()[shape.getRootString()];
         int targetFret = (root.ordinal() - openNote.ordinal() + 12) % 12;
         int offset = targetFret - template[shape.getRootString()];
         if (offset < 0) offset += 12;
@@ -162,12 +162,23 @@ public class ChordService {
             throw new IllegalArgumentException("Unknown root note: " + req.root());
         }
 
-        List<String> rawFrets = req.frets();
-        if (rawFrets == null || rawFrets.size() != 6) {
-            throw new IllegalArgumentException("Exactly 6 fret values required");
+        String instrumentName = (req.instrument() != null && !req.instrument().isBlank())
+            ? req.instrument().toUpperCase() : "GUITAR";
+        Instrument inst;
+        try {
+            inst = InstrumentRegistry.fromName(instrumentName);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown instrument: " + instrumentName);
         }
-        int[] frets = new int[6];
-        for (int i = 0; i < 6; i++) {
+
+        List<String> rawFrets = req.frets();
+        int expectedStrings = inst.stringCount();
+        if (rawFrets == null || rawFrets.size() != expectedStrings) {
+            throw new IllegalArgumentException(
+                "Exactly " + expectedStrings + " fret values required for " + instrumentName);
+        }
+        int[] frets = new int[expectedStrings];
+        for (int i = 0; i < expectedStrings; i++) {
             String f = rawFrets.get(i).trim();
             if (f.equalsIgnoreCase("x")) {
                 frets[i] = -2;
@@ -182,7 +193,7 @@ public class ChordService {
             }
         }
 
-        Note[] tuning = Guitar.STANDARD.tuning();
+        Note[] tuning = inst.tuning();
         int rootString = -1;
         for (int i = 0; i < tuning.length; i++) {
             if (frets[i] == -2) continue;
@@ -206,10 +217,6 @@ public class ChordService {
         String suffix = req.quality() != null ? req.quality() : "";
         ChordQuality quality = qualityRepo.findBySuffix(suffix)
             .orElseGet(() -> qualityRepo.save(new ChordQuality(suffix)));
-
-        String instrumentName = (req.instrument() != null && !req.instrument().isBlank())
-            ? req.instrument().toUpperCase()
-            : "GUITAR";
 
         if (shapeRepo.existsByTemplateFretsAndChordQuality_SuffixAndInstrument(json.toString(), suffix, instrumentName)) {
             throw new IllegalArgumentException("This voicing already exists for " + suffix);
