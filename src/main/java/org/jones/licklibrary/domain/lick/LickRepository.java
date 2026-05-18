@@ -9,5 +9,6 @@ import java.util.UUID;
 public interface LickRepository extends JpaRepository<Lick, UUID> {
     Optional<Lick> findByIntervalHash(String intervalHash);
     Optional<Lick> findByIntervalHashAndAutoImportedFalse(String intervalHash);
+    Optional<Lick> findByIntervalHashAndInstrumentAndAutoImportedFalse(String intervalHash, String instrument);
     List<Lick> findAllByAutoImportedFalse();
 }

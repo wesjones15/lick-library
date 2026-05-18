@@ -46,17 +46,17 @@ public class LickService {
 
     // --- Upload pipeline ---
 
-    public LickResponse uploadLick(UploadLickRequest request) {
+    public LickResponse uploadLick(UploadLickRequest request, Instrument inst, String instrumentName) {
         if (request.rawTab() == null || request.rawTab().isBlank()) {
             throw new IllegalArgumentException("rawTab must not be blank");
         }
         List<TabNote> notes = parseTab(request.rawTab());
         Note rootKey = request.inputKey() != null ? request.inputKey()
-                : Guitar.STANDARD.getNoteAt(notes.get(0).stringIndex(), notes.get(0).fret());
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, Guitar.STANDARD);
+                : inst.getNoteAt(notes.get(0).stringIndex(), notes.get(0).fret());
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, inst);
         String hash = LickUtils.hashIntervals(intervals);
 
-        Optional<Lick> existing = lickRepository.findByIntervalHashAndAutoImportedFalse(hash);
+        Optional<Lick> existing = lickRepository.findByIntervalHashAndInstrumentAndAutoImportedFalse(hash, instrumentName);
         if (existing.isPresent()) {
             return toSummaryResponse(existing.get());
         }
@@ -72,6 +72,7 @@ public class LickService {
         lick.setRawTab(request.rawTab());
         lick.setMode(mode);
         lick.setTabSpan(tabSpan);
+        lick.setInstrument(instrumentName);
         lick = lickRepository.save(lick);
         return toSummaryResponse(lick);
     }
@@ -123,6 +124,7 @@ public class LickService {
         lick.setMode(mode);
         lick.setTabSpan(tabSpan);
         lick.setAutoImported(true);
+        lick.setInstrument("GUITAR");
         return lickRepository.save(lick).getId();
     }
 

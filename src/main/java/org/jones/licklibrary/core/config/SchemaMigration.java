@@ -25,5 +25,8 @@ public class SchemaMigration implements ApplicationRunner {
         jdbcTemplate.execute(
             "ALTER TABLE lick ALTER COLUMN intervals CLOB"
         );
+        jdbcTemplate.execute(
+            "UPDATE lick SET instrument = 'GUITAR' WHERE instrument IS NULL"
+        );
     }
 }

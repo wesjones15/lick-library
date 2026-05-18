@@ -26,8 +26,15 @@ public class LickController {
 
     @PostMapping
     public ResponseEntity<LickResponse> uploadLick(@RequestBody UploadLickRequest request) {
+        String instrumentName = request.instrument() != null ? request.instrument() : "GUITAR";
+        Instrument inst;
         try {
-            return ResponseEntity.ok(lickService.uploadLick(request));
+            inst = InstrumentRegistry.fromName(instrumentName);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            return ResponseEntity.ok(lickService.uploadLick(request, inst, instrumentName));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }

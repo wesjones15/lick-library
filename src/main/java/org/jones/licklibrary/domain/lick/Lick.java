@@ -36,6 +36,9 @@ public class Lick {
     @Column(name = "tab_span")
     private Integer tabSpan;
 
+    @Column(name = "instrument", length = 16)
+    private String instrument;
+
     @Column(name = "endpoint_degree", length = 16)
     private String endpointDegree;
 
@@ -55,6 +58,8 @@ public class Lick {
     public void setMode(Mode mode) { this.mode = mode; }
     public Integer getTabSpan() { return tabSpan; }
     public void setTabSpan(Integer tabSpan) { this.tabSpan = tabSpan; }
+    public String getInstrument() { return instrument; }
+    public void setInstrument(String instrument) { this.instrument = instrument; }
     public String getEndpointDegree() { return endpointDegree; }
     public void setEndpointDegree(String endpointDegree) { this.endpointDegree = endpointDegree; }
     public LocalDateTime getCreatedAt() { return createdAt; }
