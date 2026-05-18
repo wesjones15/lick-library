@@ -22,5 +22,8 @@ public class SchemaMigration implements ApplicationRunner {
         jdbcTemplate.execute(
             "UPDATE lick SET auto_imported = FALSE WHERE auto_imported IS NULL"
         );
+        jdbcTemplate.execute(
+            "ALTER TABLE lick ALTER COLUMN intervals CLOB"
+        );
     }
 }

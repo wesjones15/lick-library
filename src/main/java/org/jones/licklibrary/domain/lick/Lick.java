@@ -23,7 +23,7 @@ public class Lick {
     private boolean autoImported = false;
 
     @Convert(converter = IntervalNoteListConverter.class)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private List<IntervalNote> intervals;
 
     @Column(name = "raw_tab", columnDefinition = "TEXT")
