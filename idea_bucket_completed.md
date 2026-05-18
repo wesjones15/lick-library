@@ -1375,5 +1375,27 @@ key: [ ]  = open, [x] = complete, [~] = deferred
                             - on click, update icon turns to green check for same amount of time as when adding song, then to a red x
 </details>
 
+<details>
+<summary>[x] 140. (Playlist,Songs) ui aesthetics</summary>
+
+- in playlist detail page,
+    - song card should show capo as well (default capo + capo_offset)
+        - should go between key and tempo
+        - if no capo, say No Capo
+- in manage view on playlist detail page,
+    - change the pencil button and the x button (make it red) to be 3 times the size.
+    - make the pencil button for renaming playlist 3x bigger.
+    - the pencil button by the song card should not have a button around it
+    - the pencil button and the x button should be spaced more apart, and not as close to right edge
+    - if a playlist is empty, the add songs button should appear outside of manage mode.
+- in song library, if show all is clicked,
+    - currently the show less button is at bottom.
+    - lets move show less back up top where show all is.
+- in playlist song detail page,
+    - if offsets are modified such that the update icon would appear in the add to playlist modal,
+        - change color of add to playlist button to indigo
+        - default color should be blue otherwise
+</details>
+
 
 </details>

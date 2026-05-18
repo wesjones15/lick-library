@@ -79,28 +79,69 @@ songs that should have variable font size throughout seem to have a uniform font
 </details>
 
 <details>
-<summary>[ ] 12. (Licks) Upload instrument selection</summary>
+<summary>[ ] 12. (Licks) Multi-Instrument Support Epic</summary>
 
-- Allow user to change input instrument for tab upload
-- parseTab + toIntervals currently always use Guitar.STANDARD
-- Would potentially remove need for TabNote if parseTab is retooled for any tuning/instrument
-- need to update lick library to support
-  - manage lick flow, similar to manage song, to replace the direct delete lick ui
-  - add sort and filter to lick library display.
-    - filter by instrument, default show all
-    - not sure for sort
-- this will enable
+- [ ] Phase 1: Backend and Legacy Lick Upload
+  - Allow user to change input instrument for tab upload
+    - only for Legacy "Upload A Lick" Form
+  - parseTab + toIntervals currently always use Guitar.STANDARD
+  - Would potentially remove need for TabNote if parseTab is retooled for any tuning/instrument
+  - backend logic should be tooled to allow dynamic input for instrument/tuning. 
+    - after refactor, standard guitar should still behave the same, but flow should now accept, generate, and serve tabs for other instruments
+- [ ] Phase 2: Lick Library Search
+  - need to update lick library to support
+    - manage lick flow, similar to manage song, to replace the direct delete lick ui
+    - add sort and filter to lick library display.
+      - filter by instrument, default show all
+      - filter by mode
+      - filter or sort by length of tab
+      - search by present intervals 
+        - (query: 1 b2 4) 
+          - returns any tab containing that sequence
+            - ignore slash or technique when finding results
+            - if query contains technique, then don't ignore technique in search results.
+- [ ] Phase 3: Chord Gallery Voicings DB
   - track chord voicings for other instruments
+    - chord voicing db is updated to track instrument/tuning.
+    - chord voicing modal will show instrument name/tuning in little gray font left aligned underneath the chord name in the modal
+      - modal will retrieve chord voicings for instrument selected
+        - add instrument selector to chord gallery
+  - Add Chord Voicing for chord flow
+    - add Instrument selector 
+      - (also allow custom, like in lick search)
+      - default value to standard guitar
+      - if user changes instrument in chord voicing modal
+        - then update the form and the display 
+          - the fret entry should update to show the number and tuning of strings for the selected instrument
+          - the display modal should be updated
+            - modal shown in add voicing flow should display like the hover chord modal in layout
+              - the name of the chord should show above diagram
+              - the instrument name/tuning should show below chord name
+            - the diagram should show correct number of strings for the instrument
+- [ ] Phase 4: Song Detail and Tab Modal
   - in song page, where it currently says Standard
-    - turn this into a button that lets you select instrument from a dropdown
-    - chord voicings will now depend on selected instrument
-    - if exp tab feature enabled
-      - replace the tabline blocks with a generated position for the selected instrument
-        - position logic should be passed the notes of the strings, amount of strings, and run with that
-      - the lick position shown at 0 transpose should be
-        - as geographically close on the neck as the tabline block rawtab position as possible
+    - turn this into a selector button for instrument
+      - chord voicings will now depend on selected instrument
+        - if chord has no saved voicings, 
+          - open Add Voicing modal, following existing flow for chords-with-no-voicings
+            - instead of just hardcoding chord name,
+              - also hardcode instrument for this circumstance
+  - if exp tab feature enabled
+    - replace the tabline blocks with a generated position for the selected instrument
+      - position logic should be passed the notes of the strings, amount of strings, and run with that
+    - the lick position shown at 0 transpose should be
+      - as geographically close on the neck as the tabline block rawtab position as possible
+  - if exp tab feature disabled
+    - show unaltered tabline
+- [ ] Phase 5: GuitarNeck Multi-Instrument Support
+  - Implement support for custom tunings/instruments in GuitarNeck visual
+    - if given 4 strings and GCEA or whatever,
+      - GuitarNeck should produce only 4 strings
+      - scales generated should be interval based on open string note.
+        - i think existing logic should support this
+    - Lick Visualizer, Lick Builder, Theory/Live, should get Instrument selector, and update based on instrument tuning
+      - chord gallery Chord Theory page should also use this 
 </details>
-
 
 </details>
 
@@ -109,24 +150,54 @@ songs that should have variable font size throughout seem to have a uniform font
 
 - song parser seems to be forcing a uniform font
 - i see a song is getting lots of whitespace added between sections instead of making the font bigger
+- frontend
+  - when transposing, if a chord becoming sharp eats the space between it and the next chord (or next character, since not everything in a chordline is chords),
+    - add a space between them to prevent chord interpretation errors
+  - when exp tab mode is on.
+    - preserve technique on the tab
+      - slash, etc should be preserved in processed tab, in same relative position to the original
+      - 
 </details>
 
 <details>
-<summary>[ ] 140. (Playlist,Songs) ui aesthetics</summary>
+<summary>[ ] 141. (Licks) Lick page overhaul</summary>
 
-- in playlist detail page,
-  - song card should show capo as well (default capo + capo_offset)
-    - should go between key and tempo
-    - if no capo, say No Capo
-- in manage view on playlist detail page, 
-  - change the pencil button and the x button (make it red) to be 3 times the size. 
-  - make the pencil button for renaming playlist 3x bigger. 
-  - the pencil button by the song card should not have a button around it
-  - the pencil button and the x button should be spaced more apart, and not as close to right edge
-  - if a playlist is empty, the add songs button should appear outside of manage mode. 
-- in song library, if show all is clicked, 
-  - currently the show less button is at bottom. 
-  - lets move show less back up top where show all is.
+- currently licks page has upload lick card and buttons to Lick Library, Lick Visualizer, Lick Builder
+- Lick Builder has developed into a full on replacement for the original Upload Lick flow
+  - Licks page should be 4 buttons (structured like homepage?)
+    - Lick Library 
+    - Lick Builder
+    - Lick Visualizer
+    - Lick Builder (Legacy): directs user to original Upload A Lick form
+- rename
+  - website Lick Library -> WesLicks
+  - Licks -> Lick Library (displayed like Chord Gallery has a line break)
+  - Both Lick Library and Chord Gallery get left aligned in the navbar.
+    - when these are viewed from hamburger icon, remove line break
+</details>
+
+<details>
+<summary>[ ] 142. (Licks) Copy Lick Icon Button</summary>
+
+- add copy lick button to 
+  - lick visualizer, to left of edit lick button
+    - should copy the condensed lick, not the spread version
+- Lick Library list
+  - lick card update
+  - add icon/button for open lick in visualizer
+  - add icon for copy lick to clipboard
+  - add icon or just rest of card takes user to lick detail page.
+    - lick detail page 
+      - still shows other positions, allows transposition
+        - add copy to clipboard icon button next to "original tab"
+        - add copy to clipboard icon button to position card, in row below tab, left aligned
+      - move positionbuilder algo to right align on row
+      - instrument and key selectors should be side-by-side
+        - mode selector? maybe not
+      - put a border around tab intervals and mode card
+      - add visualize button
+        - acts as manage mode.
+        - if you click on a position while visualize is active, it takes you to lick visualizer with selected position loaded.
 </details>
 
 </details>
@@ -326,7 +397,7 @@ songs that should have variable font size throughout seem to have a uniform font
 </details>
 
 <details>
-<summary>[ ] 141. </summary>
+<summary>[ ] 143. </summary>
 
 - 
 </details>
