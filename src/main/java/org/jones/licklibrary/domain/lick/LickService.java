@@ -20,6 +20,7 @@ import org.jones.licklibrary.domain.shared.instrument.Guitar;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -134,11 +135,45 @@ public class LickService {
 
     // --- Lookup pipeline ---
 
-    public List<LickResponse> getAllLicks(boolean includeSongLicks) {
-        return (includeSongLicks ? lickRepository.findAll() : lickRepository.findAllByAutoImportedFalse())
-            .stream()
+    public List<LickResponse> getAllLicks(boolean includeSongLicks,
+            String instrument, String mode,
+            Integer minLength, Integer maxLength, String intervals) {
+        List<Lick> all = includeSongLicks
+            ? lickRepository.findAll()
+            : lickRepository.findAllByAutoImportedFalse();
+        List<String> intervalTokens = intervals != null ? parseIntervalTokens(intervals) : List.of();
+        return all.stream()
+            .filter(l -> instrument == null || instrument.equalsIgnoreCase(
+                l.getInstrument() != null ? l.getInstrument() : "GUITAR"))
+            .filter(l -> mode == null || (l.getMode() != null
+                && l.getMode().name().equalsIgnoreCase(mode)))
+            .filter(l -> minLength == null || (l.getTabSpan() != null && l.getTabSpan() >= minLength))
+            .filter(l -> maxLength == null || (l.getTabSpan() != null && l.getTabSpan() <= maxLength))
+            .filter(l -> intervalTokens.isEmpty() || hasContiguousSubsequence(l.getIntervals(), intervalTokens))
             .map(this::toSummaryResponse)
             .toList();
+    }
+
+    private List<String> parseIntervalTokens(String csv) {
+        return Arrays.stream(csv.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .toList();
+    }
+
+    private boolean hasContiguousSubsequence(List<IntervalNote> intervals, List<String> tokens) {
+        if (tokens.isEmpty()) return true;
+        for (int i = 0; i <= intervals.size() - tokens.size(); i++) {
+            boolean match = true;
+            for (int j = 0; j < tokens.size(); j++) {
+                if (!intervals.get(i + j).interval().displayName().equals(tokens.get(j))) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) return true;
+        }
+        return false;
     }
 
     public LickResponse getLick(UUID id, Note key, String algo, Instrument instrument) {
@@ -176,7 +211,8 @@ public class LickService {
             IntervalNoteListConverter.toDisplayString(lick.getIntervals()),
             lick.getMode(),
             positionResponses,
-            lick.isAutoImported()
+            lick.isAutoImported(),
+            lick.getInstrument()
         );
     }
 
@@ -187,7 +223,8 @@ public class LickService {
             IntervalNoteListConverter.toDisplayString(lick.getIntervals()),
             lick.getMode(),
             null,
-            lick.isAutoImported()
+            lick.isAutoImported(),
+            lick.getInstrument()
         );
     }
 }

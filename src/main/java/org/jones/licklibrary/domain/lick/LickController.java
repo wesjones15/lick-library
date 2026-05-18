@@ -42,8 +42,13 @@ public class LickController {
 
     @GetMapping
     public List<LickResponse> getAllLicks(
-            @RequestParam(defaultValue = "false") boolean includeSongLicks) {
-        return lickService.getAllLicks(includeSongLicks);
+            @RequestParam(defaultValue = "false") boolean includeSongLicks,
+            @RequestParam(required = false) String instrument,
+            @RequestParam(required = false) String mode,
+            @RequestParam(required = false) Integer minLength,
+            @RequestParam(required = false) Integer maxLength,
+            @RequestParam(required = false) String intervals) {
+        return lickService.getAllLicks(includeSongLicks, instrument, mode, minLength, maxLength, intervals);
     }
 
     @DeleteMapping("/{id}")

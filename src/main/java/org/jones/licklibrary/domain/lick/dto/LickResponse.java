@@ -11,5 +11,6 @@ public record LickResponse(
     String intervalDisplayString,
     Mode mode,
     List<PositionResponse> positions,
-    boolean autoImported
+    boolean autoImported,
+    String instrument
 ) {}
