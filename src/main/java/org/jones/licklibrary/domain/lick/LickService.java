@@ -147,8 +147,8 @@ public class LickService {
                 l.getInstrument() != null ? l.getInstrument() : "GUITAR"))
             .filter(l -> mode == null || (l.getMode() != null
                 && l.getMode().name().equalsIgnoreCase(mode)))
-            .filter(l -> minLength == null || (l.getTabSpan() != null && l.getTabSpan() >= minLength))
-            .filter(l -> maxLength == null || (l.getTabSpan() != null && l.getTabSpan() <= maxLength))
+            .filter(l -> minLength == null || l.getIntervals().size() >= minLength)
+            .filter(l -> maxLength == null || l.getIntervals().size() <= maxLength)
             .filter(l -> intervalTokens.isEmpty() || hasContiguousSubsequence(l.getIntervals(), intervalTokens))
             .map(this::toSummaryResponse)
             .toList();
