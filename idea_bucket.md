@@ -5,6 +5,7 @@ The purpose of this file is to hold ideas in memory so we can easily refer to th
 key: [ ]  = open, [x] = complete, [~] = deferred
 ---
 
+songs that should have variable font size throughout seem to have a uniform font size applied
 
 <details open>
 <summary>Pending</summary>
@@ -18,24 +19,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 - currently all song keys are assumed to be Major or Minor. 
 - should we add support for the other modes or is that super uncommon?
 -
-</details>
-
-<details>
-<summary>[ ] 105. (Songs,Licks) song transpose enhancement </summary>
-
-- now that tablines are recognized in song parser and they are in tab format that is consumable by the licks parser
-  - transposing song key should transpose the tabs as well using lick transpose logic.
-- on song upload, or reparse, treat detected tabline blocks in songs as licks, add to lick library, but maybe with a flag to differentiate them from user licks.
-  - loading song should load tab blocks as lick cards
-    - transposing song should transpose the tab
-    - arrows to cycle Positions for transposed
-    - if lick is deleted from lick library song licks db, 
-      - then display tabline as usual in tab if song is not transposed
-      - if song is transposed, just show error where tab was, but take up the same amount of space
-  - prevent deletion by user.
-    - song licks don't get delete buttons in the manage view, but user licks do
-  - don't show these licks in the user submitted lick library
-    - but add a toggle in the library view to show them in the list
 </details>
 
 <details>
@@ -66,87 +49,101 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 </details>
 
 <details>
-<summary>Theory Third Round Enhancement</summary>
+<summary>Theory Fourth Round Enhancement</summary>
 
 <details>
-<summary>[ ] 124. (Live,Theory) Separate Interactive page from mic</summary>
+<summary>[ ] 125. (Theory) Chords Feature In Theory Tab</summary>
 
-- make the mic input lighting up guitar neck its own page and that goes on Live
-- everything else from Theory and Live go back to Theory tab
-- 
-</details>
-
-<details>
-<summary>[ ] 125. (Theory) Chords Feature In Theory/Live Tab</summary>
-
-- (defer)
-  - if you select 3 or 4 or whatever, it will say what chord that forms
-    - tie in circle of fifths/progressions connection
-  - Where does the chord name display? Inline in the toolbar row, below it, or somewhere on the neck?
-  - What if the selected intervals don't form a recognized chord —
-    - does it say nothing, or show something like "no chord"?
-  - "Tie in circle of fifths/progressions connection" is vague —
-    - does that mean label the chord with its diatonic function (e.g. "IV — F major"), or something more visual?
+- Chords button in Theory tab
+  - button lives next to pentatonic toggle, next to where the active pentatonic card ends
+    - clicking the chords button opens a card for chords just like the pentatonic card does
+  - when Chords mode is active:
+    - 1,2,3 degree candidates no longer pulse or brighten
+    - multiple notes can be selected 
+      - even notes that aren't in the key
+        - these notes get black text, display their note value, and pulse gray
+      - a new card lists the intervals used, even off scale intervals
+        - it lists root and quality chords you are making with those intervals
+          - and perhaps the mode the chord fits in
+        - if chord doesn't match anything then say so, but still show the intervals selected in the chord card
 </details>
 
 <details>
 <summary>[ ] 126. (Theory) Modes comparison</summary>
 
 - there is learning potential with a modes comparison tool
+- create a card like pentatonic and chords cards
+  - put Modes button as toggle
+  - have a dropdown select for other mode.
+  - that will create an interval toolbar 
+    - with colors shifted, so the red note in the 'other mode' is where the 1 of the main mode lies on the other mode scale
+  - also have key select in the card
 - the idea currently isn't fleshed out
 - the theory live scope is expanding, but is also shaping into 1 big tool instead of a combo of interactables
   - i ultimately want mode comparison to go into the main interactive tool, but
 </details>
 
 <details>
-<summary>[ ] 122. (Theory/Licks) Lick Visualizer Overhaul</summary>
+<summary>[ ] 132. (Licks) Lick Builder Refresh</summary>
 
-- lick visualizer
-  - one column at a time mode should cycle columns every second
-  - toggle for mode should just show all notes from tab on neck at once.
-  - add button to get lick from lick library.
-    - that should open modal that displays list of lick cards
-    - click a lick, it will load in the text field in lick visualizer and the guitar neck will show up automatically
-      - don't worry about showing generated position licks yet
-- "Cycle columns every second"
-  - add toggle.
-    - default selection is 1 col per second.
-    - when toggled, update rate is synced with metronome
-  - add pause button for lick playback.
-    - add selectable progress bar.
-      - progress bar is synced to raw tab.
-      - since tab is ingested column by column, dragging the progress bar over a column will display the notes played in that column
-      - progress bar can only land on columns where notes are present.
-        - can tabs have rests or blank space? if so, need to include a symbol so it isn't skipped like the columns between notes.
-    - progress bar card can go below the lick text input field.
-      - the currently processed lick will be in that field
-        - the progress bar will be aligned under the lick so where you drag it will aligned with the column that gets selected
-- When a lick is loaded from the library modal,
-  - lick should render in original saved key.
-  - expose controls to alter key.
-    - this will reveal position selecting flow, similar to lick modal
-- when lick is loaded from lick modal from Lick Visualizer
-  - automatically update live neck with lick rendering
-    - default is render all notes from lick at once on neck
-      - toggle will swap mode from all-at-once to playback-mode
-        - in playback mode, user can choose between 1 second speed, and metronome-sync
-- remove lick text field with buttons. select lick from library, and new lick
-  - select lick brings up lick modal.
-  - selected lick gets rawtab displayed where lick text field is in current design
-  - new lick opens new lick modal, which you type the lick into the field, click submit, and it uploads the lick to the lick library
-    - then it automatically calls that lick and puts it in the visualizer
-- lick visualizer should not be reinterpreting the tabs inputted.
-  - since visualizer takes input as raw tab string, we have absolute positions of every note played on the neck in the lick.
-  - use that, not the position finder.
-- Perhaps Lick Visualizer should be its own tab "Lick Visualizer" OR perhaps it should be accessible under Licks tab instead.
-  - open to discussion
-- feature to build lick by clicking on notes on the guitar neck diagram, and it produces a rawTab text that you can save
-  - maybe it can determine possible valid keys / modes that describe the lick
-    - this should account for blues notes etc and assume blues or jazz over nonstandard mode if it comes down to it.
+- currently lick builder doesn't work
+  - when a note is clicked, it should add it to the tab
+  - currently notes don't register as clicked
+- lick builder should ALSO have the currentNote highlight and next note suggestions from the theory guitarneck
+  - lick builder should allow user to set key and mode
+    - setting a key and mode  will overlay the diatonic scale on the fretboard
+    - reuse existing components here if possible
+      - if not, rewrite the diatonic overlay to be applicable to live and lick and theory, since they all use it
+- lickbuilder should have start/stop button (next to clear button)
+  - clicking start should change button to say stop
+  - notes clicked while builder is active will pulse like currentNote
+    - if chord detection toggle is on, all notes selected in same chord frame will glow and pulse like currentNote
+- allow chord detection in lick builder (include toggle icon button (button turns green when active)(button is next to start stop button))
+  - consider all notes selected in 1.5 seconds (resets after every note selection too) to be in the same column 
+  - one selection per string enforced
+  - if selection is same string, 
+    - stop timer and enter to that note in the next column, and start timer for that column
+  - after 1.5 seconds move to next column.
+    - don't act until user inputs next note. once user inputs next note, listen for 1.5 sec to build a chord
+  - timer starts on first note entry, if no notes entered in 1.5 seconds, then it moves to the next column. timer stops.
+    - next note triggers timer, then once chord detection period ends, moves to next column
+- add Lick Builder button on Licks page, next to Lick Visualizer button
+  - directs to Lick Visualizer with Build pill selected.
+-
 </details>
 
+<details>
+<summary>[ ] 12. (Licks) Upload instrument selection</summary>
+
+- Allow user to change input instrument for tab upload
+- parseTab + toIntervals currently always use Guitar.STANDARD
+- Would potentially remove need for TabNote if parseTab is retooled for any tuning/instrument
+- need to update lick library to support
+  - manage lick flow, similar to manage song, to replace the direct delete lick ui
+  - add sort and filter to lick library display.
+    - filter by instrument, default show all
+    - not sure for sort
+- this will enable
+  - track chord voicings for other instruments
+  - in song page, where it currently says Standard
+    - turn this into a button that lets you select instrument from a dropdown
+    - chord voicings will now depend on selected instrument
+    - if exp tab feature enabled
+      - replace the tabline blocks with a generated position for the selected instrument
+        - position logic should be passed the notes of the strings, amount of strings, and run with that
+      - the lick position shown at 0 transpose should be
+        - as geographically close on the neck as the tabline block rawtab position as possible
 </details>
 
+
+</details>
+
+<details>
+<summary>[ ] 137. (Songs) backend parser logic or frontend font?</summary>
+
+- song parser seems to be forcing a uniform font
+- i see a song is getting lots of whitespace added between sections instead of making the font bigger
+</details>
 
 </details>
 
@@ -197,29 +194,6 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
-<details>
-<summary>[~] 12. (Licks) Upload instrument selection</summary>
-
-- Allow user to change input instrument for tab upload
-- parseTab + toIntervals currently always use Guitar.STANDARD
-- Would potentially remove need for TabNote if parseTab is retooled for any tuning/instrument
-- need to update lick library to support
-  - manage lick flow, similar to manage song, to replace the direct delete lick ui
-  - add sort and filter to lick library display.
-    - filter by instrument, default show all
-    - not sure for sort
-
-</details>
-
-<details>
-<summary>[~] 101. (Licks) animated lick playback on neck for Lick detail (from 19)</summary>
-
-- Add GuitarNeck below the tab on LickDetailPage; feed it computed positions for selected key
-- Playhead advances through columnIndex sequence at BPM from MetronomeContext
-- Active column's dots light up; play/pause button; loops
-- Depends on position data from `GET /api/lick/{id}` and existing MetronomeContext
-- **File:** `src/features/lick/LickDetailPage.tsx`, reuse `GuitarNeck`
-</details>
 
 </details>
 
@@ -347,11 +321,28 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
+<details>
+<summary>[~] 135. (Licks,Live) lickbuilder future work</summary>
+
+- i want this feature to use the dynamic neck overlay that is currently deferred
+  - this would enable users to make tabs at higher frets than 12
+- if microphone feature in Live tab ever gets sufficiently accurate, we will merge lickbuilder and live features
+</details>
+
+<details>
+<summary>[~] 133. (Licks) lick visualizer enhancement</summary>
+
+- if playing in column mode, and slide,hammer, bend, pulloff is encountered
+  - use animated transition between notes
+- in all mode, label each note by column number
+-
+</details>
+
 
 </details>
 
 <details>
-<summary>[ ] 130. </summary>
+<summary>[ ] 138. </summary>
 
 - 
 </details>

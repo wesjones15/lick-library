@@ -56,6 +56,17 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
+<details>
+<summary>[x] 101. (Licks) animated lick playback on neck for Lick detail (from 19)</summary>
+
+- Add GuitarNeck below the tab on LickDetailPage; feed it computed positions for selected key
+- Playhead advances through columnIndex sequence at BPM from MetronomeContext
+- Active column's dots light up; play/pause button; loops
+- Depends on position data from `GET /api/lick/{id}` and existing MetronomeContext
+- **File:** `src/features/lick/LickDetailPage.tsx`, reuse `GuitarNeck`
+</details>
+
+
 </details>
 
 
@@ -437,6 +448,36 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 - add "Show All" button next to pagination that shows all without paginating.
     - when show all is active, the toggle is at bottom of list/grid where pagination was
 </details>
+
+<details>
+<summary>[x] 105. (Songs,Licks) song transpose enhancement </summary>
+
+- now that tablines are recognized in song parser and they are in tab format that is consumable by the licks parser
+    - transposing song key should transpose the tabs as well using lick transpose logic.
+- on song upload, or reparse, treat detected tabline blocks in songs as licks, add to lick library, but maybe with a flag to differentiate them from user licks.
+    - loading song should load tab blocks as lick cards
+        - transposing song should transpose the tab
+        - arrows to cycle Positions for transposed
+        - if lick is deleted from lick library song licks db,
+            - then display tabline as usual in tab if song is not transposed
+            - if song is transposed, just show error where tab was, but take up the same amount of space
+    - prevent deletion by user.
+        - song licks don't get delete buttons in the manage view, but user licks do
+    - don't show these licks in the user submitted lick library
+        - but add a toggle in the library view to show them in the list
+- getting licks from a song should happen on parse and reparse. if a song has tabs/licks but has not been reparsed yet, then it should act like it doesn't have tabs detected.
+  toggling experimental mode button on should trigger reparse if song has tablines but no licks yet. if song has no tablines, then turning experimental mode on should not fail or
+  produce any licks. if song has licks and tablines, toggling experimental mode will replace regular tablines with the experimental ones
+</details>
+
+<details>
+<summary>[x] 136. (Songs) Allow update capo in manage song details</summary>
+
+- Allow update capo in manage song details
+- make sure the key update field in the manage song details is updating the sound key value
+
+</details>
+
 
 </details>
 
@@ -979,6 +1020,134 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 
 </details>
+
+<details>
+<summary>Theory Third Pass Epic / Visualizer Rewrite</summary>
+
+<details>
+<summary>[x] 122. (Theory/Licks) Lick Visualizer Overhaul</summary>
+
+- lick visualizer
+    - one column at a time mode should cycle columns every second
+    - toggle for mode should just show all notes from tab on neck at once.
+    - add button to get lick from lick library.
+        - that should open modal that displays list of lick cards
+        - click a lick, it will load in the text field in lick visualizer and the guitar neck will show up automatically
+            - don't worry about showing generated position licks yet
+- "Cycle columns every second"
+    - add toggle.
+        - default selection is 1 col per second.
+        - when toggled, update rate is synced with metronome
+    - add pause button for lick playback.
+        - add selectable progress bar.
+            - progress bar is synced to raw tab.
+            - since tab is ingested column by column, dragging the progress bar over a column will display the notes played in that column
+            - progress bar can only land on columns where notes are present.
+                - can tabs have rests or blank space? if so, need to include a symbol so it isn't skipped like the columns between notes.
+        - progress bar card can go below the lick text input field.
+            - the currently processed lick will be in that field
+                - the progress bar will be aligned under the lick so where you drag it will aligned with the column that gets selected
+- When a lick is loaded from the library modal,
+    - lick should render in original saved key.
+    - expose controls to alter key.
+        - this will reveal position selecting flow, similar to lick modal
+- when lick is loaded from lick modal from Lick Visualizer
+    - automatically update live neck with lick rendering
+        - default is render all notes from lick at once on neck
+            - toggle will swap mode from all-at-once to playback-mode
+                - in playback mode, user can choose between 1 second speed, and metronome-sync
+- remove lick text field with buttons. select lick from library, and new lick
+    - select lick brings up lick modal.
+    - selected lick gets rawtab displayed where lick text field is in current design
+    - new lick opens new lick modal, which you type the lick into the field, click submit, and it uploads the lick to the lick library
+        - then it automatically calls that lick and puts it in the visualizer
+- lick visualizer should not be reinterpreting the tabs inputted.
+    - since visualizer takes input as raw tab string, we have absolute positions of every note played on the neck in the lick.
+    - use that, not the position finder.
+- Perhaps Lick Visualizer should be its own tab "Lick Visualizer" OR perhaps it should be accessible under Licks tab instead.
+    - open to discussion
+- feature to build lick by clicking on notes on the guitar neck diagram, and it produces a rawTab text that you can save
+    - maybe it can determine possible valid keys / modes that describe the lick
+        - this should account for blues notes etc and assume blues or jazz over nonstandard mode if it comes down to it.
+</details>
+
+<details>
+<summary>[x] 130. (Theory,Licks) Lick Visualizer Second Pass</summary>
+
+- make guitar neck always on screen, even when no lick loaded.
+- load from library button and New Lick button replace the existing inputs
+    - New Lick opens new lick modal
+        - uses text field rules from /licks new lick input field
+        - Visualize button loads tab in visualizer.
+    - if tab being visualized isn't loaded from lick library, then there is a Save Lick button which triggers that process
+        - if it is rejected on backend, then produce a red error message below it
+        - if lick was loaded from lick library, then Save Lick button is grayed out
+    - if lick is modified (Edit Lick button which opens Edit Lick modal (same as New Lick modal))
+        - enable save lick button
+            - if lick exists, then error message says lick exists
+- because lick editing is moved to a modal, now we can display the raw tab ascii in a way that syncs with the progress bar
+    - tab ascii should be rendered in a way spreads it out more (possibly insert extra - between notes?)
+    - progress bar should be aligned so jump points are lined up with corresponding note column in raw tab
+- add a button to build a tab from clicking the neck diagram.
+    - one note at a time, for initial impl
+        - this way there isn't a need for a next column button
+    - output is rawtab ascii. updates live as it is built
+        - it is displayed concisely (without the spacing that the progress bar from other screen would add)
+        - save lick button
+        - you can edit the output tab in the text field before submitting,
+            - text field follows same rules as licks page new lick
+- lick library modal should show full lick in each card
+    - currently it cuts off licks horizontally, hiding last 3 string rows.
+    - it enforce card width and cut licks off vertically, so long tabs show all strings in preview, but lines can get cut off with ... to preserve card size
+</details> 
+
+<details>
+<summary>[x] 131. (Theory,Licks) Lick Visualizer Third Pass</summary>
+
+- when submitting a lick, reformat it so each column with notes has a 1 "-" gap between next column with notes.
+- saved licks should use reformatted rawtab
+- when tab is displayed in visualizer
+    - all-at-once mode
+        - show rawtab without any extra spacing added (only have 1 hyphen column between each note column)
+    - column mode
+        - show rawtab with enough hyphens added between note columns so that spacing aligns with progress bar stages
+- if there is a decorator between notes in a loaded tab in the visualizer, add decorator at midpoint between columns of rawtab
+</details>
+
+<details>
+<summary>[x] 134. (Theory,Live,Licks) Restructure</summary>
+
+- theory tab should now direct to the Live tab Live mode.
+    - we will rename this to Theory tab Theory mode
+    - once Live tab is freed up,
+        - remove microphone stuff from Theory tab Theory mode.
+        - add microphone stuff and copy over currentNote logic and guitar neck to new page accessible via Live tab
+    - Theory tab Theory mode will just be Theory page
+        - pill button is unnecessary since subfeatures are moved around
+- move Lick Visualizer under Licks
+    - On Licks page, rewrite to change title to Licks
+        - below title, the upload lick stuff stays where it is
+        - below upload licks is 2 buttons
+            - Lick Library - shows lick library, which used to be shown on licks home page
+            - Lick Visualizer - directs to Lick Visualizer, which is moved away from live tab over to licks
+    - the new/edit lick modal used by lick visualizer should be updated to include optional key and mode
+        - make it use the same rules as the upload lick impl on /licks
+            - replace the upload a lick card with the content used in the add lick modal
+                - don't make it a modal on the licks page tho, it should look similar to the old one after the change is made
+- Chords pill page should be moved under Chord Gallery tab.
+    - add a button on chord gallery homepage between key select and Upload Voicing, Labeled Chord Theory
+        - this directs to the chord pill page from former live tab
+</details>
+
+<details>
+<summary>[x] 124. (Live,Theory) Separate Interactive page from mic</summary>
+
+- make the mic input lighting up guitar neck its own page and that goes on Live
+- everything else from Theory and Live go back to Theory tab
+-
+</details>
+</details>
+
 
 </details>
 

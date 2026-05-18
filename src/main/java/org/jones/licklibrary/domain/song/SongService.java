@@ -115,6 +115,7 @@ public class SongService {
             song.setArtist(req.artist() != null && !req.artist().isBlank() ? req.artist().trim() : null);
             song.setOriginalKey(req.originalKey() != null && !req.originalKey().isBlank() ? req.originalKey() : null);
             song.setTempo(req.tempo());
+            song.setCapo(req.capo());
             song = songRepository.save(song);
         }
         return toDetail(song, song.getChordLines());
