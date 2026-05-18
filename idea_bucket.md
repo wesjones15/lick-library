@@ -42,11 +42,6 @@ songs that should have variable font size throughout seem to have a uniform font
 
 </details>
 
-<details>
-<summary>[ ] 119. (Playlist) playlist song detail view bug</summary>
-
-- in playlist song detail view, where playlist controls are exposed over song display, the save icon button to "update voicing/save offsets for song in playlist" doesn't work.
-</details>
 
 <details>
 <summary>Theory Fourth Round Enhancement</summary>
@@ -84,35 +79,6 @@ songs that should have variable font size throughout seem to have a uniform font
 </details>
 
 <details>
-<summary>[ ] 132. (Licks) Lick Builder Refresh</summary>
-
-- currently lick builder doesn't work
-  - when a note is clicked, it should add it to the tab
-  - currently notes don't register as clicked
-- lick builder should ALSO have the currentNote highlight and next note suggestions from the theory guitarneck
-  - lick builder should allow user to set key and mode
-    - setting a key and mode  will overlay the diatonic scale on the fretboard
-    - reuse existing components here if possible
-      - if not, rewrite the diatonic overlay to be applicable to live and lick and theory, since they all use it
-- lickbuilder should have start/stop button (next to clear button)
-  - clicking start should change button to say stop
-  - notes clicked while builder is active will pulse like currentNote
-    - if chord detection toggle is on, all notes selected in same chord frame will glow and pulse like currentNote
-- allow chord detection in lick builder (include toggle icon button (button turns green when active)(button is next to start stop button))
-  - consider all notes selected in 1.5 seconds (resets after every note selection too) to be in the same column 
-  - one selection per string enforced
-  - if selection is same string, 
-    - stop timer and enter to that note in the next column, and start timer for that column
-  - after 1.5 seconds move to next column.
-    - don't act until user inputs next note. once user inputs next note, listen for 1.5 sec to build a chord
-  - timer starts on first note entry, if no notes entered in 1.5 seconds, then it moves to the next column. timer stops.
-    - next note triggers timer, then once chord detection period ends, moves to next column
-- add Lick Builder button on Licks page, next to Lick Visualizer button
-  - directs to Lick Visualizer with Build pill selected.
--
-</details>
-
-<details>
 <summary>[ ] 12. (Licks) Upload instrument selection</summary>
 
 - Allow user to change input instrument for tab upload
@@ -143,6 +109,24 @@ songs that should have variable font size throughout seem to have a uniform font
 
 - song parser seems to be forcing a uniform font
 - i see a song is getting lots of whitespace added between sections instead of making the font bigger
+</details>
+
+<details>
+<summary>[ ] 140. (Playlist,Songs) ui aesthetics</summary>
+
+- in playlist detail page,
+  - song card should show capo as well (default capo + capo_offset)
+    - should go between key and tempo
+    - if no capo, say No Capo
+- in manage view on playlist detail page, 
+  - change the pencil button and the x button (make it red) to be 3 times the size. 
+  - make the pencil button for renaming playlist 3x bigger. 
+  - the pencil button by the song card should not have a button around it
+  - the pencil button and the x button should be spaced more apart, and not as close to right edge
+  - if a playlist is empty, the add songs button should appear outside of manage mode. 
+- in song library, if show all is clicked, 
+  - currently the show less button is at bottom. 
+  - lets move show less back up top where show all is.
 </details>
 
 </details>
@@ -342,7 +326,7 @@ songs that should have variable font size throughout seem to have a uniform font
 </details>
 
 <details>
-<summary>[ ] 138. </summary>
+<summary>[ ] 141. </summary>
 
 - 
 </details>

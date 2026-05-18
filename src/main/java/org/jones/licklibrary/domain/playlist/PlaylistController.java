@@ -48,7 +48,7 @@ public class PlaylistController {
         return playlistService.addEntry(id, request);
     }
 
-    @PutMapping("/{id}/entries/{entryId}")
+    @PostMapping("/{id}/entries/{entryId}")
     public PlaylistDetailResponse updateEntry(
             @PathVariable UUID id,
             @PathVariable UUID entryId,

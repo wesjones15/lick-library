@@ -1262,5 +1262,118 @@ key: [ ]  = open, [x] = complete, [~] = deferred
 
 </details>
 
+<details>
+<summary>[x] 132. (Licks) Lick Builder Refresh</summary>
+
+- currently lick builder doesn't work
+    - when a note is clicked, it should add it to the tab
+    - currently notes don't register as clicked
+- lick builder should ALSO have the currentNote highlight and next note suggestions from the theory guitarneck
+    - lick builder should allow user to set key and mode
+        - setting a key and mode  will overlay the diatonic scale on the fretboard
+        - reuse existing components here if possible
+            - if not, rewrite the diatonic overlay to be applicable to live and lick and theory, since they all use it
+- lickbuilder should have start/stop button (next to clear button)
+    - clicking start should change button to say stop
+    - notes clicked while builder is active will pulse like currentNote
+        - if chord detection toggle is on, all notes selected in same chord frame will glow and pulse like currentNote
+- allow chord detection in lick builder (include toggle icon button (button turns green when active)(button is next to start stop button))
+    - consider all notes selected in 1.5 seconds (resets after every note selection too) to be in the same column
+    - one selection per string enforced
+    - if selection is same string,
+        - stop timer and enter to that note in the next column, and start timer for that column
+    - after 1.5 seconds move to next column.
+        - don't act until user inputs next note. once user inputs next note, listen for 1.5 sec to build a chord
+    - timer starts on first note entry, if no notes entered in 1.5 seconds, then it moves to the next column. timer stops.
+        - next note triggers timer, then once chord detection period ends, moves to next column
+- add Lick Builder button on Licks page, next to Lick Visualizer button
+    - directs to Lick Visualizer with Build pill selected.
+-
+</details>
+
+<details>
+<summary>[x] 138. (Song,Playlist) Capo is messed up again in the song toolbar</summary>
+
+- we previously fixed the behavior of capo and transpose offset in manage song metadata flow.
+- there is an issue. currently, in song toolbar, when i change capo value, it acts on shape rather than sound.
+    - capo should offset sound key. should not alter shape key
+- updating song key within playlist detail manage page
+    - the song card displays the sound key for the song which is good
+        - but the transpose and capo offsets are not applied to the key that gets displayed
+    - the update capo/transpose offsets modal
+        - incorrectly loads the original sound key instead of the sound key with offsets applied
+        - it incorrectly puts that sound key in the shape spot in the widget
+        - perplexingly, it correctly applies capo offset to the displayed sound key in the modal
+            - this is strange because currently the capo value in the song detail page applies to shape(incorrectly) rather than the intended sound key.
+- cases:
+    - song upload flow
+        - user provided value for key is considered the sound key
+        - user provided value for capo is considered the capo value
+            - the capo value cannot be negative
+        - shape key is determined by sound key (user input) minus capo value
+    - song update flow (manage song metadata)
+        - user provided value for key is considered the sound key
+        - user provided value for capo is considered the capo value
+            - capo value cannot be negative
+        - shape key is determined by sound key (user input) minus capo value
+    - in song detail page
+        - any offset changes are not saved, but only persist as long as song is open.
+            - changing capo offset updates the sound value, but not shape value
+            - changing transpose offset updates the sound and shape values.
+        - add to playlist flow on song detail page
+            - when user clicks add to playlist
+                - grab currently applied capo offset
+                - grab currently applied transpose offset
+                - save these offsets in with the song in the playlist
+            - when user opens song from playlist detail page, automatically apply the capo offset and the transpose offset to the song and the transpose widget
+    - manage page for single playlist
+        - song in playlist has capo_offset=0 and transpose_offset = 0
+            - in playlist detail view, song card should show the sound key for key, with 0 offset applied
+        - song in playlist has nonzero capo_offset applied
+            - in playlist detail view, song card should show the result of (sound_key + capo offset) for key
+        - song in playlist has nonzero transpose_offset applied
+            - in playlist detail view, song card should show the result of (default_sound_key +capo_offset + transpose_offset) for key
+        - song in playlist has nonzero capo_offset and nonzero transpose applied
+            - in playlist detail view, song card should show the result of (default_sound_key + transpose_offset + capo_offset) for key
+        - when user opens voicing modal.
+            - capo widget should show (original_capo_value + capo offset).
+                - reset button will set capo value back to song default
+                - changing capo value via controls will update capo value and update transpose sound key value
+            - transpose widget should show
+                - sound: (original_song_key + transpose_offset + capo offset)
+                - shape: (original_song_key - default_capo + transpose_offset)
+                - reset button restores 0 offset for transpose
+            - clicking save will update the offsets saved to the song entry in the playlist.
+                - the song card in playlistdetail view should show the sound key with offsets applied.
+</details>
+
+<details>
+<summary>[x] 139. (Development) Move repeat values to constants file</summary>
+
+- noticed we defined the scales and offset math over and over again so we should move it all to one file, and have it referenced from there
+</details>
+
+
+<details>
+<summary>[x] 119. (Playlist) playlist song detail view bug</summary>
+
+- playlist song detail page currently conditionally displays a save icon button if user modifies offset from the offset saved to the song entry within the playlist
+    - remove this button and behavior
+    - instead, add feature to the existing add to playlist button
+        - add to playlist modal
+            - currently: in playlist list:
+                - if song is not in playlist, plus button
+                    - on click, add to playlist, button becomes green check for a few seconds, then turns to red x
+                - if song is in playlist, x button
+                    - on click, turns to plus to signify removal
+                    - maybe add a intermediate icon for 1 second to signal  action, before changing to the plus
+            - plan:
+                - if offset is modified within playlist view, then instead of the save button appearing we use this logic to
+                    - if user opens add to playlist modal within playlist song detail, and song entry offset is modified,
+                        - in playlist card, instead of showing x, show a update icon
+                            - on click, it updates the saved offsets for the song entry in the playlist - in place, song does not change its sequence in the playlist
+                            - on click, update icon turns to green check for same amount of time as when adding song, then to a red x
+</details>
+
 
 </details>
