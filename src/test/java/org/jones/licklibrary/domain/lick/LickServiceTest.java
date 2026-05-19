@@ -46,7 +46,7 @@ class LickServiceTest {
 
     @Test
     void uploadLick_storesNewLick() {
-        when(lickRepository.findByIntervalHash(anyString())).thenReturn(Optional.empty());
+        when(lickRepository.findByIntervalHashAndInstrumentAndAutoImportedFalse(anyString(), anyString())).thenReturn(Optional.empty());
         when(lickRepository.save(any(Lick.class))).thenAnswer(inv -> {
             Lick l = inv.getArgument(0);
             return new Lick() {{
@@ -57,7 +57,7 @@ class LickServiceTest {
             }};
         });
 
-        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null));
+        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null, null), Guitar.STANDARD, "GUITAR");
 
         verify(lickRepository).save(any(Lick.class));
         assertEquals(Mode.IONIAN, response.mode());
@@ -72,19 +72,19 @@ class LickServiceTest {
         existing.setRawTab(MAJOR_TAB);
         existing.setMode(Mode.IONIAN);
 
-        when(lickRepository.findByIntervalHash(anyString())).thenReturn(Optional.of(existing));
+        when(lickRepository.findByIntervalHashAndInstrumentAndAutoImportedFalse(anyString(), anyString())).thenReturn(Optional.of(existing));
 
-        lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null));
+        lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null, null), Guitar.STANDARD, "GUITAR");
 
         verify(lickRepository, never()).save(any());
     }
 
     @Test
     void uploadLick_respectsModeOverride() {
-        when(lickRepository.findByIntervalHash(anyString())).thenReturn(Optional.empty());
+        when(lickRepository.findByIntervalHashAndInstrumentAndAutoImportedFalse(anyString(), anyString())).thenReturn(Optional.empty());
         when(lickRepository.save(any(Lick.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, Mode.DORIAN, null));
+        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, Mode.DORIAN, null, null), Guitar.STANDARD, "GUITAR");
 
         assertEquals(Mode.DORIAN, response.mode());
     }
