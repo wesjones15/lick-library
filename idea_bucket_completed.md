@@ -1397,5 +1397,113 @@ key: [ ]  = open, [x] = complete, [~] = deferred
         - default color should be blue otherwise
 </details>
 
+<details>
+<summary>[x] 12. (Licks) Multi-Instrument Support Epic</summary>
+
+- [x] Phase 1: Backend and Legacy Lick Upload
+    - Allow user to change input instrument for tab upload
+        - only for Legacy "Upload A Lick" Form
+    - parseTab + toIntervals currently always use Guitar.STANDARD
+    - Would potentially remove need for TabNote if parseTab is retooled for any tuning/instrument
+    - backend logic should be tooled to allow dynamic input for instrument/tuning.
+        - after refactor, standard guitar should still behave the same, but flow should now accept, generate, and serve tabs for other instruments
+- [x] Phase 2: Lick Library Search
+    - need to update lick library to support
+        - manage lick flow, similar to manage song, to replace the direct delete lick ui
+        - add sort and filter to lick library display.
+            - filter by instrument, default show all
+            - filter by mode
+            - filter or sort by length of tab
+            - search by present intervals
+                - (query: 1 b2 4)
+                    - returns any tab containing that sequence
+                        - ignore slash or technique when finding results
+                        - if query contains technique, then don't ignore technique in search results.
+- [x] Phase 3: Chord Gallery Voicings DB
+    - track chord voicings for other instruments
+        - chord voicing db is updated to track instrument/tuning.
+        - chord voicing modal will show instrument name/tuning in little gray font left aligned underneath the chord name in the modal
+            - modal will retrieve chord voicings for instrument selected
+                - add instrument selector to chord gallery
+    - Add Chord Voicing for chord flow
+        - add Instrument selector
+            - (also allow custom, like in lick search)
+            - default value to standard guitar
+            - if user changes instrument in chord voicing modal
+                - then update the form and the display
+                    - the fret entry should update to show the number and tuning of strings for the selected instrument
+                    - the display modal should be updated
+                        - modal shown in add voicing flow should display like the hover chord modal in layout
+                            - the name of the chord should show above diagram
+                            - the instrument name/tuning should show below chord name
+                        - the diagram should show correct number of strings for the instrument
+    - ChordUploadForm is triggered when a user hovers over a chord in a song detail page, and the chord has no voicing for the instrument that the song is currently set to. the hover chord modal will show an empty diagram, with the chord name at the top, and the instrument name below. it should have ??? on it somewhere too. if user clicks hover modal when it shows no voicing, upload chord form appears, and the chordname and instrument selector are pre-filled and disabled from modification. user can assemble and submit a voicing. if user opens add voicing from chord gallery home, then they can type in chord name field, and they can select instrument. changing instrument will change what strings and fields are available for entry for building the chord. if user opens uploadchordform from a manage voicing flow in chord gallery, then chordname and instrument fields are locked.
+- [x] Phase 4: Song Detail and Tab Modal
+    - in song page, where it currently says Standard
+        - turn this into a selector button for instrument
+            - chord voicings will now depend on selected instrument
+                - if chord has no saved voicings,
+                    - open Add Voicing modal, following existing flow for chords-with-no-voicings
+                        - instead of just hardcoding chord name,
+                            - also hardcode instrument for this circumstance
+    - if exp tab feature enabled
+        - replace the tabline blocks with a generated position for the selected instrument
+            - position logic should be passed the notes of the strings, amount of strings, and run with that
+        - the lick position shown at 0 transpose should be
+            - as geographically close on the neck as the tabline block rawtab position as possible
+    - if exp tab feature disabled
+        - show unaltered tabline
+- [x] Phase 5: GuitarNeck Multi-Instrument Support
+    - Implement support for custom tunings/instruments in GuitarNeck visual
+        - if given 4 strings and GCEA or whatever,
+            - GuitarNeck should produce only 4 strings
+            - scales generated should be interval based on open string note.
+                - i think existing logic should support this
+        - Lick Visualizer, Lick Builder, Theory/Live, should get Instrument selector, and update based on instrument tuning
+            - chord gallery Chord Theory page should also use this
+</details>
+
+<details>
+<summary>[x] 144. (Songs) Minimode enhance</summary>
+
+- add more icons to navbar in mini view
+    - spread them out more and make them bigger
+    - put a more options icon button that is a toggle for these icon buttons
+    - icon button for: show chords, addtoplaylist, more options
+        - more options: exp tab, view , manage, transpose modal, instrument select, playlist controls (if applicable)
+            - playlist controls button onclick puts a window below the button that has prev x/x next and a <- <playlistname> button above
+- apply the no-scroll stuff song toolbar in scrolling mode to the navbar itself too
+- play/pause button in scroll mode needs to be moved, perhaps to the toolbar to left of exptab button
+-
+</details>
+
+<details>
+<summary>[x] 125. (Theory) Chords Feature In Theory Tab</summary>
+
+- Chords button in Theory tab
+    - button lives next to pentatonic toggle, next to where the active pentatonic card ends
+        - clicking the chords button opens a card for chords just like the pentatonic card does
+    - when Chords mode is active:
+        - 1,2,3 degree candidates no longer pulse or brighten
+        - multiple notes can be selected
+            - even notes that aren't in the key
+                - these notes get black text, display their note value, and pulse gray
+            - a new card lists the intervals used, even off scale intervals
+                - it lists root and quality chords you are making with those intervals
+                    - and perhaps the mode the chord fits in
+                - if chord doesn't match anything then say so, but still show the intervals selected in the chord card
+</details>
+
+<details>
+<summary>[x] 141. (Licks) Lick page overhaul</summary>
+
+- currently licks page has upload lick card and buttons to Lick Library, Lick Visualizer, Lick Builder
+- make the title a big pill with Lick Library | Lick Visualizer | Lick Builder | Lick Builder (Legacy)
+    - clicking pill shows that pill as selected, loads content below
+    - the active tab should move to left most pill and should appear as though it is outside of the pill, looking like a title, with the other options to the right, in their connected pill buttons
+        - remove Visualize|Build pill from Lick Visualizer & builder
+</details>
+
+
 
 </details>

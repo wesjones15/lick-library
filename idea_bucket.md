@@ -11,13 +11,13 @@ songs that should have variable font size throughout seem to have a uniform font
 <summary>Pending</summary>
 
 <details>
-<summary>Songs Enhancement Epic</summary>
-
-<details>
 <summary>[ ] 103. (Songs) Multi-Mode Key enhancement</summary>
 
 - currently all song keys are assumed to be Major or Minor. 
 - should we add support for the other modes or is that super uncommon?
+- in song toolbar, instrument selector has Major/Minor right next to it
+  - update so instead of major/minor, it says the sound key of the song, like in small mode.
+    - sound key should be suffixed with m decorator for minor.
 -
 </details>
 
@@ -30,6 +30,19 @@ songs that should have variable font size throughout seem to have a uniform font
   - there is no whitespace, but the body is zoomed to fill screen with the text that is shown
   - we already tried a horizontal scrolling approach but what i want is for the text to be smaller to fit the screen 
 - maybe we just make the font smaller in iphone view (and ipad portrait scrolling view?)
+- case
+  - expected view for scrolling view on song detail page
+    - G                    C      G                      C
+    - There's flies in the kitchen, I can hear all their buzzin'
+  - ipad vertical view, song detail page, scrolling view
+    - G                    C      G                      C
+    - There's flies in the kitchen, I can hear all their buz
+  - iphone vertical view, song detail page, scrolling view
+    - G                    C      G
+    - There's flies in the kitchen,
+  - desktop landscape view, song detail page, scrolling view
+    - G                    C      G            
+    - There's flies in the kitchen, I can hear 
 </details>
 
 <details>
@@ -40,28 +53,19 @@ songs that should have variable font size throughout seem to have a uniform font
 - does this need to be combined with the deferred idea 79 (slash chords are overengineered)?
 </details>
 
+<details>
+<summary>[ ] 137. (Songs) backend parser logic or frontend font?</summary>
+
+- song parser seems to be forcing a uniform font
+- i see a song is getting lots of whitespace added between sections instead of making the font bigger
+- frontend
+  - when transposing, if a chord becoming sharp eats the space between it and the next chord (or next character, since not everything in a chordline is chords),
+    - add a space between them to prevent chord interpretation errors
+  - when exp tab mode is on.
+    - preserve technique on the tab
+      - slash, etc should be preserved in processed tab, in same relative position to the original
 </details>
 
-
-<details>
-<summary>Theory Fourth Round Enhancement</summary>
-
-<details>
-<summary>[ ] 125. (Theory) Chords Feature In Theory Tab</summary>
-
-- Chords button in Theory tab
-  - button lives next to pentatonic toggle, next to where the active pentatonic card ends
-    - clicking the chords button opens a card for chords just like the pentatonic card does
-  - when Chords mode is active:
-    - 1,2,3 degree candidates no longer pulse or brighten
-    - multiple notes can be selected 
-      - even notes that aren't in the key
-        - these notes get black text, display their note value, and pulse gray
-      - a new card lists the intervals used, even off scale intervals
-        - it lists root and quality chords you are making with those intervals
-          - and perhaps the mode the chord fits in
-        - if chord doesn't match anything then say so, but still show the intervals selected in the chord card
-</details>
 
 <details>
 <summary>[ ] 126. (Theory) Modes comparison</summary>
@@ -78,103 +82,6 @@ songs that should have variable font size throughout seem to have a uniform font
   - i ultimately want mode comparison to go into the main interactive tool, but
 </details>
 
-<details>
-<summary>[ ] 12. (Licks) Multi-Instrument Support Epic</summary>
-
-- [ ] Phase 1: Backend and Legacy Lick Upload
-  - Allow user to change input instrument for tab upload
-    - only for Legacy "Upload A Lick" Form
-  - parseTab + toIntervals currently always use Guitar.STANDARD
-  - Would potentially remove need for TabNote if parseTab is retooled for any tuning/instrument
-  - backend logic should be tooled to allow dynamic input for instrument/tuning. 
-    - after refactor, standard guitar should still behave the same, but flow should now accept, generate, and serve tabs for other instruments
-- [ ] Phase 2: Lick Library Search
-  - need to update lick library to support
-    - manage lick flow, similar to manage song, to replace the direct delete lick ui
-    - add sort and filter to lick library display.
-      - filter by instrument, default show all
-      - filter by mode
-      - filter or sort by length of tab
-      - search by present intervals 
-        - (query: 1 b2 4) 
-          - returns any tab containing that sequence
-            - ignore slash or technique when finding results
-            - if query contains technique, then don't ignore technique in search results.
-- [ ] Phase 3: Chord Gallery Voicings DB
-  - track chord voicings for other instruments
-    - chord voicing db is updated to track instrument/tuning.
-    - chord voicing modal will show instrument name/tuning in little gray font left aligned underneath the chord name in the modal
-      - modal will retrieve chord voicings for instrument selected
-        - add instrument selector to chord gallery
-  - Add Chord Voicing for chord flow
-    - add Instrument selector 
-      - (also allow custom, like in lick search)
-      - default value to standard guitar
-      - if user changes instrument in chord voicing modal
-        - then update the form and the display 
-          - the fret entry should update to show the number and tuning of strings for the selected instrument
-          - the display modal should be updated
-            - modal shown in add voicing flow should display like the hover chord modal in layout
-              - the name of the chord should show above diagram
-              - the instrument name/tuning should show below chord name
-            - the diagram should show correct number of strings for the instrument
-- [ ] Phase 4: Song Detail and Tab Modal
-  - in song page, where it currently says Standard
-    - turn this into a selector button for instrument
-      - chord voicings will now depend on selected instrument
-        - if chord has no saved voicings, 
-          - open Add Voicing modal, following existing flow for chords-with-no-voicings
-            - instead of just hardcoding chord name,
-              - also hardcode instrument for this circumstance
-  - if exp tab feature enabled
-    - replace the tabline blocks with a generated position for the selected instrument
-      - position logic should be passed the notes of the strings, amount of strings, and run with that
-    - the lick position shown at 0 transpose should be
-      - as geographically close on the neck as the tabline block rawtab position as possible
-  - if exp tab feature disabled
-    - show unaltered tabline
-- [ ] Phase 5: GuitarNeck Multi-Instrument Support
-  - Implement support for custom tunings/instruments in GuitarNeck visual
-    - if given 4 strings and GCEA or whatever,
-      - GuitarNeck should produce only 4 strings
-      - scales generated should be interval based on open string note.
-        - i think existing logic should support this
-    - Lick Visualizer, Lick Builder, Theory/Live, should get Instrument selector, and update based on instrument tuning
-      - chord gallery Chord Theory page should also use this 
-</details>
-
-</details>
-
-<details>
-<summary>[ ] 137. (Songs) backend parser logic or frontend font?</summary>
-
-- song parser seems to be forcing a uniform font
-- i see a song is getting lots of whitespace added between sections instead of making the font bigger
-- frontend
-  - when transposing, if a chord becoming sharp eats the space between it and the next chord (or next character, since not everything in a chordline is chords),
-    - add a space between them to prevent chord interpretation errors
-  - when exp tab mode is on.
-    - preserve technique on the tab
-      - slash, etc should be preserved in processed tab, in same relative position to the original
-      - 
-</details>
-
-<details>
-<summary>[ ] 141. (Licks) Lick page overhaul</summary>
-
-- currently licks page has upload lick card and buttons to Lick Library, Lick Visualizer, Lick Builder
-- Lick Builder has developed into a full on replacement for the original Upload Lick flow
-  - Licks page should be 4 buttons (structured like homepage?)
-    - Lick Library 
-    - Lick Builder
-    - Lick Visualizer
-    - Lick Builder (Legacy): directs user to original Upload A Lick form
-- rename
-  - website Lick Library -> WesLicks
-  - Licks -> Lick Library (displayed like Chord Gallery has a line break)
-  - Both Lick Library and Chord Gallery get left aligned in the navbar.
-    - when these are viewed from hamburger icon, remove line break
-</details>
 
 <details>
 <summary>[ ] 142. (Licks) Copy Lick Icon Button</summary>
@@ -198,6 +105,66 @@ songs that should have variable font size throughout seem to have a uniform font
       - add visualize button
         - acts as manage mode.
         - if you click on a position while visualize is active, it takes you to lick visualizer with selected position loaded.
+</details>
+
+<details>
+<summary>[ ] 143. (Licks,Songs) exp tab feature bug fixes</summary>
+
+- when on song detail, and exp tab is active
+  - instrument = ukulele
+    - at zero transpose offset, lick starts at fret12 instead of fret0 (maybe allow further reach when converting tabs between instruments)
+    - at nonzero transpose offset, the standard guitar transposition gets displayed at certain offsets 
+      - i might have requested this in the spec
+  - instrument = custom or nonstandard guitar, 
+    - i don't see tabs getting produced 
+  - perhaps we create a crossInstrumentPositionBuilder
+    - for licks that are converted from standard to another instrument, this builder will be preferred
+    - it can reduce chords (dedupe intervals in a column)
+    - it will be less strict wrt reach during traversal, since caged doesn't apply to other instruments/tunings
+</details>
+
+<details>
+<summary>[ ] 145. (Licks) Renaming Lick Things</summary>
+
+- rename
+  - website Lick Library -> WesLicks
+  - Licks -> Lick Library (displayed like Chord Gallery has a line break)
+    - Both Lick Library and Chord Gallery get left aligned in the navbar.
+      - when these are viewed from hamburger icon, remove line break
+</details>
+
+<details>
+<summary>[ ] 146. (Songs,Theory) Noodle Tool</summary>
+
+- in song detail page, add noodle icon button
+  - this will open guitarneck with key/mode set to current song
+  - sync with metronome, 
+  - input field fills with the chords of the song, 
+    - user can update this to put custom chords in 
+  - currentChord will update as the metronome ticks, 
+    - neck will highlight with notes that meet rules:
+      - note is in scale for current mode
+      - note is one of the intervals in the current chord
+    - hook (defer) this feature can go in live tab
+- flow:
+  - start in song detail page.
+    - user clicks noodle button
+    - user is directed to live tab
+      - (Play Along Mode?)
+    - live tab receives the song object (chordlines,lyriclines)
+    - instead of displaying chordsheet,
+      - shows single line of song at a time 
+        - next line is smaller below in gray font
+        - prev line is smaller above in gray font
+        - chord lyric pairs are displayed together
+        - tablines can be ignored initially
+          - future will make the tablines get played on the guitar neck, instead of skipping them
+      - chord lyrics block shown is synced to metronome,
+        - after each measure, shows next lyric block.
+    - assume each bar has 4 chords
+      - stub method for logic to handle more than 4 chords in a measure
+      - stub method for logic to handle less than 4 chords in a measure
+    - intervals that make up each chord get highlighted in diagram so user can see which notes to focus during each phrase
 </details>
 
 </details>
@@ -397,7 +364,7 @@ songs that should have variable font size throughout seem to have a uniform font
 </details>
 
 <details>
-<summary>[ ] 143. </summary>
+<summary>[ ] 147. </summary>
 
 - 
 </details>
