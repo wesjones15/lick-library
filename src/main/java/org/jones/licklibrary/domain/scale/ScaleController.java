@@ -1,6 +1,8 @@
 package org.jones.licklibrary.domain.scale;
 
 import org.jones.licklibrary.domain.scale.dto.ScaleResponse;
+import org.jones.licklibrary.domain.shared.Instrument;
+import org.jones.licklibrary.domain.shared.InstrumentRegistry;
 import org.jones.licklibrary.domain.shared.Mode;
 import org.jones.licklibrary.domain.shared.Note;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +21,8 @@ public class ScaleController {
     @GetMapping
     public ResponseEntity<ScaleResponse> getScale(
             @RequestParam String root,
-            @RequestParam String mode
+            @RequestParam String mode,
+            @RequestParam(required = false, defaultValue = "GUITAR") String instrument
     ) {
         Note rootNote;
         try {
@@ -35,6 +38,13 @@ public class ScaleController {
             return ResponseEntity.badRequest().build();
         }
 
-        return ResponseEntity.ok(scaleService.getScale(rootNote, scaleMode));
+        Instrument inst;
+        try {
+            inst = InstrumentRegistry.fromName(instrument);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok(scaleService.getScale(rootNote, scaleMode, inst));
     }
 }
