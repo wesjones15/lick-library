@@ -219,6 +219,24 @@ class ChordSheetParserTest {
     }
 
     @Test
+    void sus4AfterNumberChordsIdentifiedAsChordLine() {
+        String raw = "D7sus4  G\nSome lyrics here\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        ChordLyric first = (ChordLyric) r.chordLines().get(0);
+        assertThat(first.chords()).contains("D7sus4");
+        assertThat(first.lyrics()).contains("Some lyrics");
+    }
+
+    @Test
+    void addNoteNameChordsIdentifiedAsChordLine() {
+        String raw = "CaddG  D\nSome lyrics here\n";
+        ChordSheetParser.ParseResult r = parser.parse(raw);
+        ChordLyric first = (ChordLyric) r.chordLines().get(0);
+        assertThat(first.chords()).contains("CaddG");
+        assertThat(first.lyrics()).contains("Some lyrics");
+    }
+
+    @Test
     void tabBlockWithHeaderIsDetectedAsGuitarTabLine() {
         String raw = "C#m  F#  D   E\n"
                 + "e|---4---2---2---0----|\n"

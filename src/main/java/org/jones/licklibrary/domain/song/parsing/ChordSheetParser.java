@@ -13,7 +13,7 @@ public class ChordSheetParser {
     private static final Pattern METADATA_LINE  = Pattern.compile("^\\(.*\\)$");
     private static final Pattern SECTION_LABEL  = Pattern.compile("^\\[.*\\]$");
     private static final Pattern CHORD_TOKEN    = Pattern.compile(
-            "^(NC|N\\.C\\.|[A-G][#b]?(maj|min|m|dim|aug|sus|add)?[0-9]*(b[0-9]+)?(/[A-G][#b]?)?)$"
+            "^(NC|N\\.C\\.|[A-G][#b]?(maj|min|m|dim|aug|sus|add)?[0-9]*([A-G][#b]?)?(b[0-9]+)?(sus[0-9]+)?(/[A-G][#b]?)?)$"
     );
     // Tab line: optional string letter, pipe, then content with at least one dash
     private static final Pattern TAB_LINE = Pattern.compile(
