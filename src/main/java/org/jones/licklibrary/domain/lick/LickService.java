@@ -115,11 +115,14 @@ public class LickService {
         if (notes.isEmpty()) return null;
         Note rootKey = Guitar.STANDARD.getNoteAt(notes.get(0).stringIndex(), notes.get(0).fret());
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, Guitar.STANDARD);
+        String hash = LickUtils.hashIntervals(intervals);
+        Optional<Lick> existing = lickRepository.findByIntervalHash(hash);
+        if (existing.isPresent()) return existing.get().getId();
         Mode mode = LickUtils.detectMode(intervals);
         int tabSpan = notes.stream().mapToInt(TabNote::fret).max().orElse(0)
                     - notes.stream().mapToInt(TabNote::fret).min().orElse(0);
         Lick lick = new Lick();
-        lick.setIntervalHash(LickUtils.hashIntervals(intervals));
+        lick.setIntervalHash(hash);
         lick.setIntervals(intervals);
         lick.setRawTab(rawTab);
         lick.setMode(mode);
