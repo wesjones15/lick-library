@@ -22,7 +22,7 @@ public class Song {
 
     private String artist;
 
-    @Column(name = "original_key", length = 8)
+    @Column(name = "original_key", length = 20)
     private String originalKey;
 
     private Integer capo;
