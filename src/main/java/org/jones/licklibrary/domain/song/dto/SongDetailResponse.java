@@ -11,6 +11,7 @@ public record SongDetailResponse(
         String title,
         String artist,
         String originalKey,
+        String mode,
         Integer capo,
         Integer tempo,
         List<ChordSheetLine> chordLines,

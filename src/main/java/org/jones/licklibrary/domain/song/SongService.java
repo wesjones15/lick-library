@@ -48,6 +48,7 @@ public class SongService {
         song.setTitle(request.title());
         song.setArtist(request.artist());
         song.setOriginalKey(request.originalKey());
+        song.setMode(request.mode());
         song.setCapo(request.capo());
         song.setTempo(request.tempo());
         song.setChordLines(result.chordLines());
@@ -96,7 +97,7 @@ public class SongService {
 
     private SongSummaryResponse toSummary(Song song) {
         return new SongSummaryResponse(song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
-                song.getRawChordSheet() != null, song.getTempo());
+                song.getMode(), song.getRawChordSheet() != null, song.getTempo());
     }
 
     @Transactional
@@ -114,6 +115,7 @@ public class SongService {
             if (req.title() != null && !req.title().isBlank()) song.setTitle(req.title().trim());
             song.setArtist(req.artist() != null && !req.artist().isBlank() ? req.artist().trim() : null);
             song.setOriginalKey(req.originalKey() != null && !req.originalKey().isBlank() ? req.originalKey() : null);
+            song.setMode(req.mode() != null && !req.mode().isBlank() ? req.mode() : null);
             song.setTempo(req.tempo());
             song.setCapo(req.capo());
             song = songRepository.save(song);
@@ -129,7 +131,7 @@ public class SongService {
         }
         return new SongDetailResponse(
                 song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
-                song.getCapo(), song.getTempo(), chordLines, song.getNumColumns(),
+                song.getMode(), song.getCapo(), song.getTempo(), chordLines, song.getNumColumns(),
                 song.getRawChordSheet() != null, song.getRawChordSheet(),
                 songLickMap
         );

@@ -25,6 +25,9 @@ public class Song {
     @Column(name = "original_key", length = 20)
     private String originalKey;
 
+    @Column(name = "mode", length = 20)
+    private String mode;
+
     private Integer capo;
     private Integer tempo;
 
@@ -51,6 +54,9 @@ public class Song {
 
     public String getOriginalKey() { return originalKey; }
     public void setOriginalKey(String originalKey) { this.originalKey = originalKey; }
+
+    public String getMode() { return mode; }
+    public void setMode(String mode) { this.mode = mode; }
 
     public Integer getCapo() { return capo; }
     public void setCapo(Integer capo) { this.capo = capo; }
