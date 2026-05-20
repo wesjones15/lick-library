@@ -6,6 +6,7 @@ import org.jones.licklibrary.domain.lick.dto.PositionResponse;
 import org.jones.licklibrary.domain.lick.dto.UploadLickRequest;
 import org.jones.licklibrary.domain.position.LickUtils;
 import org.jones.licklibrary.domain.position.PositionCacheRepository;
+import org.jones.licklibrary.domain.position.builder.CrossInstrumentPositionBuilder;
 import org.jones.licklibrary.domain.position.builder.DfsPositionBuilder;
 import org.jones.licklibrary.domain.position.builder.GreedyPositionBuilder;
 import org.jones.licklibrary.domain.position.builder.LoserBracketPositionBuilder;
@@ -38,6 +39,7 @@ public class LickService {
     private final PositionBuilder greedyBuilder = new GreedyPositionBuilder();
     private final PositionBuilder dfsBuilder = new DfsPositionBuilder();
     private final PositionBuilder loserBracketBuilder = new LoserBracketPositionBuilder();
+    private final PositionBuilder crossInstrumentBuilder = new CrossInstrumentPositionBuilder();
 
     public LickService(LickRepository lickRepository,
                        PositionCacheRepository positionCacheRepository) {
@@ -196,6 +198,9 @@ public class LickService {
 
     List<Position> resolvePositions(Lick lick, Note key, String algo, Instrument instrument) {
         int spanLimit = Math.max(4, lick.getTabSpan() != null ? lick.getTabSpan() : 4);
+        if (instrument != Guitar.STANDARD) {
+            return crossInstrumentBuilder.build(lick.getIntervals(), key, spanLimit, instrument);
+        }
         PositionBuilder builder = switch (algo == null ? "" : algo.toLowerCase()) {
             case "dfs"   -> dfsBuilder;
             case "chord" -> loserBracketBuilder;
