@@ -63,7 +63,8 @@ public class CrossInstrumentPositionBuilder extends PositionBuilder {
                 }
             }
         }
-        candidates.sort(Comparator.comparingDouble(c -> LickUtils.proximityScore(current, c)));
+        candidates.sort(Comparator.comparingInt(TabNote::fret)
+                .thenComparingDouble(c -> LickUtils.proximityScore(current, c)));
         return candidates;
     }
 
