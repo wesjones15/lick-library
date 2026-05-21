@@ -13,5 +13,7 @@ public record PlaylistEntryResponse(
         String originalKey,
         int defaultCapo,
         Integer tempo,
-        String mode
+        String mode,
+        String instrument,
+        String defaultInstrument
 ) {}

@@ -27,6 +27,9 @@ public class PlaylistEntry {
     @Column(name = "override_capo")
     private Integer capoOffset;
 
+    @Column(name = "override_instrument", length = 20)
+    private String instrument;
+
     public UUID getId() { return id; }
 
     public Playlist getPlaylist() { return playlist; }
@@ -43,4 +46,7 @@ public class PlaylistEntry {
 
     public Integer getCapoOffset() { return capoOffset; }
     public void setCapoOffset(Integer capoOffset) { this.capoOffset = capoOffset; }
+
+    public String getInstrument() { return instrument; }
+    public void setInstrument(String instrument) { this.instrument = instrument; }
 }

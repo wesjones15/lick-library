@@ -118,6 +118,7 @@ public class SongService {
             song.setArtist(req.artist() != null && !req.artist().isBlank() ? req.artist().trim() : null);
             song.setOriginalKey(req.originalKey() != null && !req.originalKey().isBlank() ? req.originalKey() : null);
             song.setMode(req.mode() != null && !req.mode().isBlank() ? req.mode() : null);
+            song.setInstrument(req.instrument() != null && !req.instrument().isBlank() ? req.instrument() : null);
             song.setTempo(req.tempo());
             song.setCapo(req.capo());
             song = songRepository.save(song);
@@ -133,7 +134,8 @@ public class SongService {
         }
         return new SongDetailResponse(
                 song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
-                song.getMode(), song.getCapo(), song.getTempo(), chordLines, song.getNumColumns(),
+                song.getMode(), song.getInstrument(), song.getCapo(), song.getTempo(),
+                chordLines, song.getNumColumns(),
                 song.getRawChordSheet() != null, song.getRawChordSheet(),
                 songLickMap
         );

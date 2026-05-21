@@ -28,6 +28,9 @@ public class Song {
     @Column(name = "mode", length = 20)
     private String mode;
 
+    @Column(name = "instrument", length = 20)
+    private String instrument;
+
     private Integer capo;
     private Integer tempo;
 
@@ -57,6 +60,9 @@ public class Song {
 
     public String getMode() { return mode; }
     public void setMode(String mode) { this.mode = mode; }
+
+    public String getInstrument() { return instrument; }
+    public void setInstrument(String instrument) { this.instrument = instrument; }
 
     public Integer getCapo() { return capo; }
     public void setCapo(Integer capo) { this.capo = capo; }

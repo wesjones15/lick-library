@@ -97,6 +97,7 @@ public class PlaylistService {
             if (request.keyOffset() != null) entry.setKeyOffset(request.keyOffset());
             if (request.capoOffset() != null) entry.setCapoOffset(request.capoOffset());
         }
+        if (request.instrument() != null) entry.setInstrument(request.instrument().isBlank() ? null : request.instrument());
 
         if (request.position() != null) {
             reorderEntry(playlist, entry, request.position());
@@ -114,6 +115,7 @@ public class PlaylistService {
                 .orElseThrow(() -> new ResourceNotFoundException("Entry not found: " + entryId));
         entry.setKeyOffset(null);
         entry.setCapoOffset(null);
+        entry.setInstrument(null);
         entryRepository.save(entry);
         return toDetail(playlistRepository.findById(playlistId).orElseThrow());
     }
@@ -195,7 +197,9 @@ public class PlaylistService {
                             song != null ? song.getOriginalKey() : null,
                             song != null && song.getCapo() != null ? song.getCapo() : 0,
                             song != null ? song.getTempo() : null,
-                            song != null ? song.getMode() : null);
+                            song != null ? song.getMode() : null,
+                            e.getInstrument(),
+                            song != null ? song.getInstrument() : null);
                 })
                 .toList();
 
