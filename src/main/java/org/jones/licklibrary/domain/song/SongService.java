@@ -51,6 +51,7 @@ public class SongService {
         song.setArtist(request.artist());
         song.setOriginalKey(request.originalKey());
         song.setMode(request.mode());
+        song.setInstrument(request.instrument() != null && !request.instrument().isBlank() ? request.instrument() : null);
         song.setCapo(request.capo());
         song.setTempo(request.tempo());
         song.setChordLines(result.chordLines());

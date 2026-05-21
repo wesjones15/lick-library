@@ -5,6 +5,7 @@ public record UploadSongRequest(
         String artist,
         String originalKey,
         String mode,
+        String instrument,
         Integer capo,
         Integer tempo,
         String rawChordSheet
