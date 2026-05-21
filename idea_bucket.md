@@ -203,6 +203,21 @@ songs that should have variable font size throughout seem to have a uniform font
   - I want toIntervals to be mode aware and key aware. 
   - 
 </details>
+Case: song is key G. song contains tab with guitar.STANDARD. tab begins with first note A. when converted to ukulele, output tab is first note G. why is the ukulele tab not
+  showing A as first note? this is not related to uploadSongLick. this is referring to the ukulele lick that is generated when i change the intrument on song detail page while exp
+  tab feature is active
+the original tab in Guitar.STANDARD, was already known to be parsed correctly into accurate intervals relative to song key, in toIntervals. the issue lies in
+converting it to ukulele. The song is in G. The guitar tab starts with the note A. the ukulele tab that is produced, starts on the note G. it should start on the note A.
+
+<details>
+<summary>[ ] 157. (Position) TabNote, LickUtils.toIntervals</summary>
+
+- rewrite the basic position methods to be instrument agnostic.
+- we need to pass the instrument into getNoteAt as an arg. 
+  - that way we can retrieve the tuning, which gives stringIndex the context it needs.
+- or should it take a string root note instead? 
+  - then the tuning/instrument is external to the getNoteAt call.
+</details>
 
 
 </details>

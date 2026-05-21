@@ -1,8 +1,5 @@
-The current state of the app is a react vite frontend and a java spring boot backend. you input a guitar tab string, and it is converted into a collection of note objects and then gets processed into a list of output tab strings in the chosen key and mode. the unique licks get stored in a h2 db.
-
-The purpose of this file is to hold ideas in memory so we can easily refer to them in claude code ui.
-
-key: [ ]  = open, [x] = complete, [~] = deferred
+- The purpose of this file is to hold ideas in memory so we can easily refer to them in claude code ui.
+- key: [ ]  = open, [x] = complete, [~] = deferred
 ---
 
 <details>
@@ -1502,6 +1499,284 @@ key: [ ]  = open, [x] = complete, [~] = deferred
     - clicking pill shows that pill as selected, loads content below
     - the active tab should move to left most pill and should appear as though it is outside of the pill, looking like a title, with the other options to the right, in their connected pill buttons
         - remove Visualize|Build pill from Lick Visualizer & builder
+</details>
+
+<details>
+<summary>[x] 106. (Songs) iphone portrait scrolling view cutoff issue</summary>
+
+- iphone portrait scrolling view in song display.
+- smallview has same behavior as normal view for this issue
+    - song body is too zoomed in. song line gets cut off (iphone 17 pro)
+    - there is no whitespace, but the body is zoomed to fill screen with the text that is shown
+    - we already tried a horizontal scrolling approach but what i want is for the text to be smaller to fit the screen
+- maybe we just make the font smaller in iphone view (and ipad portrait scrolling view?)
+- case
+    - expected view for scrolling view on song detail page
+        - G                    C      G                      C
+        - There's flies in the kitchen, I can hear all their buzzin'
+    - ipad vertical view, song detail page, scrolling view
+        - G                    C      G                      C
+        - There's flies in the kitchen, I can hear all their buz
+    - iphone vertical view, song detail page, scrolling view
+        - G                    C      G
+        - There's flies in the kitchen,
+    - desktop landscape view, song detail page, scrolling view
+        - G                    C      G
+        - There's flies in the kitchen, I can hear
+</details>
+
+<details>
+<summary>[x] 103. (Songs) Multi-Mode Key enhancement</summary>
+
+- currently all song keys are assumed to be Major or Minor.
+- should we add support for the other modes or is that super uncommon?
+- in song toolbar, instrument selector has Major/Minor right next to it
+    - update so instead of major/minor, it says the sound key of the song, like in small mode.
+        - sound key should be suffixed with m decorator for minor.
+</details>
+
+<details>
+<summary>[x] 111. (Songs,Chords) chord parser addition</summary>
+
+- handle D7sus4 and similar
+- handle CaddG and similar (case by case?)
+- does this need to be combined with the deferred idea 79 (slash chords are overengineered)?
+</details>
+
+<details>
+<summary>[x] 146. (Songs,Theory) Noodle Tool</summary>
+
+- in song detail page, add noodle icon button
+    - this will open guitarneck with key/mode set to current song
+    - sync with metronome,
+    - input field fills with the chords of the song,
+        - user can update this to put custom chords in
+    - currentChord will update as the metronome ticks,
+        - neck will highlight with notes that meet rules:
+            - note is in scale for current mode
+            - note is one of the intervals in the current chord
+        - hook (defer) this feature can go in live tab
+- flow:
+    - start in song detail page.
+        - user clicks noodle button
+        - user is directed to live tab
+            - (Play Along Mode?)
+        - live tab receives the song object (chordlines,lyriclines)
+        - instead of displaying chordsheet,
+            - shows single line of song at a time
+                - next line is smaller below in gray font
+                - prev line is smaller above in gray font
+                - chord lyric pairs are displayed together
+                - tablines can be ignored initially
+                    - future will make the tablines get played on the guitar neck, instead of skipping them
+            - chord lyrics block shown is synced to metronome,
+                - after each measure, shows next lyric block.
+        - assume each bar has 4 chords
+            - stub method for logic to handle more than 4 chords in a measure
+            - stub method for logic to handle less than 4 chords in a measure
+        - intervals that make up each chord get highlighted in diagram so user can see which notes to focus during each phrase
+- Live tab, if opened from navbar, rather than from song detail page,
+    - Clicking Noodle Button will open a card around it.
+        - card will have a text field to enter a chord progression
+        - user can add | between chords
+            - if | <chords> | show all intervals of all chords between those || for duration of that measure
+                - perhaps only show notes of the last chord in the measure?
+    - if noodle active and no song loaded,
+        - the karaoke card will be empty
+        - there will be an optional select song button
+            - clicking button opens a modal with song library
+            - clicking song will load song into live feature
+            - play pause button - pausing will stop metronome too
+- when song is loaded in noodle tool
+    - card will display the capo and sound key
+    - button will expose capo/transpose widget modal,
+    - if song was loaded via song detail page instead of library modal, then pass the current capo and transpose offset to the song
+</details>
+
+<details>
+<summary>[x] 147. (Noodle) noodle ui pass</summary>
+
+- when karaoke mode is active,
+    - show [Section Headers] but don't metronome over them, let them get passed by
+- the guitarneck ui
+    - should be same size on screen as it is in theory section
+- noodle main page
+    - Noodle title in top left, like theory
+    - free chords and load song button go to right of noodle title
+        - if user clicks Free Chords, buttons remain, but free chords button shows active.
+        - if user clicks Load Song, (user selects song), buttons remain, but load song button shows active.
+    - guitarneck ui should be below title and show empty guitar if neither mode is active
+- back to song button should only show if song was loaded from song detail.
+    - if song is loaded from library modal, no back button
+    - back button should show right below Noodle title
+- pressing play in load song mode should use song's saved bpm.
+- free chords
+    - bpm field, sound key selector, mode selector, instrument selector, maybe capo selector
+        - these options also show in Load Song mode
+            - prefill bpm field, but let it be modified by user
+        - for freechords and loadsong, show the capo/transpose tool instead of discrete selectors. user will be able to adjust key/capo for songs
+        - grey out mode selector for song, it will be locked to song saved mode.
+- in any mode, the intervals for a chord should be capo adjusted. if song key is B, capo 4, and the (shape) chords displayed are G, then the intervals for G capo 4 chord should show the intervals for B capo 0.
+    - use simplest approach for this, between modifying intervals by x semitones, and transposing chords to capo zero to find intervals
+        - i like the modifying intervals approach, since some transposed chords may not have correct voicings yet
+- list song name and artist somewhere
+- play button receives a Restart icon button to the right of it
+    - these buttons are right aligned, in row with Noodle and FreeChord LoadSong buttons
+- in song detail:
+    - noodle icon button goes to left of exp tab button
+    - noodle button is yellow
+    - in miniview, noodle icon button goes to left of exp tab button, and only shows when more options is active
+- don't open keyboard by default when opening song library modal
+- severely reduce upper and lower padding for song . artist in loadsong mode
+    - guitarneck should be higher on page
+        - guitarneck should be at same height in either mode of noodletab
+- when you start from beginning, metronome should go 4 clicks (1 measure) before going thru the song
+- make bpm button smaller, reduce top and bottom padding in the noodle toolbar
+    - bpm,key,mode buttons should be same height as instrument selector on noodle page
+-
+- center song lyrics box in the karaoke window
+- move song/artist to Noodle row, centered, artist little grey, songname big black. displayed stacked, like in song detail page
+-
+- if chordline has no | separators
+    - intervals update on chord change
+        - 1 chord: 8 beats
+        - 2 chords, 4 beats each
+        - 3 chords, first gets 4 beats, next 2 get 2 each
+        - 4 chords, each get 16 beats
+        - 5 chords
+- Noodle row, to right of song title
+    - display current chord: X
+    - display current intervals 1 3 5
+    - display bpm pulse
+- noodle note pulse should sync with bpm.
+</details>
+
+<details>
+<summary>[x] 149. (Noodle,Songs) Third pass and ideas</summary>
+
+- [x] Karaoke Mode Beat Map Feature
+    - how can we make chord hopping accurate for songs, given how songs can be written out
+        - manual separate chord sheet direction per song?
+            - add a new table, just songid and beatmap
+                - beatmap: list or delimited string of number of beats per chord
+                    - will just start at first chord in song and iterate
+                    - example
+                        - song has
+                            - G B7 D C
+                            - C D G G/F# Em
+                        - beatmap looks like
+                            - 4 4 4 4 4 4 2 2 4
+                        - outcome
+                            - karaoke mode will correctly parse walkdowns
+            - in LoadSong,
+                - give warning if song has no beatmap, but one will be generated, but it may be inaccurate
+                    - generate beatmap using the current rules for mapping beats in karaoke mode
+                    - - warning about how it is inaccurate
+                    - but it saves a file to the db with some right beats and it has the right amount of numbers
+                    - save beatmap to beatmap table
+                - add Edit Beatmap button
+                    - update beatmap page
+                    - edit beatmap window.
+                        - option 1: text field and song chart displayed below
+                        - option 2:
+                            - vertical split showing songon right and beatmap on left.
+                            - maybe it bolds the note you are editing the beat of depending on position in text
+                            - maybe it warns if the number of beatcounts is different than number of chords in song
+                        - option 3: just a text field
+                        - option 4:
+                            - extracts a full list of chords from song and puts editable text fields next to each that only accept numbers.
+                            - prefilled with the values from generated beatmap
+                            - user updates the fields they need to, click submit
+- [x] KaraokeDisplay Layout Enhancement
+    - make karaoke window go nearly to bottom of screen, with small padding at bottom
+        - make the prev,curr,next lines BIGGER so they fill the newly bigger modal
+            - for currline: show current and next lines
+                - these will all be black text full size
+            - next line will become second next line
+        - also, if next line is [Section Header] then also show the line after it
+    - bold the currentChord in Noodle LoadSong mode, similar to how it is selected in Noodle FreeChords mode
+    - if GuitarKaraoke mode is active
+        - karaokedisplay expands to fill the empty screenspace
+        - display even more next lines below
+- [x] Noodle Mode GuitarNeck Update
+    - change guitarneck note pulse to match bpm (or half of bpm)
+    - make the off scale notes in a song brighten and pulse too if their interval is called
+- [x] Noodle ChordCard
+  - below chord's intervals
+      - show what those intervals are considered in the song's scale
+  - in Noodle LoadSong.
+    - if originalKey E
+        - if chordCard toggle is OFF
+            - if current chord E (1 3 5)
+                - 1(red), 3(green), 5(purple)
+            - if current chord Db7 (1 3 5 b7)
+                - 1(blue), 3(gray), 5(green), b7(purple)
+            - if current chord A (1 3 5)
+                - 1(yellow), 3(blue), 5(red)
+        - if chordCard toggle is ON
+            - if current chord E (1 3 5)
+                - 1(red), 3(green), 5(purple)
+            - if current chord Db7 (6 b2 3 5)
+                - 6(blue), b2(gray), 3(green), 5(purple)
+            - if current chord A (4 6 1)
+              - 4(yellow), 6(blue), 1(red)
+</details>
+
+<details>
+<summary>[x] 152. (Noodle) LoadSong Bug</summary>
+
+- current behavior:
+    - when going from FreeChords to LoadSong mode,
+        - the guitarneck does not update to display the scale of the selected song, instead displaying the scale that was selected in FreeChords mode
+    - when navigating directly from Noodle -> Noodle LoadSong,
+        - guitarneck scale remains empty even after song is loaded
+    - when user loads a song in LoadSong by any means
+        - the song key loads and is displayed in the loadsong toolbar
+        - but no scale loads
+    - in Free Chords,
+        - selecting key via selector successfully updates the scale on guitarNeck
+        - selecting Mode via selector successfully updates the scale on guitarNeck
+        - if loading scale on guitarNeck works here, why doesn't it work in LoadSong mode?
+    - we made a change recently so that song has mode on it in some capacity,
+        - on song upload, you can select any mode
+        - how do we retrieve this mode value for LoadSong?
+    - a workaround exists,
+        - which is set the mode and key in FreeChords mode
+        - switch to LoadSong mode, it will retain whatever was on FreeChords
+            - this works in our favor for the temp workaround
+            - but it is a bug and completing this story should fix it
+    - song sound key in LoadSong toolbar
+        - is a button, but clicking it has no action currently
+        - guitarneck scale does not update on click
+        -
+- expected:
+    - after user selects song from songlibrary modal
+        - we need the song key to display on the guitarneck.
+        - just make the call at the moment the key is displayed in the toolbar
+    - The key displayed in the toolbar is also a BUTTON
+        - clicking it should trigger the scale on guitarneck to update
+    - the transpose widget in the LoadSong toolbar
+        - clicking the transpose - + buttons should also trigger the scale on guitarneck to update.
+</details>
+
+<details>
+<summary>[x] 154. (Licks) Lickbuilder bug</summary>
+
+- [ ] when building licks, grey notes turn big and red when deselected
+    - they should return to small and gray state instead
+- [ ] when switching between lick builder and lick visualizer, the state gets confused
+    - these should be distinct .tsx files to better separate them
+    - current workaround
+        - to reset lickbuilder/lickvisualizer state, go to legacybuilder or library, then navigate back to lickbuilder or lickvisualizer and state will be reset
+</details>
+
+<details>
+<summary>[x] 155. (Theory) guitarNeck UX change</summary>
+
+- in Theory mode, when clicking individual note (not in chord mode)
+    - only that note should light on interval toolbar
+        - candidates no longer should cause their intervals to flash.
+            - i realized if they all flash, its the same as none flashing
 </details>
 
 

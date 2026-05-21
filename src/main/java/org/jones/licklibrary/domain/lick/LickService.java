@@ -114,11 +114,12 @@ public class LickService {
         return out;
     }
 
-    public UUID uploadSongLick(String rawTab, Instrument instrument) {
+    public UUID uploadSongLick(String rawTab, Instrument instrument, Note songKey) {
         List<TabNote> notes = parseTab(rawTab);
         if (notes.isEmpty()) return null;
-        Note rootKey = instrument.getNoteAt(
-                instrument.displayOrder()[notes.get(0).stringIndex()], notes.get(0).fret());
+        Note rootKey = songKey != null ? songKey
+                : instrument.getNoteAt(
+                        instrument.displayOrder()[notes.get(0).stringIndex()], notes.get(0).fret());
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, instrument);
         String hash = LickUtils.hashIntervals(intervals);
         Optional<Lick> existing = lickRepository.findByIntervalHash(hash);

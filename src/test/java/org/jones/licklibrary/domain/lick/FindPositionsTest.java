@@ -220,6 +220,11 @@ class FindPositionsTest {
     }
 
     @Test
+    void toIntervals_ukeLickKeyG_flowtest() {
+
+    }
+
+    @Test
     void findPositions_noDuplicateStringPatternsInSameRegion() {
         List<Position> positions = dfsBuilder.build(minorPentatonicFragment(), Note.A, 4, Guitar.STANDARD);
         Set<List<Integer>> keys = new HashSet<>();

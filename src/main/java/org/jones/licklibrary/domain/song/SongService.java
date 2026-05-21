@@ -11,6 +11,8 @@ import org.jones.licklibrary.domain.song.parsing.ChordSheetLine;
 import org.jones.licklibrary.domain.song.parsing.ChordSheetParser;
 import org.jones.licklibrary.domain.song.parsing.ChordTransposer;
 import org.jones.licklibrary.domain.song.parsing.GuitarTabLine;
+import org.jones.licklibrary.domain.shared.Note;
+import org.jones.licklibrary.domain.shared.NoteParser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -143,11 +145,12 @@ public class SongService {
         songLickRepository.deleteBySongId(song.getId());
         lickService.deleteAutoImportedLicks(oldLickIds);
 
+        Note songKey = song.getOriginalKey() != null ? NoteParser.parse(song.getOriginalKey()) : null;
         int tabOrder = 0;
         for (ChordSheetLine line : song.getChordLines()) {
             if (line instanceof GuitarTabLine tab) {
                 String rawTab = String.join("\n", tab.tabLines());
-                UUID lickId = lickService.uploadSongLick(rawTab, chordSheetParser.detectInstrument(tab.tabLines()));
+                UUID lickId = lickService.uploadSongLick(rawTab, chordSheetParser.detectInstrument(tab.tabLines()), songKey);
                 if (lickId != null) {
                     SongLick sl = new SongLick();
                     sl.setSongId(song.getId());
