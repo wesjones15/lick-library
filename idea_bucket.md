@@ -1,63 +1,22 @@
-The current state of the app is a react vite frontend and a java spring boot backend. you input a guitar tab string, and it is converted into a collection of note objects and then gets processed into a list of output tab strings in the chosen key and mode. the unique licks get stored in a h2 db.
-
-The purpose of this file is to hold ideas in memory so we can easily refer to them in claude code ui.
-
-key: [ ]  = open, [x] = complete, [~] = deferred
+- The purpose of this file is to hold ideas in memory so we can easily refer to them in claude code ui.
+- key: [ ]  = open, [x] = complete, [~] = deferred
 ---
 
 songs that should have variable font size throughout seem to have a uniform font size applied
+
+- noodle loadsong keeps reloading to plain noodle whenever i swipe away and swipe back
+  - Im not triggering reload, this is happening passively, 
 
 <details open>
 <summary>Pending</summary>
 
 <details>
-<summary>[ ] 103. (Songs) Multi-Mode Key enhancement</summary>
-
-- currently all song keys are assumed to be Major or Minor. 
-- should we add support for the other modes or is that super uncommon?
-- in song toolbar, instrument selector has Major/Minor right next to it
-  - update so instead of major/minor, it says the sound key of the song, like in small mode.
-    - sound key should be suffixed with m decorator for minor.
--
-</details>
-
-<details>
-<summary>[ ] 106. (Songs) iphone portrait scrolling view cutoff issue</summary>
-
-- iphone portrait scrolling view in song display. 
-- smallview has same behavior as normal view for this issue
-  - song body is too zoomed in. song line gets cut off (iphone 17 pro)
-  - there is no whitespace, but the body is zoomed to fill screen with the text that is shown
-  - we already tried a horizontal scrolling approach but what i want is for the text to be smaller to fit the screen 
-- maybe we just make the font smaller in iphone view (and ipad portrait scrolling view?)
-- case
-  - expected view for scrolling view on song detail page
-    - G                    C      G                      C
-    - There's flies in the kitchen, I can hear all their buzzin'
-  - ipad vertical view, song detail page, scrolling view
-    - G                    C      G                      C
-    - There's flies in the kitchen, I can hear all their buz
-  - iphone vertical view, song detail page, scrolling view
-    - G                    C      G
-    - There's flies in the kitchen,
-  - desktop landscape view, song detail page, scrolling view
-    - G                    C      G            
-    - There's flies in the kitchen, I can hear 
-</details>
-
-<details>
-<summary>[ ] 111. (Songs,Chords) chord parser addition</summary>
-
-- handle D7sus4 and similar
-- handle CaddG and similar (case by case?)
-- does this need to be combined with the deferred idea 79 (slash chords are overengineered)?
-</details>
-
-<details>
 <summary>[ ] 137. (Songs) backend parser logic or frontend font?</summary>
 
-- song parser seems to be forcing a uniform font
-- i see a song is getting lots of whitespace added between sections instead of making the font bigger
+- column view font size issue:
+  - song parser seems to be forcing a uniform font
+    - seems to be a smaller font than necessary
+  - i see a song is getting lots of whitespace added between sections instead of making the font bigger
 - frontend
   - when transposing, if a chord becoming sharp eats the space between it and the next chord (or next character, since not everything in a chordline is chords),
     - add a space between them to prevent chord interpretation errors
@@ -117,10 +76,28 @@ songs that should have variable font size throughout seem to have a uniform font
       - i might have requested this in the spec
   - instrument = custom or nonstandard guitar, 
     - i don't see tabs getting produced 
-  - perhaps we create a crossInstrumentPositionBuilder
+  - create crossInstrumentPositionBuilder class
+    - takes in 2 instruments/tunings: input and output
+    - takes tab from tuningA, converts to instrument-agnostic intermediate object collection (TabNote?)
+      - takes intermediate object collection and tuningB
+        - builds positions for tuning B
+        - need to allow jumps to farther notes than standard positionBuilder allows for
+          - this is to increase number of positions produced
+          - also to increase possible positions generated at low frets
     - for licks that are converted from standard to another instrument, this builder will be preferred
-    - it can reduce chords (dedupe intervals in a column)
+    - it should reduce chords (dedupe intervals in a column)
     - it will be less strict wrt reach during traversal, since caged doesn't apply to other instruments/tunings
+- case
+  - if
+    - SongDetail page is open
+    - Exp Tab button is active
+    - instrument other than standard guitar is selected
+  - then
+    - for a detected lick
+      - if no positions exist or no positions can be generated
+        - show an empty tab with the correct strings for selected instrument
+        - show a little error message below it in small red text,
+          - no valid positions found for lick with <instrument>
 </details>
 
 <details>
@@ -134,43 +111,105 @@ songs that should have variable font size throughout seem to have a uniform font
 </details>
 
 <details>
-<summary>[ ] 146. (Songs,Theory) Noodle Tool</summary>
+<summary>[ ] 148. (Housekeeping) ui/ux enhancements</summary>
 
-- in song detail page, add noodle icon button
-  - this will open guitarneck with key/mode set to current song
-  - sync with metronome, 
-  - input field fills with the chords of the song, 
-    - user can update this to put custom chords in 
-  - currentChord will update as the metronome ticks, 
-    - neck will highlight with notes that meet rules:
-      - note is in scale for current mode
-      - note is one of the intervals in the current chord
-    - hook (defer) this feature can go in live tab
-- flow:
-  - start in song detail page.
-    - user clicks noodle button
-    - user is directed to live tab
-      - (Play Along Mode?)
-    - live tab receives the song object (chordlines,lyriclines)
-    - instead of displaying chordsheet,
-      - shows single line of song at a time 
-        - next line is smaller below in gray font
-        - prev line is smaller above in gray font
-        - chord lyric pairs are displayed together
-        - tablines can be ignored initially
-          - future will make the tablines get played on the guitar neck, instead of skipping them
-      - chord lyrics block shown is synced to metronome,
-        - after each measure, shows next lyric block.
-    - assume each bar has 4 chords
-      - stub method for logic to handle more than 4 chords in a measure
-      - stub method for logic to handle less than 4 chords in a measure
-    - intervals that make up each chord get highlighted in diagram so user can see which notes to focus during each phrase
+- in miniview
+  - hide add to playlist behind more options toggle
+  - add a logo icon to left of song/artist name
+    - clicking logo takes you home
+- add Noodle tab to Home
+- iphone ui needs another pass across board for toolbars, options,dropdowns,etc
+- get rid of Live tab
+
+  - 
+
 </details>
 
+<details>
+<summary>[ ] 153. (Noodle) </summary>
+
+- [ ] KaraokeDisplay Wishlist Items
+  - make karaoke display scrollable.
+  - clicking a line should set song to start from there on play (after 4 beat leadin)
 </details>
 
 
 <details>
+<summary>[ ] 150. (Songs) use noodle karaoke feature elsewhere</summary>
+
+- add another play button to song detail page. this will do what noodle page does, but in scroll view
+</details>
+
+<details>
+<summary>[ ] 151. (Development) Reduce Repetition</summary>
+
+- can we dive in the frontend and see whether we've introduced any redundancy or repetition in the music consts
+  - consolidate and reduce frontend methods,etc where possible
+  - update readme
+- check backend for repetition
+  - consolidate and reduce backend methods, classes where possible
+  - update readme
+- since live and theory and licks all got moved around
+  - perhaps rename files and directories to reflect new functionality. 
+  - 
+</details>
+
+<details>
+<summary>[ ] 156. (Position) CrossInstrumentPositionBuilder testing</summary>
+
+- I want crossInstrument_realWorldTab_guitarIntervalsAndUkulelePositions to compare 
+  - the notes in the Guitar.STANDARD rawtab input lick
+  - the notes in the Ukulele.STANDARD output lick
+  - I added sout to the tests and got the raw tabs. 
+- current input
+  e|----------------------------------|------------|
+  B|----------------------------------|------------|
+  G|----------------------------------|-----2------|
+  D|-------------------2---4---2------|------------|
+  A|--0----2---3---4------------------|------------|
+  E|----------------------------------|------------|
+- current output
+  A|-2-------0-2-0---|
+  E|---------------0-|
+  C|---1-2-3---------|
+  g|-----------------|
+- notice that the test currently passes - it shouldn't pass with the output the method is producing
+  - if you look at what it is comparing, first note of each: A vs G
+  - these 2 tabs don't produce identical intervals wrt key of G
+  - redesign this test so that it only asserts what i asked.
+    - assert that the literal notes between the 2 tabs are the same
+      - this test should FAIL
+- both licks are returning this string for LickUtils.toIntervals()
+  - 3 b5 5 b6 2 3 2 6
+  - this is incorrect.
+  - the song is in G Ionian
+  - the Guitar.STANDARD lick should evaluate to 
+    - 2 3 4 b5 6 7 6 2
+  - the ukulele lick (incorrect position) evaluates to
+    - 3 b5 5 b6 2 3 2 6
+  - write a test for toIntervals.
+    - assert input guitar lick produces "2 3 4 b5 6 7 6 2" intervals
+      System.out.println(rawTab+"\n");
+      System.out.println(intervals.stream()
+      .map(IntervalNote::toString)
+      .collect(Collectors.joining(" ")));
+      System.out.println("\n\n");
+      System.out.println(ukulelePositions.get(0).toTabString(Ukulele.STANDARD)+"\n");
+      System.out.println(ukuleleIntervals.stream()
+      .map(IntervalNote::toString)
+      .collect(Collectors.joining(" ")));
+- toIntervals uses TabNotes. 
+  - TabNote pojo was designed when the app was only for Guitar.STANDARD.
+  - I want toIntervals to be mode aware and key aware. 
+  - 
+</details>
+
+
+</details>
+
+
+
+<details Deferred>
 <summary>Deferred</summary>
 
 <details>
@@ -364,7 +403,7 @@ songs that should have variable font size throughout seem to have a uniform font
 </details>
 
 <details>
-<summary>[ ] 147. </summary>
+<summary>[ ] 157. </summary>
 
 - 
 </details>
