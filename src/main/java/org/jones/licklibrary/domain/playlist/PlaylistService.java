@@ -194,7 +194,8 @@ public class PlaylistService {
                             e.getCapoOffset() != null ? e.getCapoOffset() : 0,
                             song != null ? song.getOriginalKey() : null,
                             song != null && song.getCapo() != null ? song.getCapo() : 0,
-                            song != null ? song.getTempo() : null);
+                            song != null ? song.getTempo() : null,
+                            song != null ? song.getMode() : null);
                 })
                 .toList();
 

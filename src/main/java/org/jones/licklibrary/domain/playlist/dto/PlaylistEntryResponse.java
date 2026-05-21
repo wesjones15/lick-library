@@ -12,5 +12,6 @@ public record PlaylistEntryResponse(
         int capoOffset,
         String originalKey,
         int defaultCapo,
-        Integer tempo
+        Integer tempo,
+        String mode
 ) {}
