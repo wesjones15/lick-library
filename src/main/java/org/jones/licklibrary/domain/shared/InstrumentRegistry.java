@@ -2,11 +2,24 @@ package org.jones.licklibrary.domain.shared;
 
 import org.jones.licklibrary.domain.shared.instrument.Banjo;
 import org.jones.licklibrary.domain.shared.instrument.Bass;
+import org.jones.licklibrary.domain.shared.instrument.CustomInstrument;
 import org.jones.licklibrary.domain.shared.instrument.Guitar;
 import org.jones.licklibrary.domain.shared.instrument.Mandolin;
 import org.jones.licklibrary.domain.shared.instrument.Ukulele;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class InstrumentRegistry {
+
+    public static Instrument fromTuning(Note[] tuning) {
+        for (Instrument preset : List.of(
+                Guitar.STANDARD, Guitar.DROP_D, Guitar.OPEN_G, Guitar.OPEN_D, Guitar.DADGAD,
+                Bass.STANDARD, Ukulele.STANDARD, Mandolin.STANDARD, Banjo.STANDARD)) {
+            if (Arrays.equals(preset.tuning(), tuning)) return preset;
+        }
+        return new CustomInstrument(tuning);
+    }
 
     public static Instrument fromName(String name) {
         return switch (name == null ? "" : name.toUpperCase()) {

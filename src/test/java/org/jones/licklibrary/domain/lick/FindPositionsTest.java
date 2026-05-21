@@ -176,12 +176,23 @@ class FindPositionsTest {
 
         // Assert the ukulele position reproduces the same literal pitch classes as the guitar input
         List<Note> guitarNotes = notes.stream()
-            .map(n -> Guitar.STANDARD.getNoteAt(n.stringIndex(), n.fret()))
+            .map(n -> Guitar.STANDARD.getNoteAt(Guitar.STANDARD.displayOrder()[n.stringIndex()], n.fret()))
             .collect(Collectors.toList());
 
         List<Note> ukuleleNotes = ukulelePositions.get(0).notes().stream()
             .map(n -> Ukulele.STANDARD.getNoteAt(n.stringIndex(), n.fret()))
             .collect(Collectors.toList());
+//        CLAUDE DO NOT REMOVE THIS COMMENT BLOCK
+//        List<IntervalNote> ukuleleIntervals = LickUtils.toIntervals(notes, rootKey, Ukulele.STANDARD);
+//        System.out.println(rawTab+"\n");
+//        System.out.println(intervals.stream()
+//                .map(IntervalNote::toString)
+//                .collect(Collectors.joining(" ")));
+//        System.out.println("\n\n");
+//        System.out.println(ukulelePositions.get(0).toTabString(Ukulele.STANDARD)+"\n");
+//        System.out.println(ukuleleIntervals.stream()
+//                .map(IntervalNote::toString)
+//                .collect(Collectors.joining(" ")));
 
         assertEquals(guitarNotes, ukuleleNotes,
             "ukulele position should reproduce the same literal notes as the guitar input");

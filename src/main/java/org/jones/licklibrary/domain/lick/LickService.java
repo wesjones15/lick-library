@@ -55,7 +55,7 @@ public class LickService {
         }
         List<TabNote> notes = parseTab(request.rawTab());
         Note rootKey = request.inputKey() != null ? request.inputKey()
-                : inst.getNoteAt(notes.get(0).stringIndex(), notes.get(0).fret());
+                : inst.getNoteAt(inst.displayOrder()[notes.get(0).stringIndex()], notes.get(0).fret());
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, inst);
         String hash = LickUtils.hashIntervals(intervals);
 
@@ -85,7 +85,9 @@ public class LickService {
         List<TabNote> out = new ArrayList<>();
         for (int i = 0; i < strings.length; i++) {
             String line = strings[i];
-            for (int j = 2; j < line.length(); j++) {
+            int pipeIdx = line.indexOf('|');
+            if (pipeIdx < 0) continue;
+            for (int j = pipeIdx + 1; j < line.length(); j++) {
                 if (Character.isDigit(line.charAt(j))) {
                     int fretNum;
                     int techniqueIdx;
@@ -104,7 +106,7 @@ public class LickService {
                             technique = String.valueOf(next);
                         }
                     }
-                    out.add(new TabNote(i, fretNum, j - 2, technique));
+                    out.add(new TabNote(i, fretNum, j - (pipeIdx + 1), technique));
                 }
             }
         }
@@ -112,11 +114,12 @@ public class LickService {
         return out;
     }
 
-    public UUID uploadSongLick(String rawTab) {
+    public UUID uploadSongLick(String rawTab, Instrument instrument) {
         List<TabNote> notes = parseTab(rawTab);
         if (notes.isEmpty()) return null;
-        Note rootKey = Guitar.STANDARD.getNoteAt(notes.get(0).stringIndex(), notes.get(0).fret());
-        List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, Guitar.STANDARD);
+        Note rootKey = instrument.getNoteAt(
+                instrument.displayOrder()[notes.get(0).stringIndex()], notes.get(0).fret());
+        List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, instrument);
         String hash = LickUtils.hashIntervals(intervals);
         Optional<Lick> existing = lickRepository.findByIntervalHash(hash);
         if (existing.isPresent()) return existing.get().getId();

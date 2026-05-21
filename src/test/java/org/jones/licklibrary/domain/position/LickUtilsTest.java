@@ -44,8 +44,8 @@ class LickUtilsTest {
     @Test
     void toIntervals_usesProvidedRootKeyInsteadOfFirstNote() {
         List<TabNote> notes = List.of(
-            new TabNote(1, 0, 0, null),
-            new TabNote(1, 2, 1, null)
+            new TabNote(4, 0, 0, null),
+            new TabNote(4, 2, 1, null)
         );
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.C, Guitar.STANDARD);
         assertEquals(Interval.SIX,   intervals.get(0).interval());
@@ -54,7 +54,7 @@ class LickUtilsTest {
 
     @Test
     void toIntervals_firstNoteIsONE_whenRootMatchesFirstNote() {
-        List<TabNote> notes = List.of(new TabNote(4, 2, 0, null));
+        List<TabNote> notes = List.of(new TabNote(1, 2, 0, null));
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.C_SHARP, Guitar.STANDARD);
         assertEquals(Interval.ONE, intervals.get(0).interval());
     }
@@ -62,9 +62,9 @@ class LickUtilsTest {
     @Test
     void toIntervals_computesCorrectIntervalsFromNotes() {
         List<TabNote> notes = List.of(
-            new TabNote(4, 0, 0, null),
-            new TabNote(4, 2, 1, null),
-            new TabNote(4, 4, 2, null)
+            new TabNote(1, 0, 0, null),
+            new TabNote(1, 2, 1, null),
+            new TabNote(1, 4, 2, null)
         );
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.B, Guitar.STANDARD);
         assertEquals(3, intervals.size());
@@ -76,8 +76,8 @@ class LickUtilsTest {
     @Test
     void toIntervals_wrapsAroundOctave() {
         List<TabNote> notes = List.of(
-            new TabNote(4, 0, 0, null),
-            new TabNote(1, 0, 1, null)
+            new TabNote(1, 0, 0, null),
+            new TabNote(4, 0, 1, null)
         );
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, Note.B, Guitar.STANDARD);
         assertEquals(Interval.FLAT_SEVEN, intervals.get(1).interval());

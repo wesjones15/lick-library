@@ -1,5 +1,10 @@
 package org.jones.licklibrary.domain.song.parsing;
 
+import org.jones.licklibrary.domain.shared.Instrument;
+import org.jones.licklibrary.domain.shared.InstrumentRegistry;
+import org.jones.licklibrary.domain.shared.Note;
+import org.jones.licklibrary.domain.shared.NoteParser;
+import org.jones.licklibrary.domain.shared.instrument.Guitar;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -15,9 +20,8 @@ public class ChordSheetParser {
     private static final Pattern CHORD_TOKEN    = Pattern.compile(
             "^(NC|N\\.C\\.|[A-G][#b]?(maj|min|m|dim|aug|sus|add)?[0-9]*([A-G][#b]?)?(b[0-9]+)?(sus[0-9]+)?(/[A-G][#b]?)?)$"
     );
-    // Tab line: optional string letter, pipe, then content with at least one dash
     private static final Pattern TAB_LINE = Pattern.compile(
-            "^[eEbBgGdDaA]?\\|.*-.*$"
+            "^[A-Ga-g][#b]?\\|.*-.*$"
     );
 
     private static final double CONTENT_WIDTH    = 1100.0;
@@ -28,7 +32,8 @@ public class ChordSheetParser {
     private static final double MIN_FONT_SIZE    = 8.0;
     private static final double DEFAULT_FONT_SIZE = 8.0;
     private static final int    MAX_COLUMNS      = 4;
-    private static final int    TAB_BLOCK_LINES  = 6;
+    private static final int    TAB_BLOCK_MIN    = 3;
+    private static final int    TAB_BLOCK_MAX    = 6;
     private static final int    TAB_BLOCK_PAIR_COST = 4; // height cost per tab block
 
     private record ColumnPlan(int numColumns, double effectiveFont) {}
@@ -72,12 +77,25 @@ public class ChordSheetParser {
         return TAB_LINE.matcher(line.stripTrailing()).matches();
     }
 
-    private boolean hasTabBlock(List<String> lines, int start, int offset) {
-        if (start + offset + TAB_BLOCK_LINES > lines.size()) return false;
-        for (int j = 0; j < TAB_BLOCK_LINES; j++) {
-            if (!isTabLine(lines.get(start + offset + j))) return false;
+    private int tabBlockLength(List<String> lines, int start) {
+        int count = 0;
+        while (start + count < lines.size() && isTabLine(lines.get(start + count)) && count < TAB_BLOCK_MAX)
+            count++;
+        return count >= TAB_BLOCK_MIN ? count : 0;
+    }
+
+    public Instrument detectInstrument(List<String> tabLines) {
+        try {
+            Note[] tuning = new Note[tabLines.size()];
+            for (int i = 0; i < tabLines.size(); i++) {
+                String line = tabLines.get(i);
+                String label = line.substring(0, line.indexOf('|')).strip();
+                tuning[tabLines.size() - 1 - i] = NoteParser.parse(label);
+            }
+            return InstrumentRegistry.fromTuning(tuning);
+        } catch (Exception e) {
+            return Guitar.STANDARD;
         }
-        return true;
     }
 
     private List<ChordSheetLine> pairLines(List<String> lines) {
@@ -87,20 +105,22 @@ public class ChordSheetParser {
             String line = lines.get(i);
 
             // Tab block without header (current line is first tab line)
-            if (hasTabBlock(lines, i, 0)) {
-                List<String> tabLines = lines.subList(i, i + TAB_BLOCK_LINES).stream()
+            int blockLen = tabBlockLength(lines, i);
+            if (blockLen > 0) {
+                List<String> tabLines = lines.subList(i, i + blockLen).stream()
                         .map(String::stripTrailing).collect(Collectors.toList());
                 pairs.add(new GuitarTabLine("", tabLines, DEFAULT_FONT_SIZE));
-                i += TAB_BLOCK_LINES;
+                i += blockLen;
                 continue;
             }
 
-            // Tab block with header (current line is header, next 6 are tab lines)
-            if (hasTabBlock(lines, i, 1)) {
-                List<String> tabLines = lines.subList(i + 1, i + 1 + TAB_BLOCK_LINES).stream()
+            // Tab block with header (current line is header, next block are tab lines)
+            blockLen = tabBlockLength(lines, i + 1);
+            if (blockLen > 0) {
+                List<String> tabLines = lines.subList(i + 1, i + 1 + blockLen).stream()
                         .map(String::stripTrailing).collect(Collectors.toList());
                 pairs.add(new GuitarTabLine(line, tabLines, DEFAULT_FONT_SIZE));
-                i += 1 + TAB_BLOCK_LINES;
+                i += 1 + blockLen;
                 continue;
             }
 

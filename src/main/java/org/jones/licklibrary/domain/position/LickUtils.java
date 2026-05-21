@@ -28,7 +28,8 @@ public class LickUtils {
                 normalizedCol++;
             }
             lastRawCol = tabNote.columnIndex();
-            Note note = instrument.getNoteAt(tabNote.stringIndex(), tabNote.fret());
+            Note note = instrument.getNoteAt(
+                instrument.displayOrder()[tabNote.stringIndex()], tabNote.fret());
             Interval interval = Interval.values()[(note.ordinal() - rootKey.ordinal() + 12) % 12];
             out.add(new IntervalNote(interval, tabNote.technique(), normalizedCol));
         }

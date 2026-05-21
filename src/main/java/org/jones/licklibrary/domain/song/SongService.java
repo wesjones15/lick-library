@@ -147,7 +147,7 @@ public class SongService {
         for (ChordSheetLine line : song.getChordLines()) {
             if (line instanceof GuitarTabLine tab) {
                 String rawTab = String.join("\n", tab.tabLines());
-                UUID lickId = lickService.uploadSongLick(rawTab);
+                UUID lickId = lickService.uploadSongLick(rawTab, chordSheetParser.detectInstrument(tab.tabLines()));
                 if (lickId != null) {
                     SongLick sl = new SongLick();
                     sl.setSongId(song.getId());
