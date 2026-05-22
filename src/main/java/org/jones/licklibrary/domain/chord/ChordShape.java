@@ -1,6 +1,7 @@
 package org.jones.licklibrary.domain.chord;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -28,6 +29,12 @@ public class ChordShape {
 
     private String instrument;
 
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
     public ChordShape() {}
 
     public UUID getId() { return id; }
@@ -52,4 +59,10 @@ public class ChordShape {
 
     public String getInstrument() { return instrument; }
     public void setInstrument(String instrument) { this.instrument = instrument; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

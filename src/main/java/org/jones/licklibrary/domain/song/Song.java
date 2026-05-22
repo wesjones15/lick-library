@@ -44,6 +44,9 @@ public class Song {
     @Column(name = "raw_chord_sheet", columnDefinition = "TEXT")
     private String rawChordSheet;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -78,6 +81,9 @@ public class Song {
 
     public String getRawChordSheet() { return rawChordSheet; }
     public void setRawChordSheet(String rawChordSheet) { this.rawChordSheet = rawChordSheet; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

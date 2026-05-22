@@ -42,6 +42,9 @@ public class Lick {
     @Column(name = "endpoint_degree", length = 16)
     private String endpointDegree;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -62,6 +65,9 @@ public class Lick {
     public void setInstrument(String instrument) { this.instrument = instrument; }
     public String getEndpointDegree() { return endpointDegree; }
     public void setEndpointDegree(String endpointDegree) { this.endpointDegree = endpointDegree; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     @Override

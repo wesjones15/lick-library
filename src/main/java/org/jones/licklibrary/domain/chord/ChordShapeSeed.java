@@ -4,6 +4,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -135,6 +136,8 @@ public class ChordShapeSeed implements ApplicationRunner {
             shape.setTemplateFrets(templateFrets);
             shape.setInstrument("GUITAR");
             shape.setSource("system");
+            shape.setUserId(1L);
+            shape.setCreatedAt(LocalDateTime.now());
             shapes.add(shape);
         }
         shapeRepo.saveAll(shapes);
@@ -186,6 +189,8 @@ public class ChordShapeSeed implements ApplicationRunner {
             shape.setTemplateFrets(templateFrets);
             shape.setInstrument("GUITAR");
             shape.setSource("system");
+            shape.setUserId(1L);
+            shape.setCreatedAt(LocalDateTime.now());
             shapes.add(shape);
         }
         shapeRepo.saveAll(shapes);
@@ -285,6 +290,8 @@ public class ChordShapeSeed implements ApplicationRunner {
             shape.setTemplateFrets(templateFrets);
             shape.setInstrument("GUITAR");
             shape.setSource("system");
+            shape.setUserId(1L);
+            shape.setCreatedAt(LocalDateTime.now());
             shapeRepo.save(shape);
         }
     }
@@ -319,6 +326,8 @@ public class ChordShapeSeed implements ApplicationRunner {
             shape.setTemplateFrets(templateFrets);
             shape.setInstrument("GUITAR");
             shape.setSource("system");
+            shape.setUserId(1L);
+            shape.setCreatedAt(LocalDateTime.now());
             shapeRepo.save(shape);
         }
     }
