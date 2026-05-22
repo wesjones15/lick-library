@@ -1779,6 +1779,168 @@
             - i realized if they all flash, its the same as none flashing
 </details>
 
+<details>
+<summary>[x] 156. (Position) CrossInstrumentPositionBuilder testing</summary>
+
+- I want crossInstrument_realWorldTab_guitarIntervalsAndUkulelePositions to compare
+    - the notes in the Guitar.STANDARD rawtab input lick
+    - the notes in the Ukulele.STANDARD output lick
+    - I added sout to the tests and got the raw tabs.
+- current input
+  e|----------------------------------|------------|
+  B|----------------------------------|------------|
+  G|----------------------------------|-----2------|
+  D|-------------------2---4---2------|------------|
+  A|--0----2---3---4------------------|------------|
+  E|----------------------------------|------------|
+- current output
+  A|-2-------0-2-0---|
+  E|---------------0-|
+  C|---1-2-3---------|
+  g|-----------------|
+- notice that the test currently passes - it shouldn't pass with the output the method is producing
+    - if you look at what it is comparing, first note of each: A vs G
+    - these 2 tabs don't produce identical intervals wrt key of G
+    - redesign this test so that it only asserts what i asked.
+        - assert that the literal notes between the 2 tabs are the same
+            - this test should FAIL
+- both licks are returning this string for LickUtils.toIntervals()
+    - 3 b5 5 b6 2 3 2 6
+    - this is incorrect.
+    - the song is in G Ionian
+    - the Guitar.STANDARD lick should evaluate to
+        - 2 3 4 b5 6 7 6 2
+    - the ukulele lick (incorrect position) evaluates to
+        - 3 b5 5 b6 2 3 2 6
+    - write a test for toIntervals.
+        - assert input guitar lick produces "2 3 4 b5 6 7 6 2" intervals
+          System.out.println(rawTab+"\n");
+          System.out.println(intervals.stream()
+          .map(IntervalNote::toString)
+          .collect(Collectors.joining(" ")));
+          System.out.println("\n\n");
+          System.out.println(ukulelePositions.get(0).toTabString(Ukulele.STANDARD)+"\n");
+          System.out.println(ukuleleIntervals.stream()
+          .map(IntervalNote::toString)
+          .collect(Collectors.joining(" ")));
+- toIntervals uses TabNotes.
+    - TabNote pojo was designed when the app was only for Guitar.STANDARD.
+    - I want toIntervals to be mode aware and key aware.
+- Case: song is key G. song contains tab with guitar.STANDARD. tab begins with first note A. when converted to ukulele, output tab is first note G. why is the ukulele tab not
+  showing A as first note? this is not related to uploadSongLick. this is referring to the ukulele lick that is generated when i change the intrument on song detail page while exp
+  tab feature is active
+  the original tab in Guitar.STANDARD, was already known to be parsed correctly into accurate intervals relative to song key, in toIntervals. the issue lies in
+  converting it to ukulele. The song is in G. The guitar tab starts with the note A. the ukulele tab that is produced, starts on the note G. it should start on the note A.
+</details>
+
+<details>
+<summary>[x] 143. (Licks,Songs) exp tab feature bug fixes</summary>
+
+- when on song detail, and exp tab is active
+    - instrument = ukulele
+        - at zero transpose offset, lick starts at fret12 instead of fret0 (maybe allow further reach when converting tabs between instruments)
+        - at nonzero transpose offset, the standard guitar transposition gets displayed at certain offsets
+            - i might have requested this in the spec
+    - instrument = custom or nonstandard guitar,
+        - i don't see tabs getting produced
+    - create crossInstrumentPositionBuilder class
+        - takes in 2 instruments/tunings: input and output
+        - takes tab from tuningA, converts to instrument-agnostic intermediate object collection (TabNote?)
+            - takes intermediate object collection and tuningB
+                - builds positions for tuning B
+                - need to allow jumps to farther notes than standard positionBuilder allows for
+                    - this is to increase number of positions produced
+                    - also to increase possible positions generated at low frets
+        - for licks that are converted from standard to another instrument, this builder will be preferred
+        - it should reduce chords (dedupe intervals in a column)
+        - it will be less strict wrt reach during traversal, since caged doesn't apply to other instruments/tunings
+- case
+    - if
+        - SongDetail page is open
+        - Exp Tab button is active
+        - instrument other than standard guitar is selected
+    - then
+        - for a detected lick
+            - if no positions exist or no positions can be generated
+                - show an empty tab with the correct strings for selected instrument
+                - show a little error message below it in small red text,
+                    - no valid positions found for lick with <instrument>
+</details>
+
+<details>
+<summary>[x] 157. (Position) TabNote, LickUtils.toIntervals</summary>
+
+- rewrite the basic position methods to be instrument agnostic.
+- we need to pass the instrument into getNoteAt as an arg.
+    - that way we can retrieve the tuning, which gives stringIndex the context it needs.
+- or should it take a string root note instead?
+    - then the tuning/instrument is external to the getNoteAt call.
+</details>
+
+<details>
+<summary>[x] 157. (Noodle) LoadSong capo key offset</summary>
+
+- in noodle mode, when playing a song in LoadSong,
+    - if we update the capo value,
+        - the soundkey doesn't change in the toolbar, or on the neck.
+- In Noodle LoadSong mode ONLY:
+    - the capo should update the offset of the semitones of soundkey
+        - on the toolbar
+        - on the guitarneck
+        - is the ChordCard using this soundkey value in its interval math?
+            - if so, it should use this offset for calculating intervals of the chords.
+</details>
+
+<details>
+<summary>[x] 158. (Songs,Noodle) ux bugs, QOL fixes</summary>
+
+- [x] in update song chart page, clicking back saves the changes.
+    - back should not save changes.
+    - changes to song chart should only be saved if user clicks save and reparse!
+- in noodle mode
+    - [x] only generate new beatmap on reparse
+        - any reparse should silently reset beatmap
+            - change beatmap auto logic for
+                - 5 chords -> 4 4 2 2 4
+            - in edit beatmap modal, instead of number options being ordered numeric,
+                - make the first several options jump like this:
+                    - 0,1,2,4,8,16,3,6[then numeric numbers 5,7,9,etc]
+            - does loading a song in noodle mode trigger a reparse itself?
+                - if so, we should discuss
+    - user story:
+        - i tried using noodle loadsong
+        - i manually updated the beatmap
+            - [ ] i had to do it in small increments, saving, then reopening edit modal, else it would throw a null error on the backend
+        - i press play
+            - 4 beat leadin - correct
+            - first chord is bolded on cue - correct
+            - [ ] the problem
+                - it stayed on the first chord for 6 beats before moving to the second chord
+                    - this is despite the beatmap starting with 4 4 4 4
+                    - there were streaks where it would jump on 4 beats, but in most places throughout the song, it was jumping at 6 beats when the map says 4
+                - what is causing this?
+                    - is it a metronome sync issue?
+                    - is it using a stale beatmap? (unlikely, as the auto beatmap did not have 6 beats)
+
+</details>
+<details>
+<summary>[x] 159. (Noodle) LoadSong beatmap sync issue</summary>
+
+- user story:
+    - i tried using noodle loadsong
+    - i manually updated the beatmap
+    - i press play
+        - 4 beat leadin - correct
+        - first chord is bolded on cue - correct
+        - [ ] the problem
+            - it stayed on the first chord for 6 beats before moving to the second chord
+                - this is despite the beatmap starting with 4 4 4 4
+                - there were streaks where it would jump on 4 beats, but in most places throughout the song, it was jumping at 6 beats when the map says 4
+            - what is causing this?
+                - is it a metronome sync issue?
+                - is it using a stale beatmap? (unlikely, as the auto beatmap did not have 6 beats)
+
+</details>
 
 
 </details>
