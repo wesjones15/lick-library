@@ -4,6 +4,7 @@ target/
 !**/src/test/**/target/
 .kotlin
 start_backend_with_auth_dev.sh
+client_secret_*.json
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
