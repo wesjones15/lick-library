@@ -2,6 +2,7 @@ package org.jones.licklibrary.domain.user;
 
 import org.jones.licklibrary.core.exception.ResourceNotFoundException;
 import org.jones.licklibrary.core.security.JwtTokenProvider;
+import org.jones.licklibrary.domain.user.dto.AdminUserResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -65,5 +66,21 @@ public class UserService {
         User user = findById(userId);
         user.setStatus(UserStatus.REJECTED);
         return userRepository.save(user);
+    }
+
+    public String getUsernameById(Long userId) {
+        if (userId == null) return "unknown";
+        return userRepository.findById(userId).map(User::getUsername).orElse("unknown");
+    }
+
+    public List<AdminUserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+            .map(u -> new AdminUserResponse(u.getId(), u.getEmail(), u.getUsername(),
+                                            u.getRole(), u.getStatus(), u.getCreationTs()))
+            .toList();
+    }
+
+    public void deleteUser(Long userId) {
+        userRepository.deleteById(userId);
     }
 }

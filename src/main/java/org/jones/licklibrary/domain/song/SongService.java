@@ -13,13 +13,17 @@ import org.jones.licklibrary.domain.song.parsing.ChordTransposer;
 import org.jones.licklibrary.domain.song.parsing.GuitarTabLine;
 import org.jones.licklibrary.domain.shared.Note;
 import org.jones.licklibrary.domain.shared.NoteParser;
+import org.jones.licklibrary.domain.user.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -30,21 +34,24 @@ public class SongService {
     private final ChordSheetParser chordSheetParser;
     private final ChordTransposer chordTransposer;
     private final LickService lickService;
+    private final UserService userService;
 
     public SongService(SongRepository songRepository,
                        SongLickRepository songLickRepository,
                        ChordSheetParser chordSheetParser,
                        ChordTransposer chordTransposer,
-                       LickService lickService) {
+                       LickService lickService,
+                       UserService userService) {
         this.songRepository = songRepository;
         this.songLickRepository = songLickRepository;
         this.chordSheetParser = chordSheetParser;
         this.chordTransposer = chordTransposer;
         this.lickService = lickService;
+        this.userService = userService;
     }
 
     @Transactional
-    public SongSummaryResponse uploadSong(UploadSongRequest request) {
+    public SongSummaryResponse uploadSong(UploadSongRequest request, Long userId) {
         ChordSheetParser.ParseResult result = chordSheetParser.parse(request.rawChordSheet());
         Song song = new Song();
         song.setTitle(request.title());
@@ -57,40 +64,48 @@ public class SongService {
         song.setChordLines(result.chordLines());
         song.setNumColumns(result.numColumns());
         song.setRawChordSheet(request.rawChordSheet());
+        song.setUserId(userId);
         song = songRepository.save(song);
         extractAndStoreSongLicks(song);
-        return toSummary(song);
+        return toSummary(song, userId);
     }
 
     @Transactional
-    public SongDetailResponse reparseSong(UUID id) {
+    public SongDetailResponse reparseSong(UUID id, Long currentUserId) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
+        checkOwner(song, currentUserId);
         if (song.getRawChordSheet() == null) throw new IllegalStateException("No raw chord sheet stored for this song");
         ChordSheetParser.ParseResult result = chordSheetParser.parse(song.getRawChordSheet());
         song.setChordLines(result.chordLines());
         song.setNumColumns(result.numColumns());
         song = songRepository.save(song);
         extractAndStoreSongLicks(song);
-        return toDetail(song, song.getChordLines());
+        return toDetail(song, song.getChordLines(), currentUserId);
     }
 
-    public List<SongSummaryResponse> getAllSongs() {
-        return songRepository.findAll().stream().map(this::toSummary).toList();
+    public List<SongSummaryResponse> getAllSongs(Long currentUserId) {
+        return songRepository.findAll().stream().map(s -> toSummary(s, currentUserId)).toList();
     }
 
-    public SongDetailResponse getSong(UUID id, int semitones) {
+    public List<SongSummaryResponse> getMySongs(Long currentUserId) {
+        return songRepository.findByUserId(currentUserId).stream().map(s -> toSummary(s, currentUserId)).toList();
+    }
+
+    public SongDetailResponse getSong(UUID id, int semitones, Long currentUserId) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
         List<ChordSheetLine> lines = semitones == 0
                 ? song.getChordLines()
                 : chordTransposer.transpose(song.getChordLines(), semitones);
-        return toDetail(song, lines);
+        return toDetail(song, lines, currentUserId);
     }
 
     @Transactional
-    public void deleteSong(UUID id) {
-        if (!songRepository.existsById(id)) throw new ResourceNotFoundException("Song not found: " + id);
+    public void deleteSong(UUID id, Long currentUserId) {
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
+        checkOwner(song, currentUserId);
         List<SongLick> songLicks = songLickRepository.findAllBySongId(id);
         List<UUID> lickIds = songLicks.stream().map(SongLick::getLickId).filter(lid -> lid != null).toList();
         songLickRepository.deleteBySongId(id);
@@ -98,15 +113,18 @@ public class SongService {
         songRepository.deleteById(id);
     }
 
-    private SongSummaryResponse toSummary(Song song) {
+    private SongSummaryResponse toSummary(Song song, Long currentUserId) {
         return new SongSummaryResponse(song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
-                song.getMode(), song.getRawChordSheet() != null, song.getTempo());
+                song.getMode(), song.getRawChordSheet() != null, song.getTempo(),
+                userService.getUsernameById(song.getUserId()),
+                Objects.equals(song.getUserId(), currentUserId));
     }
 
     @Transactional
-    public SongDetailResponse updateSong(UUID id, UpdateSongRequest req) {
+    public SongDetailResponse updateSong(UUID id, UpdateSongRequest req, Long currentUserId) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
+        checkOwner(song, currentUserId);
         if (req.rawChordSheet() != null) {
             song.setRawChordSheet(req.rawChordSheet());
             ChordSheetParser.ParseResult result = chordSheetParser.parse(req.rawChordSheet());
@@ -124,10 +142,16 @@ public class SongService {
             song.setCapo(req.capo());
             song = songRepository.save(song);
         }
-        return toDetail(song, song.getChordLines());
+        return toDetail(song, song.getChordLines(), currentUserId);
     }
 
-    private SongDetailResponse toDetail(Song song, List<ChordSheetLine> chordLines) {
+    public void checkOwner(Song song, Long currentUserId) {
+        if (!Objects.equals(song.getUserId(), currentUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your song");
+        }
+    }
+
+    private SongDetailResponse toDetail(Song song, List<ChordSheetLine> chordLines, Long currentUserId) {
         List<SongLick> songLicks = songLickRepository.findAllBySongId(song.getId());
         Map<Integer, SongLickInfo> songLickMap = new LinkedHashMap<>();
         for (SongLick sl : songLicks) {
@@ -138,7 +162,8 @@ public class SongService {
                 song.getMode(), song.getInstrument(), song.getCapo(), song.getTempo(),
                 chordLines, song.getNumColumns(),
                 song.getRawChordSheet() != null, song.getRawChordSheet(),
-                songLickMap
+                songLickMap,
+                Objects.equals(song.getUserId(), currentUserId)
         );
     }
 
@@ -153,7 +178,7 @@ public class SongService {
         for (ChordSheetLine line : song.getChordLines()) {
             if (line instanceof GuitarTabLine tab) {
                 String rawTab = String.join("\n", tab.tabLines());
-                UUID lickId = lickService.uploadSongLick(rawTab, chordSheetParser.detectInstrument(tab.tabLines()), songKey);
+                UUID lickId = lickService.uploadSongLick(rawTab, chordSheetParser.detectInstrument(tab.tabLines()), songKey, song.getUserId());
                 if (lickId != null) {
                     SongLick sl = new SongLick();
                     sl.setSongId(song.getId());

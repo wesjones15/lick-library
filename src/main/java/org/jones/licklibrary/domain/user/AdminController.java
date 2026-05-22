@@ -32,6 +32,11 @@ public class AdminController {
         return toResponse(userService.rejectUser(userId));
     }
 
+    @GetMapping("/users")
+    public List<AdminUserResponse> getAllUsers() {
+        return userService.getAllUsers();
+    }
+
     private AdminUserResponse toResponse(User user) {
         return new AdminUserResponse(user.getId(), user.getEmail(), user.getUsername(),
             user.getRole(), user.getStatus(), user.getCreationTs());

@@ -11,4 +11,6 @@ public interface LickRepository extends JpaRepository<Lick, UUID> {
     Optional<Lick> findByIntervalHashAndAutoImportedFalse(String intervalHash);
     Optional<Lick> findByIntervalHashAndInstrumentAndAutoImportedFalse(String intervalHash, String instrument);
     List<Lick> findAllByAutoImportedFalse();
+    List<Lick> findAllByUserId(Long userId);
+    List<Lick> findAllByAutoImportedFalseAndUserId(Long userId);
 }

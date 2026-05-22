@@ -3,6 +3,7 @@ package org.jones.licklibrary.domain.lick;
 import org.jones.licklibrary.domain.position.LickUtils;
 import org.jones.licklibrary.domain.position.PositionCacheRepository;
 import org.jones.licklibrary.domain.position.builder.CrossInstrumentPositionBuilder;
+import org.jones.licklibrary.domain.user.UserService;
 import org.jones.licklibrary.domain.position.builder.DfsPositionBuilder;
 import org.jones.licklibrary.domain.shared.Interval;
 import org.jones.licklibrary.domain.shared.IntervalNote;
@@ -32,13 +33,14 @@ class FindPositionsTest {
 
     @Mock private LickRepository lickRepository;
     @Mock private PositionCacheRepository positionCacheRepository;
+    @Mock private UserService userService;
 
     private LickService lickService;
     private DfsPositionBuilder dfsBuilder;
 
     @BeforeEach
     void setUp() {
-        lickService = new LickService(lickRepository, positionCacheRepository);
+        lickService = new LickService(lickRepository, positionCacheRepository, userService);
         dfsBuilder = new DfsPositionBuilder();
     }
 

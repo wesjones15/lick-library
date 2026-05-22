@@ -2,6 +2,7 @@ package org.jones.licklibrary.domain.lick;
 
 import org.jones.licklibrary.domain.position.LickUtils;
 import org.jones.licklibrary.domain.position.PositionCacheRepository;
+import org.jones.licklibrary.domain.user.UserService;
 import org.jones.licklibrary.domain.shared.IntervalNote;
 import org.jones.licklibrary.domain.shared.Note;
 import org.jones.licklibrary.domain.shared.TabNote;
@@ -21,12 +22,13 @@ class ParseTabTest {
 
     @Mock private LickRepository lickRepository;
     @Mock private PositionCacheRepository positionCacheRepository;
+    @Mock private UserService userService;
 
     private LickService lickService;
 
     @BeforeEach
     void setUp() {
-        lickService = new LickService(lickRepository, positionCacheRepository);
+        lickService = new LickService(lickRepository, positionCacheRepository, userService);
     }
 
     @Test

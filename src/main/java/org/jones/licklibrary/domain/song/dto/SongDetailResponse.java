@@ -19,5 +19,6 @@ public record SongDetailResponse(
         int numColumns,
         boolean canReparse,
         String rawChordSheet,
-        Map<Integer, SongLickInfo> songLicks
+        Map<Integer, SongLickInfo> songLicks,
+        boolean ownedByCurrentUser
 ) {}

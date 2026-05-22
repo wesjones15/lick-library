@@ -4,12 +4,15 @@ import org.jones.licklibrary.core.exception.ResourceNotFoundException;
 import org.jones.licklibrary.domain.playlist.dto.*;
 import org.jones.licklibrary.domain.song.Song;
 import org.jones.licklibrary.domain.song.SongRepository;
+import org.jones.licklibrary.domain.user.UserRole;
+import org.jones.licklibrary.domain.user.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
+import java.util.Objects;
 
 @Service
 public class PlaylistService {
@@ -17,54 +20,77 @@ public class PlaylistService {
     private final PlaylistRepository playlistRepository;
     private final PlaylistEntryRepository entryRepository;
     private final SongRepository songRepository;
+    private final UserService userService;
 
     public PlaylistService(PlaylistRepository playlistRepository,
                            PlaylistEntryRepository entryRepository,
-                           SongRepository songRepository) {
+                           SongRepository songRepository,
+                           UserService userService) {
         this.playlistRepository = playlistRepository;
         this.entryRepository = entryRepository;
         this.songRepository = songRepository;
+        this.userService = userService;
     }
 
-    public PlaylistSummaryResponse createPlaylist(CreatePlaylistRequest request) {
+    public PlaylistSummaryResponse createPlaylist(CreatePlaylistRequest request, Long userId) {
         Playlist playlist = new Playlist();
         playlist.setName(request.name());
+        playlist.setUserId(userId);
         playlistRepository.save(playlist);
-        return toSummary(playlist);
+        return toSummary(playlist, userId);
     }
 
-    public List<PlaylistSummaryResponse> getAllPlaylists() {
-        return playlistRepository.findAll().stream()
-                .map(this::toSummary)
-                .toList();
+    public List<PlaylistSummaryResponse> getAllPlaylists(Long currentUserId, UserRole role) {
+        List<Playlist> playlists = role == UserRole.ADMIN
+                ? playlistRepository.findAll()
+                : playlistRepository.findByIsPublicIsTrueOrUserId(currentUserId);
+        return playlists.stream().map(p -> toSummary(p, currentUserId)).toList();
     }
 
-    public PlaylistDetailResponse getPlaylist(UUID id) {
+    public PlaylistDetailResponse getPlaylist(UUID id, Long currentUserId) {
         Playlist playlist = playlistRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + id));
-        return toDetail(playlist);
+        return toDetail(playlist, currentUserId);
     }
 
     @Transactional
-    public PlaylistSummaryResponse renamePlaylist(UUID id, String name) {
+    public PlaylistSummaryResponse renamePlaylist(UUID id, String name, Long currentUserId) {
         Playlist playlist = playlistRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + id));
+        checkOwner(playlist, currentUserId);
         playlist.setName(name);
         playlistRepository.save(playlist);
-        return toSummary(playlist);
+        return toSummary(playlist, currentUserId);
     }
 
     @Transactional
-    public void deletePlaylist(UUID id) {
+    public void deletePlaylist(UUID id, Long currentUserId) {
         Playlist playlist = playlistRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + id));
+        checkOwner(playlist, currentUserId);
         playlistRepository.delete(playlist);
     }
 
     @Transactional
-    public PlaylistDetailResponse addEntry(UUID playlistId, AddEntryRequest request) {
+    public void setVisibility(UUID id, boolean isPublic, Long currentUserId) {
+        Playlist playlist = playlistRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + id));
+        checkOwner(playlist, currentUserId);
+        playlist.setIsPublic(isPublic);
+        playlistRepository.save(playlist);
+    }
+
+    private void checkOwner(Playlist playlist, Long currentUserId) {
+        if (!Objects.equals(playlist.getUserId(), currentUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your playlist");
+        }
+    }
+
+    @Transactional
+    public PlaylistDetailResponse addEntry(UUID playlistId, AddEntryRequest request, Long currentUserId) {
         Playlist playlist = playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+        checkOwner(playlist, currentUserId);
 
         boolean alreadyIn = playlist.getEntries().stream()
                 .anyMatch(e -> e.getSongId().equals(request.songId()));
@@ -83,13 +109,14 @@ public class PlaylistService {
         entry.setCapoOffset(request.capoOffset());
         entryRepository.save(entry);
 
-        return toDetail(playlistRepository.findById(playlistId).orElseThrow());
+        return toDetail(playlistRepository.findById(playlistId).orElseThrow(), currentUserId);
     }
 
     @Transactional
-    public PlaylistDetailResponse updateEntry(UUID playlistId, UUID entryId, UpdateEntryRequest request) {
+    public PlaylistDetailResponse updateEntry(UUID playlistId, UUID entryId, UpdateEntryRequest request, Long currentUserId) {
         Playlist playlist = playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+        checkOwner(playlist, currentUserId);
         PlaylistEntry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Entry not found: " + entryId));
 
@@ -104,26 +131,28 @@ public class PlaylistService {
         }
 
         entryRepository.save(entry);
-        return toDetail(playlistRepository.findById(playlistId).orElseThrow());
+        return toDetail(playlistRepository.findById(playlistId).orElseThrow(), currentUserId);
     }
 
     @Transactional
-    public PlaylistDetailResponse clearEntryOverrides(UUID playlistId, UUID entryId) {
-        playlistRepository.findById(playlistId)
+    public PlaylistDetailResponse clearEntryOverrides(UUID playlistId, UUID entryId, Long currentUserId) {
+        Playlist playlist = playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+        checkOwner(playlist, currentUserId);
         PlaylistEntry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Entry not found: " + entryId));
         entry.setKeyOffset(null);
         entry.setCapoOffset(null);
         entry.setInstrument(null);
         entryRepository.save(entry);
-        return toDetail(playlistRepository.findById(playlistId).orElseThrow());
+        return toDetail(playlistRepository.findById(playlistId).orElseThrow(), currentUserId);
     }
 
     @Transactional
-    public PlaylistDetailResponse removeEntry(UUID playlistId, UUID entryId) {
+    public PlaylistDetailResponse removeEntry(UUID playlistId, UUID entryId, Long currentUserId) {
         Playlist playlist = playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+        checkOwner(playlist, currentUserId);
         PlaylistEntry entry = entryRepository.findById(entryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Entry not found: " + entryId));
 
@@ -139,7 +168,7 @@ public class PlaylistService {
             }
         }
 
-        return toDetail(playlistRepository.findById(playlistId).orElseThrow());
+        return toDetail(playlistRepository.findById(playlistId).orElseThrow(), currentUserId);
     }
 
     public List<PlaylistContainingEntry> getContainingEntries(UUID songId) {
@@ -172,11 +201,15 @@ public class PlaylistService {
         entry.setPosition(clampedNew);
     }
 
-    private PlaylistSummaryResponse toSummary(Playlist playlist) {
-        return new PlaylistSummaryResponse(playlist.getId(), playlist.getName(), playlist.getEntries().size());
+    private PlaylistSummaryResponse toSummary(Playlist playlist, Long currentUserId) {
+        return new PlaylistSummaryResponse(
+                playlist.getId(), playlist.getName(), playlist.getEntries().size(),
+                userService.getUsernameById(playlist.getUserId()),
+                Objects.equals(playlist.getUserId(), currentUserId),
+                Boolean.TRUE.equals(playlist.getIsPublic()));
     }
 
-    private PlaylistDetailResponse toDetail(Playlist playlist) {
+    private PlaylistDetailResponse toDetail(Playlist playlist, Long currentUserId) {
         List<PlaylistEntry> entries = entryRepository.findByPlaylistOrderByPositionAsc(playlist);
 
         Set<UUID> songIds = new HashSet<>();
@@ -203,6 +236,9 @@ public class PlaylistService {
                 })
                 .toList();
 
-        return new PlaylistDetailResponse(playlist.getId(), playlist.getName(), entryResponses);
+        return new PlaylistDetailResponse(
+                playlist.getId(), playlist.getName(), entryResponses,
+                Objects.equals(playlist.getUserId(), currentUserId),
+                Boolean.TRUE.equals(playlist.getIsPublic()));
     }
 }

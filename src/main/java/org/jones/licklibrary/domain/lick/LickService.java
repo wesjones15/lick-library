@@ -18,12 +18,16 @@ import org.jones.licklibrary.domain.shared.Note;
 import org.jones.licklibrary.domain.shared.Position;
 import org.jones.licklibrary.domain.shared.TabNote;
 import org.jones.licklibrary.domain.shared.instrument.Guitar;
+import org.jones.licklibrary.domain.user.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +39,7 @@ public class LickService {
 
     private final LickRepository lickRepository;
     private final PositionCacheRepository positionCacheRepository;
+    private final UserService userService;
 
     private final PositionBuilder greedyBuilder = new GreedyPositionBuilder();
     private final PositionBuilder dfsBuilder = new DfsPositionBuilder();
@@ -42,14 +47,16 @@ public class LickService {
     private final PositionBuilder crossInstrumentBuilder = new CrossInstrumentPositionBuilder();
 
     public LickService(LickRepository lickRepository,
-                       PositionCacheRepository positionCacheRepository) {
+                       PositionCacheRepository positionCacheRepository,
+                       UserService userService) {
         this.lickRepository = lickRepository;
         this.positionCacheRepository = positionCacheRepository;
+        this.userService = userService;
     }
 
     // --- Upload pipeline ---
 
-    public LickResponse uploadLick(UploadLickRequest request, Instrument inst, String instrumentName) {
+    public LickResponse uploadLick(UploadLickRequest request, Instrument inst, String instrumentName, Long userId) {
         if (request.rawTab() == null || request.rawTab().isBlank()) {
             throw new IllegalArgumentException("rawTab must not be blank");
         }
@@ -61,7 +68,7 @@ public class LickService {
 
         Optional<Lick> existing = lickRepository.findByIntervalHashAndInstrumentAndAutoImportedFalse(hash, instrumentName);
         if (existing.isPresent()) {
-            return toSummaryResponse(existing.get());
+            return toSummaryResponse(existing.get(), userId);
         }
 
         Mode mode = request.mode() != null ? request.mode() : LickUtils.detectMode(intervals);
@@ -76,8 +83,9 @@ public class LickService {
         lick.setMode(mode);
         lick.setTabSpan(tabSpan);
         lick.setInstrument(instrumentName);
+        lick.setUserId(userId);
         lick = lickRepository.save(lick);
-        return toSummaryResponse(lick);
+        return toSummaryResponse(lick, userId);
     }
 
     List<TabNote> parseTab(String rawTab) {
@@ -114,7 +122,7 @@ public class LickService {
         return out;
     }
 
-    public UUID uploadSongLick(String rawTab, Instrument instrument, Note songKey) {
+    public UUID uploadSongLick(String rawTab, Instrument instrument, Note songKey, Long userId) {
         List<TabNote> notes = parseTab(rawTab);
         if (notes.isEmpty()) return null;
         Note rootKey = songKey != null ? songKey
@@ -135,6 +143,7 @@ public class LickService {
         lick.setTabSpan(tabSpan);
         lick.setAutoImported(true);
         lick.setInstrument("GUITAR");
+        lick.setUserId(userId);
         return lickRepository.save(lick).getId();
     }
 
@@ -146,10 +155,18 @@ public class LickService {
 
     public List<LickResponse> getAllLicks(boolean includeSongLicks,
             String instrument, String mode,
-            Integer minLength, Integer maxLength, String intervals) {
-        List<Lick> all = includeSongLicks
-            ? lickRepository.findAll()
-            : lickRepository.findAllByAutoImportedFalse();
+            Integer minLength, Integer maxLength, String intervals,
+            boolean mine, Long currentUserId) {
+        List<Lick> all;
+        if (mine && currentUserId != null) {
+            all = includeSongLicks
+                ? lickRepository.findAllByUserId(currentUserId)
+                : lickRepository.findAllByAutoImportedFalseAndUserId(currentUserId);
+        } else {
+            all = includeSongLicks
+                ? lickRepository.findAll()
+                : lickRepository.findAllByAutoImportedFalse();
+        }
         List<String> intervalTokens = intervals != null ? parseIntervalTokens(intervals) : List.of();
         return all.stream()
             .filter(l -> instrument == null || instrument.equalsIgnoreCase(
@@ -159,7 +176,7 @@ public class LickService {
             .filter(l -> minLength == null || l.getIntervals().size() >= minLength)
             .filter(l -> maxLength == null || l.getIntervals().size() <= maxLength)
             .filter(l -> intervalTokens.isEmpty() || hasContiguousSubsequence(l.getIntervals(), intervalTokens))
-            .map(this::toSummaryResponse)
+            .map(l -> toSummaryResponse(l, currentUserId))
             .toList();
     }
 
@@ -185,19 +202,37 @@ public class LickService {
         return false;
     }
 
-    public LickResponse getLick(UUID id, Note key, String algo, Instrument instrument) {
+    public LickResponse getLick(UUID id, Note key, String algo, Instrument instrument, Long currentUserId) {
         Lick lick = lickRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Lick not found: " + id));
         List<Position> positions = resolvePositions(lick, key, algo, instrument);
-        return toLickResponse(lick, positions, instrument);
+        return toLickResponse(lick, positions, instrument, currentUserId);
     }
 
-    public boolean deleteLick(UUID id) {
+    public boolean deleteLick(UUID id, Long currentUserId) {
         Lick lick = lickRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Lick not found: " + id));
         if (lick.isAutoImported()) return false;
+        if (!Objects.equals(lick.getUserId(), currentUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your lick");
+        }
         lickRepository.deleteById(id);
         return true;
+    }
+
+    public LickResponse forkLick(UUID id, Long currentUserId) {
+        Lick original = lickRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Lick not found: " + id));
+        Lick fork = new Lick();
+        fork.setIntervalHash(original.getIntervalHash());
+        fork.setIntervals(original.getIntervals());
+        fork.setRawTab(original.getRawTab());
+        fork.setMode(original.getMode());
+        fork.setTabSpan(original.getTabSpan());
+        fork.setInstrument(original.getInstrument());
+        fork.setUserId(currentUserId);
+        fork = lickRepository.save(fork);
+        return toSummaryResponse(fork, currentUserId);
     }
 
     List<Position> resolvePositions(Lick lick, Note key, String algo, Instrument instrument) {
@@ -213,7 +248,7 @@ public class LickService {
         return builder.build(lick.getIntervals(), key, spanLimit, instrument);
     }
 
-    LickResponse toLickResponse(Lick lick, List<Position> positions, Instrument instrument) {
+    LickResponse toLickResponse(Lick lick, List<Position> positions, Instrument instrument, Long currentUserId) {
         List<PositionResponse> positionResponses = positions.stream()
             .map(p -> new PositionResponse(p.toTabString(instrument)))
             .toList();
@@ -224,11 +259,13 @@ public class LickService {
             lick.getMode(),
             positionResponses,
             lick.isAutoImported(),
-            lick.getInstrument()
+            lick.getInstrument(),
+            userService.getUsernameById(lick.getUserId()),
+            Objects.equals(lick.getUserId(), currentUserId)
         );
     }
 
-    LickResponse toSummaryResponse(Lick lick) {
+    LickResponse toSummaryResponse(Lick lick, Long currentUserId) {
         return new LickResponse(
             lick.getId(),
             lick.getRawTab(),
@@ -236,7 +273,9 @@ public class LickService {
             lick.getMode(),
             null,
             lick.isAutoImported(),
-            lick.getInstrument()
+            lick.getInstrument(),
+            userService.getUsernameById(lick.getUserId()),
+            Objects.equals(lick.getUserId(), currentUserId)
         );
     }
 }

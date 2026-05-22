@@ -1,5 +1,6 @@
 package org.jones.licklibrary.domain.lick;
 
+import org.jones.licklibrary.core.security.UserPrincipal;
 import org.jones.licklibrary.domain.lick.dto.LickResponse;
 import org.jones.licklibrary.domain.lick.dto.UploadLickRequest;
 import org.jones.licklibrary.domain.shared.Instrument;
@@ -9,6 +10,7 @@ import org.jones.licklibrary.domain.shared.NoteParser;
 import org.jones.licklibrary.domain.shared.instrument.CustomInstrument;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +27,8 @@ public class LickController {
     }
 
     @PostMapping
-    public ResponseEntity<LickResponse> uploadLick(@RequestBody UploadLickRequest request) {
+    public ResponseEntity<LickResponse> uploadLick(@RequestBody UploadLickRequest request,
+                                                    @AuthenticationPrincipal UserPrincipal principal) {
         String instrumentName = request.instrument() != null ? request.instrument() : "GUITAR";
         Instrument inst;
         try {
@@ -34,7 +37,7 @@ public class LickController {
             return ResponseEntity.badRequest().build();
         }
         try {
-            return ResponseEntity.ok(lickService.uploadLick(request, inst, instrumentName));
+            return ResponseEntity.ok(lickService.uploadLick(request, inst, instrumentName, principal.userId()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -47,14 +50,24 @@ public class LickController {
             @RequestParam(required = false) String mode,
             @RequestParam(required = false) Integer minLength,
             @RequestParam(required = false) Integer maxLength,
-            @RequestParam(required = false) String intervals) {
-        return lickService.getAllLicks(includeSongLicks, instrument, mode, minLength, maxLength, intervals);
+            @RequestParam(required = false) String intervals,
+            @RequestParam(defaultValue = "false") boolean mine,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return lickService.getAllLicks(includeSongLicks, instrument, mode, minLength, maxLength, intervals,
+                mine, principal.userId());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteLick(@PathVariable UUID id) {
-        boolean deleted = lickService.deleteLick(id);
+    public ResponseEntity<Void> deleteLick(@PathVariable UUID id,
+                                            @AuthenticationPrincipal UserPrincipal principal) {
+        boolean deleted = lickService.deleteLick(id, principal.userId());
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+
+    @PostMapping("/{id}/fork")
+    public ResponseEntity<LickResponse> forkLick(@PathVariable UUID id,
+                                                  @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(lickService.forkLick(id, principal.userId()));
     }
 
     @GetMapping("/{id}")
@@ -63,7 +76,8 @@ public class LickController {
             @RequestParam String key,
             @RequestParam(defaultValue = "greedy") String algo,
             @RequestParam(defaultValue = "GUITAR") String instrument,
-            @RequestParam(required = false) String tuning) {
+            @RequestParam(required = false) String tuning,
+            @AuthenticationPrincipal UserPrincipal principal) {
         Note noteKey;
         try {
             noteKey = Note.valueOf(key.toUpperCase());
@@ -87,6 +101,6 @@ public class LickController {
                 return ResponseEntity.badRequest().build();
             }
         }
-        return ResponseEntity.ok(lickService.getLick(id, noteKey, algo, inst));
+        return ResponseEntity.ok(lickService.getLick(id, noteKey, algo, inst, principal.userId()));
     }
 }

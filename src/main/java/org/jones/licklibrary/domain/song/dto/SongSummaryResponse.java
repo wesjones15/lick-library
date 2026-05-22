@@ -9,5 +9,7 @@ public record SongSummaryResponse(
         String originalKey,
         String mode,
         boolean canReparse,
-        Integer tempo
+        Integer tempo,
+        String authorName,
+        boolean ownedByCurrentUser
 ) {}

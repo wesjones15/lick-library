@@ -12,6 +12,7 @@ import org.jones.licklibrary.domain.shared.Note;
 import org.jones.licklibrary.domain.shared.Position;
 import org.jones.licklibrary.domain.shared.instrument.Bass;
 import org.jones.licklibrary.domain.shared.instrument.Guitar;
+import org.jones.licklibrary.domain.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ class LickServiceTest {
 
     @Mock private LickRepository lickRepository;
     @Mock private PositionCacheRepository positionCacheRepository;
+    @Mock private UserService userService;
 
     private LickService lickService;
 
@@ -62,7 +64,8 @@ class LickServiceTest {
 
     @BeforeEach
     void setUp() {
-        lickService = new LickService(lickRepository, positionCacheRepository);
+        lickService = new LickService(lickRepository, positionCacheRepository, userService);
+        lenient().when(userService.getUsernameById(any())).thenReturn("testuser");
     }
 
     @Test
@@ -78,7 +81,7 @@ class LickServiceTest {
             }};
         });
 
-        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null, null), Guitar.STANDARD, "GUITAR");
+        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null, null), Guitar.STANDARD, "GUITAR", 1L);
 
         verify(lickRepository).save(any(Lick.class));
         assertEquals(Mode.IONIAN, response.mode());
@@ -95,7 +98,7 @@ class LickServiceTest {
 
         when(lickRepository.findByIntervalHashAndInstrumentAndAutoImportedFalse(anyString(), anyString())).thenReturn(Optional.of(existing));
 
-        lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null, null), Guitar.STANDARD, "GUITAR");
+        lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, null, null, null), Guitar.STANDARD, "GUITAR", 1L);
 
         verify(lickRepository, never()).save(any());
     }
@@ -105,7 +108,7 @@ class LickServiceTest {
         when(lickRepository.findByIntervalHashAndInstrumentAndAutoImportedFalse(anyString(), anyString())).thenReturn(Optional.empty());
         when(lickRepository.save(any(Lick.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, Mode.DORIAN, null, null), Guitar.STANDARD, "GUITAR");
+        LickResponse response = lickService.uploadLick(new UploadLickRequest(MAJOR_TAB, Mode.DORIAN, null, null), Guitar.STANDARD, "GUITAR", 1L);
 
         assertEquals(Mode.DORIAN, response.mode());
     }
@@ -165,7 +168,7 @@ class LickServiceTest {
     void deleteLick_throwsWhenNotFound() {
         UUID id = UUID.randomUUID();
         when(lickRepository.findById(id)).thenReturn(Optional.empty());
-        assertThrows(ResourceNotFoundException.class, () -> lickService.deleteLick(id));
+        assertThrows(ResourceNotFoundException.class, () -> lickService.deleteLick(id, 1L));
     }
 
     @Test
@@ -176,7 +179,7 @@ class LickServiceTest {
         lick.setAutoImported(true);
         when(lickRepository.findById(id)).thenReturn(Optional.of(lick));
 
-        boolean result = lickService.deleteLick(id);
+        boolean result = lickService.deleteLick(id, 1L);
 
         assertFalse(result);
         verify(lickRepository, never()).deleteById(any());
@@ -188,9 +191,10 @@ class LickServiceTest {
         Lick lick = new Lick();
         lick.setIntervals(List.of());
         lick.setAutoImported(false);
+        lick.setUserId(1L);
         when(lickRepository.findById(id)).thenReturn(Optional.of(lick));
 
-        boolean result = lickService.deleteLick(id);
+        boolean result = lickService.deleteLick(id, 1L);
 
         assertTrue(result);
         verify(lickRepository).deleteById(id);
@@ -205,7 +209,7 @@ class LickServiceTest {
         UUID id = UUID.randomUUID();
         when(lickRepository.findById(id)).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class,
-                () -> lickService.getLick(id, Note.A, "greedy", Guitar.STANDARD));
+                () -> lickService.getLick(id, Note.A, "greedy", Guitar.STANDARD, 1L));
     }
 
     // -----------------------------------------------------------------------
@@ -280,7 +284,7 @@ class LickServiceTest {
     @Test
     void getAllLicks_excludesSongLicksWhenFlagFalse() {
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of());
-        lickService.getAllLicks(false, null, null, null, null, null);
+        lickService.getAllLicks(false, null, null, null, null, null, false, 1L);
         verify(lickRepository).findAllByAutoImportedFalse();
         verify(lickRepository, never()).findAll();
     }
@@ -288,7 +292,7 @@ class LickServiceTest {
     @Test
     void getAllLicks_includesSongLicksWhenFlagTrue() {
         when(lickRepository.findAll()).thenReturn(List.of());
-        lickService.getAllLicks(true, null, null, null, null, null);
+        lickService.getAllLicks(true, null, null, null, null, null, false, 1L);
         verify(lickRepository).findAll();
         verify(lickRepository, never()).findAllByAutoImportedFalse();
     }
@@ -299,7 +303,7 @@ class LickServiceTest {
         Lick bassLick   = makeLick(THREE_NOTE_MAJOR, "BASS",   Mode.IONIAN);
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(guitarLick, bassLick));
 
-        List<LickResponse> result = lickService.getAllLicks(false, "BASS", null, null, null, null);
+        List<LickResponse> result = lickService.getAllLicks(false, "BASS", null, null, null, null, false, 1L);
 
         assertEquals(1, result.size());
     }
@@ -309,7 +313,7 @@ class LickServiceTest {
         Lick lick = makeLick(THREE_NOTE_MAJOR, "GUITAR", Mode.IONIAN);
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(lick));
 
-        List<LickResponse> result = lickService.getAllLicks(false, "guitar", null, null, null, null);
+        List<LickResponse> result = lickService.getAllLicks(false, "guitar", null, null, null, null, false, 1L);
 
         assertEquals(1, result.size());
     }
@@ -320,7 +324,7 @@ class LickServiceTest {
         Lick lick = makeLick(THREE_NOTE_MAJOR, null, Mode.IONIAN);
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(lick));
 
-        List<LickResponse> result = lickService.getAllLicks(false, "GUITAR", null, null, null, null);
+        List<LickResponse> result = lickService.getAllLicks(false, "GUITAR", null, null, null, null, false, 1L);
 
         assertEquals(1, result.size(), "Lick with null instrument should match GUITAR filter");
     }
@@ -331,7 +335,7 @@ class LickServiceTest {
         Lick aeolianLick = makeLick(THREE_NOTE_MAJOR, "GUITAR", Mode.AEOLIAN);
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(ionianLick, aeolianLick));
 
-        List<LickResponse> result = lickService.getAllLicks(false, null, "IONIAN", null, null, null);
+        List<LickResponse> result = lickService.getAllLicks(false, null, "IONIAN", null, null, null, false, 1L);
 
         assertEquals(1, result.size());
     }
@@ -342,7 +346,7 @@ class LickServiceTest {
         Lick longLick  = makeLick(MINOR_PENTA,      "GUITAR", Mode.AEOLIAN); // 5 intervals
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(shortLick, longLick));
 
-        List<LickResponse> result = lickService.getAllLicks(false, null, null, 4, null, null);
+        List<LickResponse> result = lickService.getAllLicks(false, null, null, 4, null, null, false, 1L);
 
         assertEquals(1, result.size(), "minLength=4 should exclude the 3-note lick");
     }
@@ -353,7 +357,7 @@ class LickServiceTest {
         Lick longLick  = makeLick(MINOR_PENTA,      "GUITAR", Mode.AEOLIAN); // 5 intervals
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(shortLick, longLick));
 
-        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, 4, null);
+        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, 4, null, false, 1L);
 
         assertEquals(1, result.size(), "maxLength=4 should exclude the 5-note lick");
     }
@@ -365,7 +369,7 @@ class LickServiceTest {
         Lick majorLick = makeLick(THREE_NOTE_MAJOR, "GUITAR", Mode.IONIAN);
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(pentaLick, majorLick));
 
-        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, null, "b3,4");
+        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, null, "b3,4", false, 1L);
 
         assertEquals(1, result.size(), "Only the minor penta lick should match filter 'b3,4'");
     }
@@ -375,7 +379,7 @@ class LickServiceTest {
         Lick lick = makeLick(THREE_NOTE_MAJOR, "GUITAR", Mode.IONIAN);
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(lick));
 
-        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, null, "b7,b2");
+        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, null, "b7,b2", false, 1L);
 
         assertTrue(result.isEmpty(), "Filter 'b7,b2' should not match major scale fragment");
     }
@@ -386,7 +390,7 @@ class LickServiceTest {
         Lick l2 = makeLick(MINOR_PENTA,     "BASS",   Mode.AEOLIAN);
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(l1, l2));
 
-        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, null, null);
+        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, null, null, false, 1L);
 
         assertEquals(2, result.size());
     }
@@ -397,7 +401,7 @@ class LickServiceTest {
         Lick lick = makeLick(MINOR_PENTA, "GUITAR", Mode.AEOLIAN);
         when(lickRepository.findAllByAutoImportedFalse()).thenReturn(List.of(lick));
 
-        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, null, "1,4");
+        List<LickResponse> result = lickService.getAllLicks(false, null, null, null, null, "1,4", false, 1L);
 
         assertTrue(result.isEmpty(), "Non-contiguous token sequence should not match");
     }
@@ -423,7 +427,7 @@ class LickServiceTest {
         when(positionCacheRepository.findByIntervalHashAndKey(hash, "A"))
             .thenReturn(Optional.of(cached));
 
-        lickService.getLick(UUID.randomUUID(), Note.A, "greedy", Guitar.STANDARD);
+        lickService.getLick(UUID.randomUUID(), Note.A, "greedy", Guitar.STANDARD, 1L);
 
         verify(positionCacheRepository, never()).save(any());
     }
@@ -441,7 +445,7 @@ class LickServiceTest {
         when(positionCacheRepository.findByIntervalHashAndKey(anyString(), anyString()))
             .thenReturn(Optional.empty());
 
-        lickService.getLick(UUID.randomUUID(), Note.A, "greedy", Guitar.STANDARD);
+        lickService.getLick(UUID.randomUUID(), Note.A, "greedy", Guitar.STANDARD, 1L);
 
         verify(positionCacheRepository).save(any(PositionCache.class));
     }

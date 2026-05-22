@@ -6,13 +6,17 @@ import org.jones.licklibrary.domain.shared.Instrument;
 import org.jones.licklibrary.domain.shared.InstrumentRegistry;
 import org.jones.licklibrary.domain.shared.Interval;
 import org.jones.licklibrary.domain.shared.Note;
+import org.jones.licklibrary.domain.user.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,38 +46,48 @@ public class ChordService {
 
     private final ChordShapeRepository shapeRepo;
     private final ChordQualityRepository qualityRepo;
+    private final UserService userService;
 
-    public ChordService(ChordShapeRepository shapeRepo, ChordQualityRepository qualityRepo) {
+    public ChordService(ChordShapeRepository shapeRepo, ChordQualityRepository qualityRepo,
+                        UserService userService) {
         this.shapeRepo = shapeRepo;
         this.qualityRepo = qualityRepo;
+        this.userService = userService;
     }
 
     public boolean knowsQuality(String quality) {
         return CHORD_QUALITIES.containsKey(quality);
     }
 
-    public Map<String, List<ChordVoicingResponse>> getAllVoicings(Note root, Instrument instrument, String instrumentName) {
+    public Map<String, List<ChordVoicingResponse>> getAllVoicings(Note root, Instrument instrument, String instrumentName, Long currentUserId) {
         List<String> suffixes = shapeRepo.findDistinctQualitiesByInstrument(instrumentName.toUpperCase());
         Map<String, List<ChordVoicingResponse>> result = new LinkedHashMap<>();
         for (String suffix : suffixes) {
-            result.put(suffix, getVoicings(root, suffix, instrument, instrumentName));
+            result.put(suffix, getVoicings(root, suffix, instrument, instrumentName, currentUserId));
         }
         return result;
     }
 
-    private record ShapeResult(String id, int[] frets, boolean isUser) {}
+    private record ShapeResult(String id, int[] frets, boolean isUser, Long userId) {}
 
-    public List<ChordVoicingResponse> getVoicings(Note root, String quality, Instrument instrument, String instrumentName) {
+    public List<ChordVoicingResponse> getVoicings(Note root, String quality, Instrument instrument, String instrumentName, Long currentUserId) {
         List<ChordShape> shapes = shapeRepo.findByChordQuality_SuffixAndInstrument(quality, instrumentName.toUpperCase());
         return shapes.stream()
-            .map(s -> new ShapeResult(s.getId().toString(), transposeShape(s, root, instrument), "user".equals(s.getSource())))
+            .map(s -> new ShapeResult(s.getId().toString(), transposeShape(s, root, instrument), "user".equals(s.getSource()), s.getUserId()))
             .sorted(Comparator.comparingInt((ShapeResult r) -> r.isUser() ? 0 : 1)
                               .thenComparingInt(r -> minFret(r.frets())))
-            .map(r -> new ChordVoicingResponse(r.id(), toDisplayFrets(r.frets())))
+            .map(r -> new ChordVoicingResponse(r.id(), toDisplayFrets(r.frets()),
+                    userService.getUsernameById(r.userId()),
+                    Objects.equals(r.userId(), currentUserId)))
             .collect(Collectors.toList());
     }
 
-    public void deleteVoicing(UUID id) {
+    public void deleteVoicing(UUID id, Long currentUserId) {
+        ChordShape shape = shapeRepo.findById(id)
+            .orElseThrow(() -> new org.jones.licklibrary.core.exception.ResourceNotFoundException("Voicing not found: " + id));
+        if (!Objects.equals(shape.getUserId(), currentUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your voicing");
+        }
         shapeRepo.deleteById(id);
     }
 
@@ -154,7 +168,7 @@ public class ChordService {
         return result;
     }
 
-    public UUID uploadChord(UploadChordRequest req) {
+    public UUID uploadChord(UploadChordRequest req, Long userId) {
         Note root;
         try {
             root = Note.valueOf(req.root().toUpperCase());
@@ -229,6 +243,7 @@ public class ChordService {
         shape.setSource("user");
         shape.setInstrument(instrumentName);
         shape.setShapeName(req.shapeName());
+        shape.setUserId(userId);
         return shapeRepo.save(shape).getId();
     }
 }

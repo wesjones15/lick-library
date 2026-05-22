@@ -12,5 +12,7 @@ public record LickResponse(
     Mode mode,
     List<PositionResponse> positions,
     boolean autoImported,
-    String instrument
+    String instrument,
+    String authorName,
+    boolean ownedByCurrentUser
 ) {}
