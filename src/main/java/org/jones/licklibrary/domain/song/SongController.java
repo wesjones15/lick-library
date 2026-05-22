@@ -47,7 +47,7 @@ public class SongController {
         return songService.getSong(id, semitones);
     }
 
-    @PostMapping("/{id}/reparse")
+    @PutMapping("/{id}/reparse")
     public ResponseEntity<SongDetailResponse> reparseSong(@PathVariable UUID id) {
         try {
             return ResponseEntity.ok(songService.reparseSong(id));
@@ -56,7 +56,7 @@ public class SongController {
         }
     }
 
-    @PostMapping("/{id}/update")
+    @PutMapping("/{id}")
     public SongDetailResponse updateSong(@PathVariable UUID id, @RequestBody UpdateSongRequest request) {
         return songService.updateSong(id, request);
     }
