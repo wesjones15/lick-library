@@ -38,7 +38,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/**", "/error").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
@@ -47,7 +47,7 @@ public class SecurityConfig {
                     res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
             )
             .oauth2Login(oauth2 -> oauth2
-                .authorizationEndpoint(ae -> ae.baseUri("/api/auth"))
+                .authorizationEndpoint(ae -> ae.baseUri("/api/oauth2/authorize"))
                 .redirectionEndpoint(re -> re.baseUri("/api/auth/callback"))
                 .userInfoEndpoint(ui -> ui.userService(oauthUserService))
                 .successHandler(successHandler)
