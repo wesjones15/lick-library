@@ -19,7 +19,7 @@ public class DevLoginController {
         this.userService = userService;
     }
 
-    @PostMapping("/dev-login")
+    @PostMapping("/dev/login")
     public ResponseEntity<Map<String, String>> devLogin(@RequestParam Long userId) {
         User user = userService.findById(userId);
         String token = userService.issueToken(user);

@@ -64,7 +64,7 @@ class SecurityIntegrationTest {
 
     @Test
     void dev_login_returns_token() throws Exception {
-        String body = mockMvc.perform(post("/api/auth/dev-login")
+        String body = mockMvc.perform(post("/api/auth/dev/login")
                 .param("userId", adminId.toString())
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
@@ -78,7 +78,7 @@ class SecurityIntegrationTest {
 
     @Test
     void authenticated_request_returns_200() throws Exception {
-        String body = mockMvc.perform(post("/api/auth/dev-login")
+        String body = mockMvc.perform(post("/api/auth/dev/login")
                 .param("userId", adminId.toString()))
             .andExpect(status().isOk())
             .andReturn().getResponse().getContentAsString();
