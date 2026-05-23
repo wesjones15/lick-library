@@ -28,6 +28,9 @@ public class User {
     @Column(name = "creation_ts")
     private LocalDateTime creationTs;
 
+    @Column(name = "request_type")
+    private String requestType = "ACCOUNT_CREATION";
+
     public Long getId() { return id; }
 
     public String getGoogleId() { return googleId; }
@@ -47,4 +50,7 @@ public class User {
 
     public LocalDateTime getCreationTs() { return creationTs; }
     public void setCreationTs(LocalDateTime creationTs) { this.creationTs = creationTs; }
+
+    public String getRequestType() { return requestType; }
+    public void setRequestType(String requestType) { this.requestType = requestType; }
 }

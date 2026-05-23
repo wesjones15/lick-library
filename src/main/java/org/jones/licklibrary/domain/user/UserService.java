@@ -64,7 +64,19 @@ public class UserService {
 
     public User rejectUser(Long userId) {
         User user = findById(userId);
-        user.setStatus(UserStatus.REJECTED);
+        if ("ACCOUNT_DELETION".equals(user.getRequestType())) {
+            user.setStatus(UserStatus.APPROVED);
+            user.setRequestType("ACCOUNT_CREATION");
+        } else {
+            user.setStatus(UserStatus.REJECTED);
+        }
+        return userRepository.save(user);
+    }
+
+    public User requestDeletion(Long userId) {
+        User user = findById(userId);
+        user.setStatus(UserStatus.PENDING);
+        user.setRequestType("ACCOUNT_DELETION");
         return userRepository.save(user);
     }
 
@@ -76,7 +88,7 @@ public class UserService {
     public List<AdminUserResponse> getAllUsers() {
         return userRepository.findAll().stream()
             .map(u -> new AdminUserResponse(u.getId(), u.getEmail(), u.getUsername(),
-                                            u.getRole(), u.getStatus(), u.getCreationTs()))
+                                            u.getRole(), u.getStatus(), u.getCreationTs(), u.getRequestType()))
             .toList();
     }
 

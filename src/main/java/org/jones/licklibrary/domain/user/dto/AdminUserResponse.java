@@ -11,5 +11,6 @@ public record AdminUserResponse(
     String username,
     UserRole role,
     UserStatus status,
-    LocalDateTime creationTs
+    LocalDateTime creationTs,
+    String requestType
 ) {}

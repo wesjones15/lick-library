@@ -20,7 +20,13 @@ public class UserController {
     public UserProfileResponse getProfile(@AuthenticationPrincipal UserPrincipal principal) {
         User user = userService.findById(principal.userId());
         return new UserProfileResponse(user.getId(), user.getEmail(), user.getUsername(),
-            user.getRole(), user.getStatus(), user.getCreationTs());
+            user.getRole(), user.getStatus(), user.getCreationTs(), user.getRequestType());
+    }
+
+    @PostMapping("/request-deletion")
+    public ResponseEntity<Void> requestDeletion(@AuthenticationPrincipal UserPrincipal principal) {
+        userService.requestDeletion(principal.userId());
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/me")

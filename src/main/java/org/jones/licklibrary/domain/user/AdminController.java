@@ -24,8 +24,13 @@ public class AdminController {
     }
 
     @PostMapping("/approve/{userId}")
-    public AdminUserResponse approveUser(@PathVariable Long userId) {
-        return toResponse(userService.approveUser(userId));
+    public ResponseEntity<?> approveUser(@PathVariable Long userId) {
+        User user = userService.findById(userId);
+        if ("ACCOUNT_DELETION".equals(user.getRequestType())) {
+            userService.deleteUser(userId);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(toResponse(userService.approveUser(userId)));
     }
 
     @PostMapping("/reject/{userId}")
@@ -46,6 +51,6 @@ public class AdminController {
 
     private AdminUserResponse toResponse(User user) {
         return new AdminUserResponse(user.getId(), user.getEmail(), user.getUsername(),
-            user.getRole(), user.getStatus(), user.getCreationTs());
+            user.getRole(), user.getStatus(), user.getCreationTs(), user.getRequestType());
     }
 }

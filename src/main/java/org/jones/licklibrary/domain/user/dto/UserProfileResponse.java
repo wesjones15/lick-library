@@ -11,5 +11,6 @@ public record UserProfileResponse(
     String username,
     UserRole role,
     UserStatus status,
-    LocalDateTime creationTs
+    LocalDateTime creationTs,
+    String requestType
 ) {}
