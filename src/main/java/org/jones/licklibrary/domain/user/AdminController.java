@@ -1,6 +1,7 @@
 package org.jones.licklibrary.domain.user;
 
 import org.jones.licklibrary.domain.user.dto.AdminUserResponse;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,6 +36,12 @@ public class AdminController {
     @GetMapping("/users")
     public List<AdminUserResponse> getAllUsers() {
         return userService.getAllUsers();
+    }
+
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+        userService.deleteUser(userId);
+        return ResponseEntity.noContent().build();
     }
 
     private AdminUserResponse toResponse(User user) {

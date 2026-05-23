@@ -105,4 +105,20 @@ class AdminControllerIntegrationTest {
         mockMvc.perform(post("/api/admin/approve/99999"))
             .andExpect(status().isNotFound());
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteUser_admin_deletesUser() throws Exception {
+        mockMvc.perform(delete("/api/admin/users/" + pendingUserId))
+            .andExpect(status().isNoContent());
+
+        assertTrue(userRepository.findById(pendingUserId).isEmpty());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteUser_admin_unknownUser_returns404() throws Exception {
+        mockMvc.perform(delete("/api/admin/users/99999"))
+            .andExpect(status().isNotFound());
+    }
 }
