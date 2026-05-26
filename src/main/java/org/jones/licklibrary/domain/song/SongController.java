@@ -59,7 +59,7 @@ public class SongController {
     public ResponseEntity<SongDetailResponse> reparseSong(@PathVariable UUID id,
                                                            @AuthenticationPrincipal UserPrincipal principal) {
         try {
-            return ResponseEntity.ok(songService.reparseSong(id, principal.userId()));
+            return ResponseEntity.ok(songService.reparseSong(id, principal.userId(), principal.role()));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -68,13 +68,13 @@ public class SongController {
     @PutMapping("/{id}")
     public SongDetailResponse updateSong(@PathVariable UUID id, @RequestBody UpdateSongRequest request,
                                           @AuthenticationPrincipal UserPrincipal principal) {
-        return songService.updateSong(id, request, principal.userId());
+        return songService.updateSong(id, request, principal.userId(), principal.role());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteSong(@PathVariable UUID id, @AuthenticationPrincipal UserPrincipal principal) {
-        songService.deleteSong(id, principal.userId());
+        songService.deleteSong(id, principal.userId(), principal.role());
     }
 
     @GetMapping("/{id}/beatmap")
@@ -90,7 +90,7 @@ public class SongController {
                                        @AuthenticationPrincipal UserPrincipal principal) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new org.jones.licklibrary.core.exception.ResourceNotFoundException("Song not found: " + id));
-        songService.checkOwner(song, principal.userId());
+        songService.checkOwner(song, principal.userId(), principal.role());
         SongBeatmap bm = beatmapRepository.findBySongId(id).orElse(new SongBeatmap());
         bm.setSongId(id);
         bm.setBeats(request.beats().stream()

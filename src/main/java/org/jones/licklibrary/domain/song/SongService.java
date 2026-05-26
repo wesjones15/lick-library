@@ -13,6 +13,7 @@ import org.jones.licklibrary.domain.song.parsing.ChordTransposer;
 import org.jones.licklibrary.domain.song.parsing.GuitarTabLine;
 import org.jones.licklibrary.domain.shared.Note;
 import org.jones.licklibrary.domain.shared.NoteParser;
+import org.jones.licklibrary.domain.user.UserRole;
 import org.jones.licklibrary.domain.user.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -71,10 +72,10 @@ public class SongService {
     }
 
     @Transactional
-    public SongDetailResponse reparseSong(UUID id, Long currentUserId) {
+    public SongDetailResponse reparseSong(UUID id, Long currentUserId, UserRole role) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
-        checkOwner(song, currentUserId);
+        checkOwner(song, currentUserId, role);
         if (song.getRawChordSheet() == null) throw new IllegalStateException("No raw chord sheet stored for this song");
         ChordSheetParser.ParseResult result = chordSheetParser.parse(song.getRawChordSheet());
         song.setChordLines(result.chordLines());
@@ -102,10 +103,10 @@ public class SongService {
     }
 
     @Transactional
-    public void deleteSong(UUID id, Long currentUserId) {
+    public void deleteSong(UUID id, Long currentUserId, UserRole role) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
-        checkOwner(song, currentUserId);
+        checkOwner(song, currentUserId, role);
         List<SongLick> songLicks = songLickRepository.findAllBySongId(id);
         List<UUID> lickIds = songLicks.stream().map(SongLick::getLickId).filter(lid -> lid != null).toList();
         songLickRepository.deleteBySongId(id);
@@ -121,10 +122,10 @@ public class SongService {
     }
 
     @Transactional
-    public SongDetailResponse updateSong(UUID id, UpdateSongRequest req, Long currentUserId) {
+    public SongDetailResponse updateSong(UUID id, UpdateSongRequest req, Long currentUserId, UserRole role) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
-        checkOwner(song, currentUserId);
+        checkOwner(song, currentUserId, role);
         if (req.rawChordSheet() != null) {
             song.setRawChordSheet(req.rawChordSheet());
             ChordSheetParser.ParseResult result = chordSheetParser.parse(req.rawChordSheet());
@@ -145,7 +146,8 @@ public class SongService {
         return toDetail(song, song.getChordLines(), currentUserId);
     }
 
-    public void checkOwner(Song song, Long currentUserId) {
+    public void checkOwner(Song song, Long currentUserId, UserRole role) {
+        if (role == UserRole.ADMIN) return;
         if (!Objects.equals(song.getUserId(), currentUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your song");
         }
