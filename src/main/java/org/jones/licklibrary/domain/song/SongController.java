@@ -1,9 +1,12 @@
 package org.jones.licklibrary.domain.song;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jones.licklibrary.core.security.UserPrincipal;
 import org.jones.licklibrary.domain.song.dto.BeatmapResponse;
 import org.jones.licklibrary.domain.song.dto.SongDetailResponse;
 import org.jones.licklibrary.domain.song.dto.SongSummaryResponse;
+import org.jones.licklibrary.domain.song.dto.SongUpdateRequestSummary;
 import org.jones.licklibrary.domain.song.dto.UpdateSongRequest;
 import org.jones.licklibrary.domain.song.dto.UploadSongRequest;
 import org.springframework.http.HttpStatus;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,12 +27,14 @@ public class SongController {
     private final SongService songService;
     private final SongRepository songRepository;
     private final SongBeatmapRepository beatmapRepository;
+    private final ObjectMapper objectMapper;
 
     public SongController(SongService songService, SongRepository songRepository,
-                          SongBeatmapRepository beatmapRepository) {
+                          SongBeatmapRepository beatmapRepository, ObjectMapper objectMapper) {
         this.songService = songService;
         this.songRepository = songRepository;
         this.beatmapRepository = beatmapRepository;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping
@@ -96,6 +102,33 @@ public class SongController {
         bm.setBeats(request.beats().stream()
                 .map(String::valueOf).collect(Collectors.joining(",")));
         return toResponse(beatmapRepository.save(bm));
+    }
+
+    @PostMapping("/{id}/update-request")
+    public ResponseEntity<SongUpdateRequestSummary> submitUpdateRequest(
+            @PathVariable UUID id,
+            @RequestBody UpdateSongRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        try {
+            String requestType = request.rawChordSheet() != null ? "SONG_CHART" : "SONG_METADATA";
+            String payload = objectMapper.writeValueAsString(request);
+            return ResponseEntity.accepted().body(songService.submitSongUpdate(id, principal.userId(), requestType, payload));
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/{id}/beatmap-request")
+    public ResponseEntity<SongUpdateRequestSummary> submitBeatmapRequest(
+            @PathVariable UUID id,
+            @RequestBody BeatmapResponse request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        try {
+            String payload = objectMapper.writeValueAsString(Map.of("beats", request.beats()));
+            return ResponseEntity.accepted().body(songService.submitSongUpdate(id, principal.userId(), "SONG_BEATMAP", payload));
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     private BeatmapResponse toResponse(SongBeatmap bm) {

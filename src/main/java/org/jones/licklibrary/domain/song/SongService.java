@@ -1,10 +1,14 @@
 package org.jones.licklibrary.domain.song;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jones.licklibrary.core.exception.ResourceNotFoundException;
 import org.jones.licklibrary.domain.lick.LickService;
 import org.jones.licklibrary.domain.song.dto.SongDetailResponse;
 import org.jones.licklibrary.domain.song.dto.SongLickInfo;
 import org.jones.licklibrary.domain.song.dto.SongSummaryResponse;
+import org.jones.licklibrary.domain.song.dto.SongUpdateRequestSummary;
+import org.jones.licklibrary.domain.song.dto.SongUpdateReviewResponse;
 import org.jones.licklibrary.domain.song.dto.UpdateSongRequest;
 import org.jones.licklibrary.domain.song.dto.UploadSongRequest;
 import org.jones.licklibrary.domain.song.parsing.ChordSheetLine;
@@ -32,23 +36,32 @@ public class SongService {
 
     private final SongRepository songRepository;
     private final SongLickRepository songLickRepository;
+    private final SongBeatmapRepository beatmapRepository;
+    private final SongUpdateRequestRepository updateRequestRepository;
     private final ChordSheetParser chordSheetParser;
     private final ChordTransposer chordTransposer;
     private final LickService lickService;
     private final UserService userService;
+    private final ObjectMapper objectMapper;
 
     public SongService(SongRepository songRepository,
                        SongLickRepository songLickRepository,
+                       SongBeatmapRepository beatmapRepository,
+                       SongUpdateRequestRepository updateRequestRepository,
                        ChordSheetParser chordSheetParser,
                        ChordTransposer chordTransposer,
                        LickService lickService,
-                       UserService userService) {
+                       UserService userService,
+                       ObjectMapper objectMapper) {
         this.songRepository = songRepository;
         this.songLickRepository = songLickRepository;
+        this.beatmapRepository = beatmapRepository;
+        this.updateRequestRepository = updateRequestRepository;
         this.chordSheetParser = chordSheetParser;
         this.chordTransposer = chordTransposer;
         this.lickService = lickService;
         this.userService = userService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -169,6 +182,129 @@ public class SongService {
                 songLickMap,
                 owned
         );
+    }
+
+    @Transactional
+    public SongUpdateRequestSummary submitSongUpdate(UUID songId, Long submitterId, String requestType, String payloadJson) {
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + songId));
+        SongUpdateRequest req = new SongUpdateRequest();
+        req.setSongId(songId);
+        req.setSubmitterUserId(submitterId);
+        req.setRequestType(requestType);
+        req.setPayload(payloadJson);
+        req = updateRequestRepository.save(req);
+        return toUpdateSummary(req, song);
+    }
+
+    public List<SongUpdateRequestSummary> getPendingSongUpdates() {
+        return updateRequestRepository.findByStatus("PENDING").stream()
+                .map(req -> {
+                    Song song = songRepository.findById(req.getSongId()).orElse(null);
+                    return toUpdateSummary(req, song);
+                })
+                .toList();
+    }
+
+    public SongUpdateReviewResponse getSongUpdateForReview(UUID updateId) {
+        SongUpdateRequest req = updateRequestRepository.findById(updateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Update request not found: " + updateId));
+        Song song = songRepository.findById(req.getSongId())
+                .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + req.getSongId()));
+        String currentValue = buildCurrentValue(song, req.getRequestType());
+        return new SongUpdateReviewResponse(
+                req.getId(), song.getId(), song.getTitle(), song.getArtist(),
+                userService.getUsernameById(req.getSubmitterUserId()),
+                req.getRequestType(), currentValue, req.getPayload(), req.getCreatedAt());
+    }
+
+    @Transactional
+    public void approveSongUpdate(UUID updateId) {
+        SongUpdateRequest req = updateRequestRepository.findById(updateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Update request not found: " + updateId));
+        Song song = songRepository.findById(req.getSongId())
+                .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + req.getSongId()));
+        try {
+            if ("SONG_BEATMAP".equals(req.getRequestType())) {
+                Map<String, Object> map = objectMapper.readValue(req.getPayload(), new TypeReference<>() {});
+                @SuppressWarnings("unchecked")
+                List<Integer> beats = (List<Integer>) map.get("beats");
+                SongBeatmap bm = beatmapRepository.findBySongId(song.getId()).orElse(new SongBeatmap());
+                bm.setSongId(song.getId());
+                bm.setBeats(beats.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(",")));
+                beatmapRepository.save(bm);
+            } else {
+                UpdateSongRequest updateReq = objectMapper.readValue(req.getPayload(), UpdateSongRequest.class);
+                applyUpdate(song, updateReq);
+            }
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Failed to apply update: " + e.getMessage());
+        }
+        req.setStatus("APPROVED");
+        updateRequestRepository.save(req);
+    }
+
+    @Transactional
+    public void rejectSongUpdate(UUID updateId) {
+        SongUpdateRequest req = updateRequestRepository.findById(updateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Update request not found: " + updateId));
+        req.setStatus("REJECTED");
+        updateRequestRepository.save(req);
+    }
+
+    private void applyUpdate(Song song, UpdateSongRequest req) {
+        if (req.rawChordSheet() != null) {
+            song.setRawChordSheet(req.rawChordSheet());
+            ChordSheetParser.ParseResult result = chordSheetParser.parse(req.rawChordSheet());
+            song.setChordLines(result.chordLines());
+            song.setNumColumns(result.numColumns());
+            song = songRepository.save(song);
+            extractAndStoreSongLicks(song);
+        } else {
+            if (req.title() != null && !req.title().isBlank()) song.setTitle(req.title().trim());
+            song.setArtist(req.artist() != null && !req.artist().isBlank() ? req.artist().trim() : null);
+            song.setOriginalKey(req.originalKey() != null && !req.originalKey().isBlank() ? req.originalKey() : null);
+            song.setMode(req.mode() != null && !req.mode().isBlank() ? req.mode() : null);
+            song.setInstrument(req.instrument() != null && !req.instrument().isBlank() ? req.instrument() : null);
+            song.setTempo(req.tempo());
+            song.setCapo(req.capo());
+            songRepository.save(song);
+        }
+    }
+
+    private String buildCurrentValue(Song song, String requestType) {
+        try {
+            if ("SONG_BEATMAP".equals(requestType)) {
+                SongBeatmap bm = beatmapRepository.findBySongId(song.getId()).orElse(null);
+                if (bm == null) return "{\"beats\":[]}";
+                java.util.List<Integer> beats = java.util.Arrays.stream(bm.getBeats().split(","))
+                        .map(Integer::parseInt).toList();
+                return objectMapper.writeValueAsString(Map.of("beats", beats));
+            } else if ("SONG_CHART".equals(requestType)) {
+                return objectMapper.writeValueAsString(Map.of("rawChordSheet", song.getRawChordSheet() != null ? song.getRawChordSheet() : ""));
+            } else {
+                return objectMapper.writeValueAsString(Map.of(
+                        "title", song.getTitle() != null ? song.getTitle() : "",
+                        "artist", song.getArtist() != null ? song.getArtist() : "",
+                        "originalKey", song.getOriginalKey() != null ? song.getOriginalKey() : "",
+                        "mode", song.getMode() != null ? song.getMode() : "",
+                        "instrument", song.getInstrument() != null ? song.getInstrument() : "",
+                        "capo", song.getCapo() != null ? song.getCapo() : 0,
+                        "tempo", song.getTempo() != null ? song.getTempo() : 0
+                ));
+            }
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private SongUpdateRequestSummary toUpdateSummary(SongUpdateRequest req, Song song) {
+        String title = song != null ? song.getTitle() : "(deleted)";
+        String artist = song != null ? song.getArtist() : null;
+        return new SongUpdateRequestSummary(
+                req.getId(), req.getSongId(), title, artist,
+                userService.getUsernameById(req.getSubmitterUserId()),
+                req.getRequestType(), req.getCreatedAt());
     }
 
     private void extractAndStoreSongLicks(Song song) {
