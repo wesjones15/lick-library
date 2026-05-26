@@ -44,7 +44,7 @@ public class SongController {
     @GetMapping
     public List<SongSummaryResponse> getAllSongs(@RequestParam(defaultValue = "false") boolean mine,
                                                   @AuthenticationPrincipal UserPrincipal principal) {
-        return mine ? songService.getMySongs(principal.userId()) : songService.getAllSongs(principal.userId());
+        return mine ? songService.getMySongs(principal.userId()) : songService.getAllSongs(principal.userId(), principal.role());
     }
 
     @GetMapping("/{id}")
@@ -52,7 +52,7 @@ public class SongController {
             @PathVariable UUID id,
             @RequestParam(defaultValue = "0") int semitones,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return songService.getSong(id, semitones, principal.userId());
+        return songService.getSong(id, semitones, principal.userId(), principal.role());
     }
 
     @PutMapping("/{id}/reparse")

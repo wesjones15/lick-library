@@ -68,7 +68,7 @@ public class SongService {
         song.setUserId(userId);
         song = songRepository.save(song);
         extractAndStoreSongLicks(song);
-        return toSummary(song, userId);
+        return toSummary(song, userId, UserRole.USER);
     }
 
     @Transactional
@@ -82,24 +82,24 @@ public class SongService {
         song.setNumColumns(result.numColumns());
         song = songRepository.save(song);
         extractAndStoreSongLicks(song);
-        return toDetail(song, song.getChordLines(), currentUserId);
+        return toDetail(song, song.getChordLines(), currentUserId, role);
     }
 
-    public List<SongSummaryResponse> getAllSongs(Long currentUserId) {
-        return songRepository.findAll().stream().map(s -> toSummary(s, currentUserId)).toList();
+    public List<SongSummaryResponse> getAllSongs(Long currentUserId, UserRole role) {
+        return songRepository.findAll().stream().map(s -> toSummary(s, currentUserId, role)).toList();
     }
 
     public List<SongSummaryResponse> getMySongs(Long currentUserId) {
-        return songRepository.findByUserId(currentUserId).stream().map(s -> toSummary(s, currentUserId)).toList();
+        return songRepository.findByUserId(currentUserId).stream().map(s -> toSummary(s, currentUserId, UserRole.USER)).toList();
     }
 
-    public SongDetailResponse getSong(UUID id, int semitones, Long currentUserId) {
+    public SongDetailResponse getSong(UUID id, int semitones, Long currentUserId, UserRole role) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
         List<ChordSheetLine> lines = semitones == 0
                 ? song.getChordLines()
                 : chordTransposer.transpose(song.getChordLines(), semitones);
-        return toDetail(song, lines, currentUserId);
+        return toDetail(song, lines, currentUserId, role);
     }
 
     @Transactional
@@ -114,11 +114,12 @@ public class SongService {
         songRepository.deleteById(id);
     }
 
-    private SongSummaryResponse toSummary(Song song, Long currentUserId) {
+    private SongSummaryResponse toSummary(Song song, Long currentUserId, UserRole role) {
+        boolean owned = role == UserRole.ADMIN || Objects.equals(song.getUserId(), currentUserId);
         return new SongSummaryResponse(song.getId(), song.getTitle(), song.getArtist(), song.getOriginalKey(),
                 song.getMode(), song.getRawChordSheet() != null, song.getTempo(),
                 userService.getUsernameById(song.getUserId()),
-                Objects.equals(song.getUserId(), currentUserId));
+                owned);
     }
 
     @Transactional
@@ -143,7 +144,7 @@ public class SongService {
             song.setCapo(req.capo());
             song = songRepository.save(song);
         }
-        return toDetail(song, song.getChordLines(), currentUserId);
+        return toDetail(song, song.getChordLines(), currentUserId, role);
     }
 
     public void checkOwner(Song song, Long currentUserId, UserRole role) {
@@ -153,7 +154,8 @@ public class SongService {
         }
     }
 
-    private SongDetailResponse toDetail(Song song, List<ChordSheetLine> chordLines, Long currentUserId) {
+    private SongDetailResponse toDetail(Song song, List<ChordSheetLine> chordLines, Long currentUserId, UserRole role) {
+        boolean owned = role == UserRole.ADMIN || Objects.equals(song.getUserId(), currentUserId);
         List<SongLick> songLicks = songLickRepository.findAllBySongId(song.getId());
         Map<Integer, SongLickInfo> songLickMap = new LinkedHashMap<>();
         for (SongLick sl : songLicks) {
@@ -165,7 +167,7 @@ public class SongService {
                 chordLines, song.getNumColumns(),
                 song.getRawChordSheet() != null, song.getRawChordSheet(),
                 songLickMap,
-                Objects.equals(song.getUserId(), currentUserId)
+                owned
         );
     }
 
