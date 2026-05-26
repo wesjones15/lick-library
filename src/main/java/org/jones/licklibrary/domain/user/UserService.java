@@ -3,8 +3,11 @@ package org.jones.licklibrary.domain.user;
 import org.jones.licklibrary.core.exception.ResourceNotFoundException;
 import org.jones.licklibrary.core.security.JwtTokenProvider;
 import org.jones.licklibrary.domain.user.dto.AdminUserResponse;
+import org.jones.licklibrary.domain.user.dto.UserProfileResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -95,5 +98,19 @@ public class UserService {
     public void deleteUser(Long userId) {
         findById(userId);
         userRepository.deleteById(userId);
+    }
+
+    public UserProfileResponse updateUsername(Long userId, String newUsername) {
+        if (newUsername == null || newUsername.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username cannot be blank");
+        }
+        if (newUsername.trim().length() > 50) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username too long");
+        }
+        User user = findById(userId);
+        user.setUsername(newUsername.trim());
+        userRepository.save(user);
+        return new UserProfileResponse(user.getId(), user.getEmail(), user.getUsername(),
+            user.getRole(), user.getStatus(), user.getCreationTs(), user.getRequestType());
     }
 }
