@@ -14,7 +14,7 @@ public class InstrumentRegistry {
 
     public static Instrument fromTuning(Note[] tuning) {
         for (Instrument preset : List.of(
-                Guitar.STANDARD, Guitar.DROP_D, Guitar.OPEN_G, Guitar.OPEN_D, Guitar.DADGAD,
+                Guitar.STANDARD, Guitar.DROP_D, Guitar.OPEN_G, Guitar.OPEN_D, Guitar.DADGAD, Guitar.EB,
                 Bass.STANDARD, Ukulele.STANDARD, Mandolin.STANDARD, Banjo.STANDARD)) {
             if (Arrays.equals(preset.tuning(), tuning)) return preset;
         }
@@ -28,6 +28,7 @@ public class InstrumentRegistry {
             case "OPEN_G"   -> Guitar.OPEN_G;
             case "OPEN_D"   -> Guitar.OPEN_D;
             case "DADGAD"   -> Guitar.DADGAD;
+            case "EB"       -> Guitar.EB;
             case "BASS"     -> Bass.STANDARD;
             case "UKULELE"  -> Ukulele.STANDARD;
             case "MANDOLIN" -> Mandolin.STANDARD;

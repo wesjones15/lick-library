@@ -12,13 +12,21 @@ public class Guitar implements Instrument {
     public static final Guitar OPEN_G   = new Guitar("Open G",   new Note[]{D, G, D, G, B, D});
     public static final Guitar OPEN_D   = new Guitar("Open D",   new Note[]{D, A, D, F_SHARP, A, D});
     public static final Guitar DADGAD   = new Guitar("DADGAD",   new Note[]{D, A, D, G, A, D});
+    public static final Guitar EB       = new Guitar("Eb",       new Note[]{D_SHARP, G_SHARP, C_SHARP, F_SHARP, B_FLAT, D_SHARP},
+                                                     new String[]{"eb", "Bb", "Gb", "Db", "Ab", "Eb"});
 
     private final String name;
     private final Note[] tuning;
+    private final String[] customLabels;
 
     private Guitar(String name, Note[] tuning) {
+        this(name, tuning, null);
+    }
+
+    private Guitar(String name, Note[] tuning, String[] customLabels) {
         this.name = name;
         this.tuning = tuning;
+        this.customLabels = customLabels;
     }
 
     @Override public Note[]   tuning()       { return tuning; }
@@ -27,6 +35,7 @@ public class Guitar implements Instrument {
 
     @Override
     public String[] labels() {
+        if (customLabels != null) return customLabels;
         int n = tuning.length;
         String[] result = new String[n];
         for (int i = 0; i < n; i++) {
