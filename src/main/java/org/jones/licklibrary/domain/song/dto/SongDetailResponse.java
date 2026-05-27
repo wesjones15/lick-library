@@ -20,5 +20,6 @@ public record SongDetailResponse(
         boolean canReparse,
         String rawChordSheet,
         Map<Integer, SongLickInfo> songLicks,
-        boolean ownedByCurrentUser
+        boolean ownedByCurrentUser,
+        Integer timeSignature
 ) {}

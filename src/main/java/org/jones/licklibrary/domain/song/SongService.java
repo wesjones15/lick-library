@@ -75,6 +75,7 @@ public class SongService {
         song.setInstrument(request.instrument() != null && !request.instrument().isBlank() ? request.instrument() : null);
         song.setCapo(request.capo());
         song.setTempo(request.tempo());
+        song.setTimeSignature(request.timeSignature() != null ? request.timeSignature() : 4);
         song.setChordLines(result.chordLines());
         song.setNumColumns(result.numColumns());
         song.setRawChordSheet(request.rawChordSheet());
@@ -155,6 +156,7 @@ public class SongService {
             song.setInstrument(req.instrument() != null && !req.instrument().isBlank() ? req.instrument() : null);
             song.setTempo(req.tempo());
             song.setCapo(req.capo());
+            if (req.timeSignature() != null) song.setTimeSignature(req.timeSignature());
             song = songRepository.save(song);
         }
         return toDetail(song, song.getChordLines(), currentUserId, role);
@@ -180,7 +182,8 @@ public class SongService {
                 chordLines, song.getNumColumns(),
                 song.getRawChordSheet() != null, song.getRawChordSheet(),
                 songLickMap,
-                owned
+                owned,
+                song.getTimeSignature() != null ? song.getTimeSignature() : 4
         );
     }
 
@@ -268,6 +271,7 @@ public class SongService {
             song.setInstrument(req.instrument() != null && !req.instrument().isBlank() ? req.instrument() : null);
             song.setTempo(req.tempo());
             song.setCapo(req.capo());
+            if (req.timeSignature() != null) song.setTimeSignature(req.timeSignature());
             songRepository.save(song);
         }
     }
@@ -290,7 +294,8 @@ public class SongService {
                         "mode", song.getMode() != null ? song.getMode() : "",
                         "instrument", song.getInstrument() != null ? song.getInstrument() : "",
                         "capo", song.getCapo() != null ? song.getCapo() : 0,
-                        "tempo", song.getTempo() != null ? song.getTempo() : 0
+                        "tempo", song.getTempo() != null ? song.getTempo() : 0,
+                        "timeSignature", song.getTimeSignature() != null ? song.getTimeSignature() : 4
                 ));
             }
         } catch (Exception e) {

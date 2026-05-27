@@ -8,5 +8,6 @@ public record UpdateSongRequest(
         String instrument,
         Integer capo,
         Integer tempo,
-        String rawChordSheet
+        String rawChordSheet,
+        Integer timeSignature
 ) {}

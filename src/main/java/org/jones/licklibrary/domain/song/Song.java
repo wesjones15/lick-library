@@ -34,6 +34,9 @@ public class Song {
     private Integer capo;
     private Integer tempo;
 
+    @Column(name = "time_signature", columnDefinition = "INTEGER DEFAULT 4")
+    private Integer timeSignature;
+
     @Convert(converter = ChordLyricListConverter.class)
     @Column(name = "chord_lines", columnDefinition = "TEXT", nullable = false)
     private List<ChordSheetLine> chordLines = new ArrayList<>();
@@ -72,6 +75,9 @@ public class Song {
 
     public Integer getTempo() { return tempo; }
     public void setTempo(Integer tempo) { this.tempo = tempo; }
+
+    public Integer getTimeSignature() { return timeSignature; }
+    public void setTimeSignature(Integer timeSignature) { this.timeSignature = timeSignature; }
 
     public List<ChordSheetLine> getChordLines() { return chordLines; }
     public void setChordLines(List<ChordSheetLine> chordLines) { this.chordLines = chordLines; }

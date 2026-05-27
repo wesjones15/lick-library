@@ -15,5 +15,6 @@ public record PlaylistEntryResponse(
         Integer tempo,
         String mode,
         String instrument,
-        String defaultInstrument
+        String defaultInstrument,
+        int bpmOffset
 ) {}
