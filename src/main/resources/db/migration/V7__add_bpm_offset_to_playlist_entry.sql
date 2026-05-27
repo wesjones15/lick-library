@@ -1,0 +1,1 @@
+ALTER TABLE playlist_entry ADD COLUMN IF NOT EXISTS bpm_offset INTEGER DEFAULT 0;
