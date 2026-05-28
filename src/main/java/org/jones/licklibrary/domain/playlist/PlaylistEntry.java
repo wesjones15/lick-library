@@ -30,8 +30,8 @@ public class PlaylistEntry {
     @Column(name = "override_instrument", length = 20)
     private String instrument;
 
-    @Column(name = "bpm_offset", columnDefinition = "INTEGER DEFAULT 0")
-    private Integer bpmOffset;
+    @Column(name = "override_tempo")
+    private Integer tempoOverride;
 
     public UUID getId() { return id; }
 
@@ -53,6 +53,6 @@ public class PlaylistEntry {
     public String getInstrument() { return instrument; }
     public void setInstrument(String instrument) { this.instrument = instrument; }
 
-    public Integer getBpmOffset() { return bpmOffset; }
-    public void setBpmOffset(Integer bpmOffset) { this.bpmOffset = bpmOffset; }
+    public Integer getTempoOverride() { return tempoOverride; }
+    public void setTempoOverride(Integer tempoOverride) { this.tempoOverride = tempoOverride; }
 }

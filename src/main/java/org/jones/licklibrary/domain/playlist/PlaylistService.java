@@ -107,7 +107,7 @@ public class PlaylistService {
         entry.setPosition(nextPosition);
         entry.setKeyOffset(request.keyOffset());
         entry.setCapoOffset(request.capoOffset());
-        entry.setBpmOffset(request.bpmOffset() != null ? request.bpmOffset() : 0);
+        entry.setTempoOverride(request.tempoOverride());
         entryRepository.save(entry);
 
         return toDetail(playlistRepository.findById(playlistId).orElseThrow(), currentUserId);
@@ -125,7 +125,7 @@ public class PlaylistService {
             if (request.keyOffset() != null) entry.setKeyOffset(request.keyOffset());
             if (request.capoOffset() != null) entry.setCapoOffset(request.capoOffset());
         }
-        if (request.bpmOffset() != null) entry.setBpmOffset(request.bpmOffset());
+        entry.setTempoOverride(request.tempoOverride());
         if (request.instrument() != null) entry.setInstrument(request.instrument().isBlank() ? null : request.instrument());
 
         if (request.position() != null) {
@@ -236,7 +236,7 @@ public class PlaylistService {
                             song != null ? song.getMode() : null,
                             e.getInstrument(),
                             song != null ? song.getInstrument() : null,
-                            e.getBpmOffset() != null ? e.getBpmOffset() : 0);
+                            e.getTempoOverride());
                 })
                 .toList();
 

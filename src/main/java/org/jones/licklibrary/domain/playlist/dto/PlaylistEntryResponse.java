@@ -16,5 +16,5 @@ public record PlaylistEntryResponse(
         String mode,
         String instrument,
         String defaultInstrument,
-        int bpmOffset
+        Integer tempoOverride
 ) {}
