@@ -3,7 +3,7 @@
 ---
 
 <details>
-<summary>Completed</summary>
+<summary>Completed (Release 1.0)</summary>
 
 <details>
 <summary>Licks Feature</summary>
@@ -1941,6 +1941,287 @@
                 - is it using a stale beatmap? (unlikely, as the auto beatmap did not have 6 beats)
 
 </details>
+
+<details>
+<summary>Security,Microphone Access, Deployment</summary>
+
+<details>
+<summary>[x] 10. (Development) Auth & security hardening</summary>
+
+- JWT auth, Spring Security, CORS policy, rate limiting, user-scoped repositories
+- H2 → Postgres migration required
+- Worth doing last if at all; not prioritized over functional features
+
+</details>
+
+<details>
+<summary>[x] 13. (Development) Containerize and deploy</summary>
+
+- Containerize frontend and backend
+- Deploy to a hosting service
+
+</details>
+
+<details>
+<summary>[x] 33. (Development) Users, auth, playlists</summary>
+
+- Account creation with admin-gated 2FA
+- Users can upload songs, view songs, make and view playlists
+- Users can only delete their own songs; admin can delete anything
+
+</details>
+</details>
+
+<details>
+<summary>[x] 160. (Development) Prep App For Public Web</summary>
+
+- for this work, we will create feature branches since this is a big guy
+    - backend: feature/add_user_flow_backend
+    - frontend: feature/add_user_flow_frontend
+- recommended approach
+    - db migration with schema updates and new tables
+    - backend security core - add jwt, spring security, etc
+    - Google Login Handshake - implement sign in with google
+    - frontend token and router integration
+        - implement user restrictions/filters on frontend
+    - cloud deployment and https
+        - prep repos to be hosted from clou
+
+- Phases:
+    - update db schemas to include user_id, creation_ts
+        - for non-system records: (records not seeded by backend)
+            - existing records all get provided default values for new fields:
+                - user_id: 1 (this will represent my admin account)
+                - creation_ts: current datetime
+    - Implement Stateless JWT Security Core (Backend)
+        - Add JWT dependencies to pom.xml (e.g., io.jsonwebtoken:jjwt)
+        - Create JwtTokenProvider utility class to handle cryptographically signing and parsing tokens
+        - Create JwtAuthenticationFilter to intercept incoming requests and extract token from headers
+        - Update SecurityConfig to disable server sessions (SessionCreationPolicy.STATELESS) and insert JWT filter
+    - Logged In toggle:
+        - default logged in to true
+            - implement the proposed access restrictions
+            - implement the little ui navbar changes
+            - add new pages and flows
+                - login page
+        - actual site should be a container for the current site
+            - if user isn't logged in, don't even serve the real tsx pages at all.
+    - migrate the updated db to postgres or other target db framework
+    - make site https
+    - add google login flow
+    - containerize frontend
+    - containerize backend
+
+- add login page
+    - if not logged in
+        - you can view home page
+            - homepage has login button in title row, right aligned
+                - takes you to login/account creation page
+                    - sign in/up with google account
+                    - pick username
+    - 2 account types:
+        - admin
+            - all current permissions
+        - user
+            - add create account flow
+            - users can upload content, but
+                - user uploads viewable by all logged in users
+                - user uploads are stored in the db
+    - if not logged in,
+        - kick to logged out page
+            - logged out page has button to login and button to go home
+- Can we use existing login flows instead of reinventing the wheel?
+    - allow login via Google account
+    - when user creates an account
+        - immediately create account: unapproved user
+        - add account to admin approval queue
+            - approval queue will be accessible via admin page
+        - admin will review queue and approve or reject user account creation
+        - upon approval, user receives confirmation email
+        - approved users can login and view,create,etc
+- restore PUT call for update calls that currently use POST
+    - they were only switched to POST because PUT had not yet been enabled in CorsConfig
+- add user icon button tab to navbar
+    - different icon for basic vs admin user
+- basic user (unapproved)
+    - can login.
+    - cannot view or access anything aside from Homepage and User page
+- basic user (approved)
+    - can login
+    - Licks
+        - when user adds licks
+            - licks are public
+            - lick has author field
+        - can filter by author
+        - user can delete/update own licks
+        - user can load and use all licks,
+            - but if they edit a lick that isn't theirs,
+            - then it creates a new lick entry with that user as author
+    - Songs
+        - can view song library
+        - can view song detail
+        - can upload song (tags that song with user author in metadata)
+            - user can update, delete songs they uploaded
+    - Chord Gallery
+        - user can view chord gallery
+        - user can upload voicings (voicing is tagged with username for author)
+        - user can delete/edit voicings they uploaded
+    - Playlists
+        - playlist tab gets filter toggle: all/public/user
+            - all: option only visible for admin. shows ALL playlists
+            - public: shows all public playlists
+            - user: shows only user's playlists (default)
+        - user can see all public playlists and own playlists
+        - user can make own playlists
+        - playlists get author tag
+            - author tag should display on playlist card, and on detail page
+        - playlists can be public / private
+    - Theory
+        - full access (this page doesn't modify db records)
+    - Live
+        - let's delete this tab (page can remain and be inaccessible)
+        - this tab will be removed from home and navbar
+    - Noodle
+        - (this tab should be added to homepage)
+        - FreeChords
+            - no reason to restrict access here
+        - LoadSong
+            - user can load any song
+            - user can update beatmap for own songs
+- User
+    - (This tab should be added to homepage)
+    - this will be a new tab in Navbar to represent user account.
+        - we make room for this by removing Live tab from navbar
+    - rules:
+        - unapproved user:
+            - shows user details (username, email, join_ts)
+            - shows message: "unapproved account. contact administrator"
+            - delete account button with confirm
+        - approved user:
+            - shows user details (username, email, join_ts)
+            - shows message: "approved user"
+            - shows list of songs/playlists/chords added by user
+            - delete account button with confirm
+                - delete account will not delete user uploads.
+        - admin:
+            - show user details(email, join_ts)
+            - shows message: "welcome aboard captain, all systems online"
+            - button to trigger call to show all uploads by admin
+                - admin uploaded nearly everything, so call will be heavy
+            - manage users panel
+                - delete user creations, user account, etc
+            - user approval queue
+                - should this just be user account approval
+                    - or should we allow admin approval for song upload, chord voicing, etc?
+- db update:
+    - make user account table (`users`)
+        - id (BIGSERIAL Primary Key) -> Admin = 1.
+        - google_id (VARCHAR Unique) -> Maps to Google 'sub' claim
+        - email (VARCHAR Unique)
+        - username (VARCHAR)
+        - role (VARCHAR) -> ADMIN, USER
+        - status (VARCHAR) -> PENDING, APPROVED, REJECTED
+        - creation_ts (TIMESTAMP)
+    - Reset Sequence Counter (Run immediately after Admin #1 is created via Java bootstrap or SQL seed)
+        - SQL command: `SELECT setval('users_id_seq', 1, true);` -> Forces next user to be 2.
+    - Playlists:
+        - user_id (BIGINT FK to users.id)
+        - public (BOOLEAN)
+        - creation_ts (TIMESTAMP)
+        - last_modified_ts (TIMESTAMP)
+    - Songs:
+        - user_id (BIGINT FK to users.id)
+        - creation_ts (TIMESTAMP)
+    - Licks:
+        - user_id (BIGINT FK to users.id)
+        - creation_ts (TIMESTAMP)
+    - Chord Voicings:
+        - user_id (BIGINT FK to users.id)
+        - creation_ts (TIMESTAMP)
+</details>
+
+
+</details>
+
+<details>
+<summary>Completed (Release 1.1) </summary>
+
+<details>
+<summary>[x] 164. (User Access) Allow Users to Submit Song Metadata Updates to Admin Approval Queue</summary>
+
+- if user isn't uploader for song
+    - instead of blocking updates to song metadata or chart,
+        - allow them to submit update as a request that shows in admin approval queue
+        - admin can approve update and it will save song change for all users.
+        - allow user to submit beatmap updates for approval as well
+        - this flow will be a little different than the creation/deletion flow in queue
+            - new request types : Song Chart Update, Song Metadata Update, Beatmap Update
+                - card in queue should say request type, user who submitted request, and what song/artist the update is for
+    - flow
+        - user submits change for a song chart owned by another user
+        - chart enters admin approval queue
+            - Card shows request type Song Chart
+            - instead of approve/reject
+                - button says Review
+            - clicking Review brings up modal showing diff between old and new.
+            - bottom of modal will have approve and reject buttons
+            - top right of modal has x to just close without deciding
+- [x] admin can update any song
+</details>
+
+<details>
+<summary>[x] 167. </summary>
+
+- more visual beat state in KaraokeDisplay
+- Currently in Noodle
+    - active chord is bolded for duration of its beats
+    - you cannot tell at a glance how many beats a chord stays on for
+- I want:
+    - when chord becomes active during playback,
+    - i want a line of circles above the active line's chords
+        - o o o o o o o o
+        - and they fill as each beat passes.
+        - expect possible range 0-16
+    - maybe the active chord can pulse to the tempo?
+      - 
+    - next chord info
+        - when o o o o shows up for current chord
+            - show o o below for next chord beats
+        - on GuitarNeck,
+            - pulse next chords notes the way 2nd candidates pulse in theory mode
+                - so user can see where to travel to
+</details>
+
+<details>
+<summary>[x] 168. (metronome, song) time signature </summary>
+
+- add time signature support
+    - to metronome
+    - also to songs as part of song metadata
+        - beatmap editor will offer different options in the beat selector
+            - 3/4 will offer 0 1 3 6 9 perhaps
+        - all songs in db get updated to use 4/4
+            - 4/4 is preselected default when uploading new song
+            - timesignature can be modified in manage song detail page
+-
+- Playlist
+    - allow bpm offset to be saved also
+</details>
+
+
+<details>
+<summary>[x] 162. (UI/UX) Double Metronome Bug</summary>
+
+- When playing song via Noodle LoadSong,
+    - metronome sound is doubled.
+    - is metronome triggered twice here?
+    - we only want 1 metronome state in app.
+        - this state is the one that should be updated
+        - otherwise we get chaos sounds
+    - sometimes the doubled sound is synced together, sometimes its off by a lil
+</details>
+
+
 
 
 </details>

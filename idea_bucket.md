@@ -72,7 +72,7 @@
 </details>
 
 <details>
-<summary>[ ] 148. (Housekeeping) ui/ux enhancements</summary>
+<summary>[ ] 148. (UI/UX) Miniview enhancements</summary>
 
 - in miniview
   - hide add to playlist behind more options toggle
@@ -84,22 +84,99 @@
 </details>
 
 <details>
-<summary>[ ] 153. (Noodle) </summary>
-
-- [ ] KaraokeDisplay Wishlist Items
-  - make karaoke display scrollable.
-  - clicking a line should set song to start from there on play (after 4 beat leadin)
-</details>
-
-
-<details>
-<summary>[ ] 150. (Songs) use noodle karaoke feature elsewhere</summary>
+<summary>[ ] 150. (Songs) Integrate GuitarKaraoke View in SongDetail Page</summary>
 
 - add another play button to song detail page. this will do what noodle page does, but in scroll view
+- This will allow users to use Noodle mode's features while in playlist mode
+  - maybe just add option for playlist controls to work in Noodle
+    - open playlist in noddle mode
+    - add bpm offset to things user can modify on playlist song
+      - necessary because bpm is used practically for noodle playback
+  - that way we can keep Noodle separate from Playlist/Song page
 </details>
 
 <details>
-<summary>[ ] 151. (Development) Reduce Repetition</summary>
+<summary>[ ] 161. (Songs/Licks/Position?) Song Lick Off By One Bug</summary>
+
+- some offset is being applied where it shouldnt
+- colder weather 
+  - key G# G capo 1
+  - lick starts G|-2-
+  - Uke conversion starts g|-1-
+  - off by 1
+  - is it due to capo offset being double applied?
+</details>
+
+<details>
+<summary>[ ] 163. (UI/UX) Post-Release UI/UX Pass</summary>
+
+- [ ] Lick Builder (defer)
+- [ ] Lick Visualizer (defer)
+- [x] Account Page
+  - Account in Navbar (make it an icon button with dropdown including Profile and Sign Out)
+  - we previously made clicking Admin/Account reload user page.
+    - since we are moving user nav button into dropdown,
+    - lets add a refresh button into the account page
+      - Users will see the refresh icon near the account status banner
+        - clicking will refresh status of user account
+      - Admin will see the refresh icon in row with Approval Queue
+        - clicking will refresh queue and userlist
+  - add manage button/toggle to user account page
+    - hide delete button behind manage
+    - allow user to change username by clicking pencil icon next to username when manage is active
+    - delete account should be greyed out for admin (maybe just for user_id=1 admin)
+- [x] Song Card
+  - don't show uploader username
+</details>
+
+<details>
+<summary>[ ] 165. (Noodle) Add Lick Parsing to Noodle Mode</summary>
+
+- currently, Noodle LoadSong mode will ignore and skip over guitar tab snippets
+  - but Lick logic already parses and interprets tab blocks detected in song view
+- I want Noodle LoadSong to get a toggle that, when enabled,
+  - will integrate detected songlicks into LoadSong playback
+  - use Lick Visualizer logic to play lick back on GuitarNeck in time with metronome, in the song itself
+    - so instead of solos just showing the rhythm chords' intervals,
+      - it will playback the solo in realtime with song
+
+- also if possible
+  - add toggle icon button
+  - when enabled, 
+    - play corresponding MIDI note during playback,
+      - but only while GuitarNeck is displayed
+</details>
+
+<details>
+<summary>[ ] 166. (Fork) Make App Use Local Device Storage</summary>
+
+- don't do this idea til more features are implemented and bugs are cleared
+  - this will be a fork, not the original
+  - use local storage (not browser cache for db
+- maybe remove auth and users and make it an offline app that uses ipad storage(not browser cache) to store song data, then distribute it like ds download play used to be used for demo distribution.
+</details>
+
+
+</details>
+
+
+
+- what if we use x2 crap to compress long tabs
+- detect duplicate section blocks (groups of chordlyrics)
+  - remove and reference the original
+  - maybe only for columns mode in songdetail idk
+
+- add Eb tuning as an instrument.
+- 
+
+
+
+
+<details Deferred>
+<summary>Deferred</summary>
+
+<details>
+<summary>[~] 151. (Development) Reduce Repetition</summary>
 
 - can we dive in the frontend and see whether we've introduced any redundancy or repetition in the music consts
   - consolidate and reduce frontend methods,etc where possible
@@ -108,19 +185,9 @@
   - consolidate and reduce backend methods, classes where possible
   - update readme
 - since live and theory and licks all got moved around
-  - perhaps rename files and directories to reflect new functionality. 
-  - 
+  - perhaps rename files and directories to reflect new functionality.
+  -
 </details>
-
-
-
-
-</details>
-
-
-
-<details Deferred>
-<summary>Deferred</summary>
 
 <details>
 <summary>Licks Enhancements</summary>
@@ -242,35 +309,6 @@
 
 
 <details>
-<summary>Security,Microphone Access, Deployment</summary>
-
-<details>
-<summary>[~] 10. (Development) Auth & security hardening</summary>
-
-- JWT auth, Spring Security, CORS policy, rate limiting, user-scoped repositories
-- H2 → Postgres migration required
-- Worth doing last if at all; not prioritized over functional features
-
-</details>
-
-<details>
-<summary>[~] 13. (Development) Containerize and deploy</summary>
-
-- Containerize frontend and backend
-- Deploy to a hosting service
-
-</details>
-
-<details>
-<summary>[~] 33. (Development) Users, auth, playlists</summary>
-
-- Account creation with admin-gated 2FA
-- Users can upload songs, view songs, make and view playlists
-- Users can only delete their own songs; admin can delete anything
-
-</details>
-
-<details>
 <summary>[~] 91. (Live) make app HTTPS</summary>
 
 - mic doesn't work without https. can we make this app secure
@@ -290,7 +328,6 @@
 - maybe frets shouldn't show uniform, but vary in size up the neck like real guitars
 </details>
 
-</details>
 
 <details>
 <summary>[~] 135. (Licks,Live) lickbuilder future work</summary>
@@ -309,11 +346,21 @@
 -
 </details>
 
+<details>
+<summary>[~] 153. (Noodle) Make KaraokeDisplay Scrollable</summary>
+
+- KaraokeDisplay Wishlist Items
+  - make karaoke display scrollable.
+  - clicking a line should set song to start from there on play (after 4 beat leadin)
+  - when karaoke display moves to next line,
+    - is it possible to smooth animate it?
+</details>
+
 
 </details>
 
 <details>
-<summary>[ ] 160. </summary>
+<summary>[ ] 169. </summary>
 
 - 
 </details>

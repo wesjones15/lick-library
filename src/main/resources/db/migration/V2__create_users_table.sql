@@ -10,7 +10,7 @@ CREATE TABLE users (
 
 -- Seed admin account as id=1
 INSERT INTO users (id, google_id, email, username, role, status, creation_ts)
-VALUES (1, NULL, 'admin@example.com', 'admin', 'ADMIN', 'APPROVED', CURRENT_TIMESTAMP);
+VALUES (1, NULL, '${app.admin.email}', 'admin', 'ADMIN', 'APPROVED', CURRENT_TIMESTAMP);
 
 -- Force next auto-generated user id to start at 2
 SELECT setval('users_id_seq', 1, true);
