@@ -398,10 +398,10 @@ DELETE /api/playlist/{id}                     → 204
 PATCH  /api/playlist/{id}/visibility?isPublic=true → 204
 
 POST   /api/playlist/{id}/entries             → PlaylistDetailResponse
-  body: { "songId": "...", "keyOffset": 0, "capoOffset": 0 }
+  body: { "songId": "...", "keyOffset": 0, "capoOffset": 0, "bpmOffset": 0 }
 
 PUT    /api/playlist/{id}/entries/{entryId}   → PlaylistDetailResponse
-  body: { "position": 2, "keyOffset": -2, "capoOffset": 1 }
+  body: { "position": 2, "keyOffset": -2, "capoOffset": 1, "bpmOffset": 0, "instrument": "GUITAR" }
 
 DELETE /api/playlist/{id}/entries/{entryId}           → PlaylistDetailResponse
 DELETE /api/playlist/{id}/entries/{entryId}/overrides  → PlaylistDetailResponse  (clear key/capo overrides)
@@ -699,6 +699,8 @@ src/main/java/org/jones/licklibrary/
 | `mode` | VARCHAR(16) | Mode enum name |
 | `tab_span` | INTEGER | max fret − min fret of original tab; used as span limit |
 | `endpoint_degree` | VARCHAR(16) | Reserved for solo chaining |
+| `user_id` | BIGINT | FK → `users.id` |
+| `auto_imported` | BOOLEAN | DEFAULT FALSE |
 | `created_at` | TIMESTAMP | |
 
 ### `song` entity
@@ -706,14 +708,15 @@ src/main/java/org/jones/licklibrary/
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
-| `owner_id` | BIGINT | FK → `users.id` |
+| `user_id` | BIGINT | FK → `users.id` |
 | `title` | VARCHAR | |
 | `artist` | VARCHAR | |
 | `original_key` | VARCHAR | |
+| `mode` | VARCHAR(20) | |
+| `instrument` | VARCHAR(20) | |
 | `capo` | INTEGER | |
 | `tempo` | INTEGER | |
-| `bpm_offset` | DECIMAL | Fine-grained tempo adjustment |
-| `time_signature` | VARCHAR | e.g. `"4/4"` |
+| `time_signature` | INTEGER | Beats per bar (1, 2, 3, 4, or 6) |
 | `chord_lines` | TEXT | JSON list of ChordSheetLine objects |
 | `num_columns` | INTEGER | computed at parse time |
 | `raw_chord_sheet` | TEXT | Original upload; used by reparse |
@@ -733,7 +736,7 @@ src/main/java/org/jones/licklibrary/
 |---|---|---|
 | `id` | UUID | PK |
 | `song_id` | UUID | |
-| `requester_id` | BIGINT | FK → `users.id` |
+| `submitter_user_id` | BIGINT | FK → `users.id` |
 | `request_type` | VARCHAR | `SONG_METADATA`, `SONG_CHART`, or `SONG_BEATMAP` |
 | `payload` | TEXT | JSON-encoded update payload |
 | `status` | VARCHAR | `PENDING`, `APPROVED`, `REJECTED` |
@@ -790,7 +793,7 @@ UNIQUE on `(interval_hash, note_key)`. Table exists but is not actively used —
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
-| `owner_id` | BIGINT | FK → `users.id` |
+| `user_id` | BIGINT | FK → `users.id` |
 | `name` | VARCHAR | |
 | `is_public` | BOOLEAN | |
 | `created_at` | TIMESTAMP | |
@@ -803,8 +806,10 @@ UNIQUE on `(interval_hash, note_key)`. Table exists but is not actively used —
 | `playlist_id` | UUID | FK → `playlist` |
 | `song_id` | UUID | FK → `song` |
 | `position` | INTEGER | Sort order within the playlist |
-| `key_offset` | INTEGER | Semitone shift applied on top of the song's original key |
+| `override_semitones` | INTEGER | Semitone shift applied on top of the song's original key |
 | `capo_offset` | INTEGER | Capo adjustment relative to the song's default capo |
+| `bpm_offset` | INTEGER | BPM adjustment relative to the song's tempo; DEFAULT 0 |
+| `instrument` | VARCHAR(20) | Optional instrument override |
 
 ---
 
