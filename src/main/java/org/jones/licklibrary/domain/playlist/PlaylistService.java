@@ -145,7 +145,7 @@ public class PlaylistService {
                 .orElseThrow(() -> new ResourceNotFoundException("Entry not found: " + entryId));
         entry.setKeyOffset(null);
         entry.setCapoOffset(null);
-        entry.setBpmOffset(null);
+        entry.setTempoOverride(null);
         entry.setInstrument(null);
         entryRepository.save(entry);
         return toDetail(playlistRepository.findById(playlistId).orElseThrow(), currentUserId);
