@@ -318,7 +318,10 @@ public class SongService {
         songLickRepository.deleteBySongId(song.getId());
         lickService.deleteAutoImportedLicks(oldLickIds);
 
-        Note songKey = song.getOriginalKey() != null ? NoteParser.parse(song.getOriginalKey()) : null;
+        int capoSemitones = song.getCapo() != null ? song.getCapo() : 0;
+        Note songKey = song.getOriginalKey() != null
+                ? NoteParser.parse(song.getOriginalKey()).shift(12 - (capoSemitones % 12))
+                : null;
         int tabOrder = 0;
         for (ChordSheetLine line : song.getChordLines()) {
             if (line instanceof GuitarTabLine tab) {
