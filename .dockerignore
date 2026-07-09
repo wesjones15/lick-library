@@ -1,0 +1,32 @@
+# Version control
+.git
+.gitignore
+
+# IDE
+.idea
+*.iml
+
+# Maven wrapper (Dockerfile uses the maven:3.9 base image, not the wrapper)
+.mvn
+mvnw
+mvnw.cmd
+
+# Build output (never copy compiled artifacts into a fresh build)
+target/
+
+# Local database files (H2 dev database — not needed in image)
+data/
+
+# Documentation and notes
+*.md
+docs/
+notes/
+
+# Dev shell scripts
+*.sh
+
+# OAuth credentials — must never be baked into an image
+client_secret_*.json
+
+# Claude / tooling
+.claude/
