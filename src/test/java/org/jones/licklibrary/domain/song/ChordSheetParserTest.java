@@ -398,4 +398,48 @@ class ChordSheetParserTest {
         double without = contentFont(parser.parse(manyShortSections()));
         assertThat(withLongLine).isGreaterThanOrEqualTo(without - 1.0);
     }
+
+    // --- Repeat markers ---
+
+    private List<ChordLyric> contentPairs(String raw) {
+        return parser.parse(raw).chordLines().stream()
+                .filter(l -> l instanceof ChordLyric c && !(c.chords().isBlank() && c.lyrics().isBlank()))
+                .map(l -> (ChordLyric) l).toList();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"x2", "X2", "2x", "(x2)", "(2x)", "[x2]", "×2", "x 2"})
+    void trailingRepeatMarkerWritesTheChordLineOutAgain(String marker) {
+        List<ChordLyric> pairs = contentPairs("G   C   D   " + marker + "\n");
+        assertThat(pairs).hasSize(2);
+        assertThat(pairs).allSatisfy(p -> {
+            assertThat(p.chords().trim()).isEqualTo("G   C   D");
+            assertThat(p.chords()).doesNotContainIgnoringCase("x");
+        });
+    }
+
+    @Test
+    void repeatCountIsHonoured() {
+        assertThat(contentPairs("Intro\nAm  F  C  G  x4\n")).filteredOn(p -> !p.chords().isBlank()).hasSize(4);
+    }
+
+    @Test
+    void repeatedChordLineKeepsItsLyricOnEveryPass() {
+        List<ChordLyric> pairs = contentPairs("G        C   x2\nNa na na na\n");
+        assertThat(pairs).hasSize(2).allSatisfy(p -> assertThat(p.lyrics()).startsWith("Na na na na"));
+    }
+
+    @Test
+    void hugeRepeatCountIsLeftWrittenOut() {
+        List<ChordLyric> pairs = contentPairs("G   C   x16\n");
+        assertThat(pairs).hasSize(1);
+        assertThat(pairs.get(0).chords()).contains("x16");
+    }
+
+    @Test
+    void repeatMarkerOnALyricLineIsLeftAlone() {
+        List<ChordLyric> pairs = contentPairs("Oh yeah (x2)\n");
+        assertThat(pairs).hasSize(1);
+        assertThat(pairs.get(0).lyrics()).contains("(x2)");
+    }
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -22,6 +23,10 @@ public class ChordSheetParser {
     );
     private static final Pattern UNICODE_SPACE = Pattern.compile("[\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]");
     private static final int TAB_STOP = 8;
+    /** Trailing repeat count on a chord line: "x2", "2x", "(x2)", "[3x]", "×4". */
+    private static final Pattern REPEAT_MARKER = Pattern.compile(
+            "\\s+[(\\[]?\\s*(?:[x×]\\s?(\\d{1,2})|(\\d{1,2})\\s?[x×])\\s*[)\\]]?\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final int MAX_REPEATS = 8; // larger counts stay written out rather than flooding the sheet
 
     private static final double CONTENT_WIDTH    = 1100.0;
     private static final double CONTENT_HEIGHT   = 660.0;
@@ -81,7 +86,7 @@ public class ChordSheetParser {
 
     private boolean isChordLine(String line) {
         if (line.isBlank()) return false;
-        String normalized = line
+        String normalized = REPEAT_MARKER.matcher(line).replaceFirst("")
             .replaceAll("\\(.*?\\)", " ")
             .replaceAll("[|*%]", " ")
             .replaceAll("\\s+-\\s+", " ")
@@ -181,7 +186,18 @@ public class ChordSheetParser {
                         && !SECTION_LABEL.matcher(lines.get(i).trim()).matches();
 
                 String lyric = nextIsLyric ? lines.get(i++) : "";
-                pairs.add(equalized(line, lyric, DEFAULT_FONT_SIZE));
+                // "G  C  D  x2" plays the line twice: write it out twice and drop the marker
+                int repeats = 1;
+                Matcher marker = REPEAT_MARKER.matcher(line);
+                if (marker.find()) {
+                    int count = Integer.parseInt(marker.group(1) != null ? marker.group(1) : marker.group(2));
+                    if (count >= 1 && count <= MAX_REPEATS) {
+                        repeats = count;
+                        line = line.substring(0, marker.start());
+                    }
+                }
+                ChordLyric pair = equalized(line, lyric, DEFAULT_FONT_SIZE);
+                for (int r = 0; r < repeats; r++) pairs.add(pair);
                 continue;
             }
 
