@@ -128,8 +128,13 @@ class ChordSheetParserTest {
                 .orElseThrow();
         assertThat(fontSize).isBetween(8.0, 20.0);
 
-        int pairsPerCol = (int) Math.ceil((double) result.chordLines().size() / result.numColumns());
-        double estimatedHeight = pairsPerCol * 2.5 * fontSize;
+        // As the UI draws it: a pair is two 1.25em rows, a blank spacer one 8px row, a tab one row per line
+        double totalHeight = result.chordLines().stream().mapToDouble(line -> {
+            if (line instanceof GuitarTabLine gt) return (gt.tabLines().size() + 1) * 1.25 * gt.fontSize() + 8;
+            ChordLyric cl = (ChordLyric) line;
+            return cl.chords().isBlank() && cl.lyrics().isBlank() ? 1.25 * cl.fontSize() : 2.5 * cl.fontSize();
+        }).sum();
+        double estimatedHeight = totalHeight / result.numColumns() + 2.5 * fontSize;
         assertThat(estimatedHeight).isLessThanOrEqualTo(660.0);
     }
 
@@ -362,5 +367,35 @@ class ChordSheetParserTest {
     void nullOrEmptyInputDoesNotThrow() {
         assertThat(parser.parse("").chordLines()).isNotNull();
         assertThat(parser.parse(null).chordLines()).isNotNull();
+    }
+
+    private static String manyShortSections() {
+        StringBuilder song = new StringBuilder();
+        for (String section : new String[]{"Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge", "Chorus"}) {
+            song.append("[").append(section).append("]\n");
+            for (int i = 0; i < 8; i++) song.append("C                 D/F#\nTake my soul and take my heart ").append(i).append("\n");
+            song.append("\n");
+        }
+        return song.toString();
+    }
+
+    private static double contentFont(ChordSheetParser.ParseResult r) {
+        return r.chordLines().stream().filter(l -> l instanceof ChordLyric c && !c.lyrics().isBlank())
+                .mapToDouble(l -> ((ChordLyric) l).fontSize()).findFirst().orElseThrow();
+    }
+
+    @Test
+    void longSongOfShortLinesSpreadsAcrossMoreColumnsForBiggerText() {
+        ChordSheetParser.ParseResult r = parser.parse(manyShortSections());
+        assertThat(r.numColumns()).isGreaterThanOrEqualTo(3);
+        assertThat(contentFont(r)).isGreaterThanOrEqualTo(12.0);
+    }
+
+    @Test
+    void oneVeryLongLineWrapsInsteadOfShrinkingTheWholeSong() {
+        String longLine = "G  C\nA really long lyric line that goes on and on and on and on and on and on and on and on forever\n";
+        double withLongLine = contentFont(parser.parse(longLine + manyShortSections()));
+        double without = contentFont(parser.parse(manyShortSections()));
+        assertThat(withLongLine).isGreaterThanOrEqualTo(without - 1.0);
     }
 }

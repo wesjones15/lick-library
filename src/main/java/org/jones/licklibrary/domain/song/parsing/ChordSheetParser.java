@@ -33,7 +33,10 @@ public class ChordSheetParser {
     private static final int    MAX_COLUMNS      = 4;
     private static final int    TAB_BLOCK_MIN    = 3;
     private static final int    TAB_BLOCK_MAX    = 8;  // up to 8-string instruments
-    private static final int    TAB_BLOCK_PAIR_COST = 4; // height cost per tab block
+    private static final double COLUMN_GAP       = 24.0; // matches the UI's gap between columns
+    private static final double ROW_HEIGHT       = LINE_HEIGHT_FACTOR / 2; // one text row, in font sizes
+    private static final double FONT_STEP        = 0.5;
+    private static final double MAX_WRAPPED_SHARE = 0.1; // wrap outliers only, not ordinary lyric lines
 
     private record ColumnPlan(int numColumns, double effectiveFont) {}
 
@@ -44,7 +47,7 @@ public class ChordSheetParser {
         List<String> stripped = stripMetadata(lines);
         List<ChordSheetLine> pairs = pairLines(stripped);
         ColumnPlan plan = selectColumnPlan(pairs);
-        double columnWidth = CONTENT_WIDTH / plan.numColumns();
+        double columnWidth = columnWidth(plan.numColumns());
         List<ChordSheetLine> sized = applyFontSizes(pairs, columnWidth, plan.effectiveFont());
         return new ParseResult(sized, plan.numColumns());
     }
@@ -198,29 +201,86 @@ public class ChordSheetParser {
         return s + " ".repeat(len - s.length());
     }
 
+    /**
+     * Picks the column count that allows the largest text: for each count, the biggest font at which
+     * the sheet (long lines wrapped to that font) fits the content height. Plans that would cut off a
+     * tab are only used when every plan does.
+     */
     private ColumnPlan selectColumnPlan(List<ChordSheetLine> pairs) {
+        ColumnPlan best = null;
+        boolean bestClipsTabs = true;
         for (int n = 2; n <= MAX_COLUMNS; n++) {
-            double colWidth = CONTENT_WIDTH / n;
-            double charLimit = colWidth / (MIN_FONT_SIZE * CHAR_WIDTH_RATIO);
-            List<ChordSheetLine> broken = breakOversized(pairs, charLimit);
-            double widthFont = computeGlobalFontSize(broken, colWidth);
-            int effectivePairs = 0;
-            for (ChordSheetLine line : broken) {
-                effectivePairs += (line instanceof GuitarTabLine) ? TAB_BLOCK_PAIR_COST : 1;
-            }
-            int pairsPerCol = (int) Math.ceil((double) effectivePairs / n);
-            double heightFont = CONTENT_HEIGHT / (pairsPerCol * LINE_HEIGHT_FACTOR);
-            double effectiveFont = Math.min(widthFont, heightFont);
-            if (effectiveFont >= MIN_FONT_SIZE) {
-                return new ColumnPlan(n, effectiveFont);
+            double colWidth = columnWidth(n);
+            boolean clipsTabs = widestTab(pairs) > charLimit(colWidth, MIN_FONT_SIZE);
+            for (double font = MAX_FONT_SIZE; font >= MIN_FONT_SIZE; font -= FONT_STEP) {
+                if (!fits(pairs, n, colWidth, font, clipsTabs)) continue;
+                boolean better = best == null
+                        || (bestClipsTabs && !clipsTabs)
+                        || (bestClipsTabs == clipsTabs && font > best.effectiveFont());
+                if (better) {
+                    best = new ColumnPlan(n, font);
+                    bestClipsTabs = clipsTabs;
+                }
+                break;
             }
         }
-        return new ColumnPlan(MAX_COLUMNS, MIN_FONT_SIZE);
+        return best != null ? best : new ColumnPlan(MAX_COLUMNS, MIN_FONT_SIZE);
+    }
+
+    private boolean fits(List<ChordSheetLine> pairs, int numColumns, double colWidth, double font, boolean ignoreTabWidth) {
+        int limit = charLimit(colWidth, font);
+        if (!ignoreTabWidth && widestTab(pairs) > limit) return false;
+        if (font > MIN_FONT_SIZE && wrappedShare(pairs, limit) > MAX_WRAPPED_SHARE) return false;
+        double rows = 0;
+        double tallest = 0;
+        for (ChordSheetLine line : breakOversized(pairs, limit)) {
+            double r = rowsFor(line, font);
+            rows += r;
+            tallest = Math.max(tallest, r);
+        }
+        // Lines can't split across columns, so a column can run up to one line over the even share
+        double rowsPerColumn = rows / numColumns + tallest;
+        return rowsPerColumn * ROW_HEIGHT * font <= CONTENT_HEIGHT;
+    }
+
+    /** Height of a line in text rows at {@code font}, as the UI lays it out. */
+    private static double rowsFor(ChordSheetLine line, double font) {
+        if (line instanceof GuitarTabLine tab) {
+            boolean hasHeader = tab.header() != null && !tab.header().isBlank();
+            return tab.tabLines().size() + (hasHeader ? 1 : 0) + 8.0 / (font * ROW_HEIGHT); // + my-1 margins
+        }
+        ChordLyric pair = (ChordLyric) line;
+        if (pair.chords().isBlank() && pair.lyrics().isBlank()) return DEFAULT_FONT_SIZE / font; // spacer row
+        return 2;
+    }
+
+    private static double wrappedShare(List<ChordSheetLine> pairs, int limit) {
+        long content = 0, wrapped = 0;
+        for (ChordSheetLine line : pairs) {
+            if (!(line instanceof ChordLyric pair) || (pair.chords().isBlank() && pair.lyrics().isBlank())) continue;
+            content++;
+            if (Math.max(pair.chords().stripTrailing().length(), pair.lyrics().stripTrailing().length()) > limit) wrapped++;
+        }
+        return content == 0 ? 0 : (double) wrapped / content;
+    }
+
+    private static int widestTab(List<ChordSheetLine> pairs) {
+        return pairs.stream()
+                .filter(l -> l instanceof GuitarTabLine)
+                .flatMap(l -> ((GuitarTabLine) l).tabLines().stream())
+                .mapToInt(String::length).max().orElse(0);
+    }
+
+    private static double columnWidth(int numColumns) {
+        return (CONTENT_WIDTH - COLUMN_GAP * (numColumns - 1)) / numColumns;
+    }
+
+    private static int charLimit(double colWidth, double font) {
+        return (int) Math.floor(colWidth / (font * CHAR_WIDTH_RATIO));
     }
 
     private List<ChordSheetLine> applyFontSizes(List<ChordSheetLine> pairs, double columnWidth, double globalFontSize) {
-        double charLimit = columnWidth / (MIN_FONT_SIZE * CHAR_WIDTH_RATIO);
-        List<ChordSheetLine> broken = breakOversized(pairs, charLimit);
+        List<ChordSheetLine> broken = breakOversized(pairs, charLimit(columnWidth, globalFontSize));
         List<ChordSheetLine> result = new ArrayList<>();
         for (ChordSheetLine line : broken) {
             if (line instanceof GuitarTabLine tab) {
@@ -257,19 +317,6 @@ public class ChordSheetParser {
             }
         }
         return result;
-    }
-
-    private double computeGlobalFontSize(List<ChordSheetLine> broken, double columnWidth) {
-        double size = MAX_FONT_SIZE;
-        for (ChordSheetLine line : broken) {
-            if (line instanceof GuitarTabLine) continue;
-            ChordLyric pair = (ChordLyric) line;
-            if (pair.chords().isBlank() && pair.lyrics().isBlank()) continue;
-            int maxLen = Math.max(pair.chords().length(), pair.lyrics().length());
-            if (maxLen == 0) continue;
-            size = Math.min(size, columnWidth / (maxLen * CHAR_WIDTH_RATIO));
-        }
-        return Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, size));
     }
 
     /** Splits an over-wide pair into pieces of at most {@code charLimit} columns, keeping chords over their syllables. */
