@@ -13,25 +13,28 @@ public class Guitar implements Instrument {
     public static final Guitar OPEN_D   = new Guitar("Open D",   new Note[]{D, A, D, F_SHARP, A, D});
     public static final Guitar DADGAD   = new Guitar("DADGAD",   new Note[]{D, A, D, G, A, D});
     public static final Guitar EB       = new Guitar("Eb",       new Note[]{D_SHARP, G_SHARP, C_SHARP, F_SHARP, B_FLAT, D_SHARP},
-                                                     new String[]{"eb", "Bb", "Gb", "Db", "Ab", "Eb"});
+                                                     new String[]{"eb", "Bb", "Gb", "Db", "Ab", "Eb"}, -1);
 
     private final String name;
     private final Note[] tuning;
     private final String[] customLabels;
+    private final int soundingOffset;
 
     private Guitar(String name, Note[] tuning) {
-        this(name, tuning, null);
+        this(name, tuning, null, 0);
     }
 
-    private Guitar(String name, Note[] tuning, String[] customLabels) {
+    private Guitar(String name, Note[] tuning, String[] customLabels, int soundingOffset) {
         this.name = name;
         this.tuning = tuning;
         this.customLabels = customLabels;
+        this.soundingOffset = soundingOffset;
     }
 
-    @Override public Note[]   tuning()       { return tuning; }
-    @Override public String   name()         { return name; }
-    @Override public int[]    displayOrder() { return new int[]{5, 4, 3, 2, 1, 0}; }
+    @Override public Note[]   tuning()         { return tuning; }
+    @Override public String   name()           { return name; }
+    @Override public int[]    displayOrder()   { return new int[]{5, 4, 3, 2, 1, 0}; }
+    @Override public int      soundingOffset() { return soundingOffset; }
 
     @Override
     public String[] labels() {

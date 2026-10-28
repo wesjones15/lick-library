@@ -97,6 +97,7 @@ public class LickService {
             if (pipeIdx < 0) continue;
             for (int j = pipeIdx + 1; j < line.length(); j++) {
                 if (Character.isDigit(line.charAt(j))) {
+                    int column = j - (pipeIdx + 1);
                     int fretNum;
                     int techniqueIdx;
                     if (j + 1 < line.length() && Character.isDigit(line.charAt(j + 1))) {
@@ -114,7 +115,8 @@ public class LickService {
                             technique = String.valueOf(next);
                         }
                     }
-                    out.add(new TabNote(i, fretNum, j - (pipeIdx + 1), technique));
+                    // Column is where the fret starts, so "10" lines up with a single digit above it
+                    out.add(new TabNote(i, fretNum, column, technique));
                 }
             }
         }
@@ -125,7 +127,8 @@ public class LickService {
     public UUID uploadSongLick(String rawTab, Instrument instrument, Note songKey, Long userId) {
         List<TabNote> notes = parseTab(rawTab);
         if (notes.isEmpty()) return null;
-        Note rootKey = songKey != null ? songKey
+        // songKey is in standard-shape terms; an Eb-tuned tab sounds those shapes a half step lower.
+        Note rootKey = songKey != null ? songKey.shift(instrument.soundingOffset())
                 : instrument.getNoteAt(
                         instrument.displayOrder()[notes.get(0).stringIndex()], notes.get(0).fret());
         List<IntervalNote> intervals = LickUtils.toIntervals(notes, rootKey, instrument);
@@ -147,8 +150,11 @@ public class LickService {
         return lickRepository.save(lick).getId();
     }
 
+    /** Deletes only licks that were auto-imported; a user's own lick reused by a song is never removed. */
     public void deleteAutoImportedLicks(List<UUID> ids) {
-        ids.forEach(lickRepository::deleteById);
+        lickRepository.findAllById(ids).stream()
+                .filter(Lick::isAutoImported)
+                .forEach(lickRepository::delete);
     }
 
     // --- Lookup pipeline ---

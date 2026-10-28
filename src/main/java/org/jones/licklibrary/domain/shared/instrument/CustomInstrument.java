@@ -27,6 +27,7 @@ public class CustomInstrument implements Instrument {
     private final Note[] tuning;
     private final String[] labels;
     private final int[] displayOrder;
+    private final int soundingOffset;
 
     public CustomInstrument(Note[] tuning) {
         if (tuning == null || tuning.length == 0)
@@ -39,10 +40,23 @@ public class CustomInstrument implements Instrument {
             labels[i]       = DISPLAY.get(tuning[n - 1 - i]);
             displayOrder[i] = n - 1 - i;
         }
+        soundingOffset = uniformShiftFromStandardGuitar(tuning);
+    }
+
+    /** A six-string tuning that is standard shifted evenly (D standard, C# standard) plays standard shapes. */
+    private static int uniformShiftFromStandardGuitar(Note[] tuning) {
+        Note[] standard = Guitar.STANDARD.tuning();
+        if (tuning.length != standard.length) return 0;
+        int shift = Math.floorMod(tuning[0].ordinal() - standard[0].ordinal(), 12);
+        for (int i = 1; i < tuning.length; i++) {
+            if (Math.floorMod(tuning[i].ordinal() - standard[i].ordinal(), 12) != shift) return 0;
+        }
+        return shift > 6 ? shift - 12 : shift;
     }
 
     @Override public Note[]   tuning()       { return tuning; }
     @Override public String   name()         { return "Custom"; }
     @Override public String[] labels()       { return labels; }
     @Override public int[]    displayOrder() { return displayOrder; }
+    @Override public int      soundingOffset() { return soundingOffset; }
 }

@@ -121,10 +121,10 @@ public class SongService {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
         checkOwner(song, currentUserId, role);
-        List<SongLick> songLicks = songLickRepository.findAllBySongId(id);
-        List<UUID> lickIds = songLicks.stream().map(SongLick::getLickId).filter(lid -> lid != null).toList();
+        List<UUID> lickIds = songLickRepository.findAllBySongId(id).stream()
+                .map(SongLick::getLickId).filter(Objects::nonNull).toList();
         songLickRepository.deleteBySongId(id);
-        lickService.deleteAutoImportedLicks(lickIds);
+        deleteOrphanedSongLicks(lickIds);
         songRepository.deleteById(id);
     }
 
@@ -313,20 +313,17 @@ public class SongService {
     }
 
     private void extractAndStoreSongLicks(Song song) {
-        List<SongLick> existing = songLickRepository.findAllBySongId(song.getId());
-        List<UUID> oldLickIds = existing.stream().map(SongLick::getLickId).filter(id -> id != null).toList();
+        List<UUID> oldLickIds = songLickRepository.findAllBySongId(song.getId()).stream()
+                .map(SongLick::getLickId).filter(Objects::nonNull).toList();
         songLickRepository.deleteBySongId(song.getId());
-        lickService.deleteAutoImportedLicks(oldLickIds);
+        songLickRepository.flush(); // Hibernate orders inserts before deletes; (song_id, tab_order) is unique
 
-        int capoSemitones = song.getCapo() != null ? song.getCapo() : 0;
-        Note songKey = song.getOriginalKey() != null
-                ? NoteParser.parse(song.getOriginalKey()).shift(12 - (capoSemitones % 12))
-                : null;
+        Note shapeKey = shapeKey(song);
         int tabOrder = 0;
         for (ChordSheetLine line : song.getChordLines()) {
             if (line instanceof GuitarTabLine tab) {
                 String rawTab = String.join("\n", tab.tabLines());
-                UUID lickId = lickService.uploadSongLick(rawTab, chordSheetParser.detectInstrument(tab.tabLines()), songKey, song.getUserId());
+                UUID lickId = lickService.uploadSongLick(rawTab, chordSheetParser.detectInstrument(tab.tabLines()), shapeKey, song.getUserId());
                 if (lickId != null) {
                     SongLick sl = new SongLick();
                     sl.setSongId(song.getId());
@@ -338,5 +335,29 @@ public class SongService {
                 tabOrder++;
             }
         }
+        // Clean up after relinking so unchanged tabs keep their lick ids
+        deleteOrphanedSongLicks(oldLickIds);
+    }
+
+    /**
+     * Key the song's tabs are written in: originalKey is the sounding key with the song's capo,
+     * and tab frets count from the capo. Null when the key is missing or unreadable.
+     */
+    private static Note shapeKey(Song song) {
+        if (song.getOriginalKey() == null || song.getOriginalKey().isBlank()) return null;
+        try {
+            int capo = song.getCapo() != null ? song.getCapo() : 0;
+            return NoteParser.parse(song.getOriginalKey()).shift(-capo);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /** Licks are shared by interval shape, so only delete ones no other song still links to. */
+    private void deleteOrphanedSongLicks(List<UUID> lickIds) {
+        List<UUID> orphaned = lickIds.stream().distinct()
+                .filter(lickId -> !songLickRepository.existsByLickId(lickId))
+                .toList();
+        lickService.deleteAutoImportedLicks(orphaned);
     }
 }

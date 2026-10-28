@@ -160,6 +160,84 @@ class LickServiceTest {
         assertEquals(7, notes.get(1).fret());
     }
 
+    @Test
+    void parseTab_twoDigitFretSharesColumnWithSingleDigitBelowIt() {
+        String tab =
+            "e|--10--|\n" +
+            "B|--8---|\n" +
+            "G|------|\n" +
+            "D|------|\n" +
+            "A|------|\n" +
+            "E|------|";
+        var notes = lickService.parseTab(tab);
+        assertEquals(2, notes.size());
+        assertEquals(notes.get(0).columnIndex(), notes.get(1).columnIndex(), "a chord should stay simultaneous");
+    }
+
+    // -----------------------------------------------------------------------
+    // uploadSongLick
+    // -----------------------------------------------------------------------
+
+    @Test
+    void uploadSongLick_ebTunedTabReadsIntervalsAgainstTheShapeKey() {
+        // Open low string then 3rd fret: an E-shape "1 b3" lick, written for Eb tuning
+        String ebTab =
+            "eb|--------|\n" +
+            "Bb|--------|\n" +
+            "Gb|--------|\n" +
+            "Db|--------|\n" +
+            "Ab|--------|\n" +
+            "Eb|--0--3--|";
+        when(lickRepository.findByIntervalHash(anyString())).thenReturn(Optional.empty());
+        when(lickRepository.save(any(Lick.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        lickService.uploadSongLick(ebTab, Guitar.EB, Note.E, 1L);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Lick.class);
+        verify(lickRepository).save(captor.capture());
+        assertEquals(List.of(Interval.ONE, Interval.FLAT_THREE),
+                captor.getValue().getIntervals().stream().map(IntervalNote::interval).toList());
+    }
+
+    @Test
+    void uploadSongLick_standardTabInSameSongGivesSameIntervals() {
+        String tab =
+            "e|--------|\n" +
+            "B|--------|\n" +
+            "G|--------|\n" +
+            "D|--------|\n" +
+            "A|--------|\n" +
+            "E|--0--3--|";
+        when(lickRepository.findByIntervalHash(anyString())).thenReturn(Optional.empty());
+        when(lickRepository.save(any(Lick.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        lickService.uploadSongLick(tab, Guitar.STANDARD, Note.E, 1L);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Lick.class);
+        verify(lickRepository).save(captor.capture());
+        assertEquals(List.of(Interval.ONE, Interval.FLAT_THREE),
+                captor.getValue().getIntervals().stream().map(IntervalNote::interval).toList());
+    }
+
+    // -----------------------------------------------------------------------
+    // deleteAutoImportedLicks
+    // -----------------------------------------------------------------------
+
+    @Test
+    void deleteAutoImportedLicks_neverDeletesAUsersOwnLick() {
+        Lick userLick = new Lick();
+        userLick.setAutoImported(false);
+        Lick songLick = new Lick();
+        songLick.setAutoImported(true);
+        UUID userId = UUID.randomUUID(), songId = UUID.randomUUID();
+        when(lickRepository.findAllById(List.of(userId, songId))).thenReturn(List.of(userLick, songLick));
+
+        lickService.deleteAutoImportedLicks(List.of(userId, songId));
+
+        verify(lickRepository).delete(songLick);
+        verify(lickRepository, never()).delete(userLick);
+    }
+
     // -----------------------------------------------------------------------
     // deleteLick
     // -----------------------------------------------------------------------

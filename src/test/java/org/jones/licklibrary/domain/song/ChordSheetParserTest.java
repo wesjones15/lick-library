@@ -128,8 +128,13 @@ class ChordSheetParserTest {
                 .orElseThrow();
         assertThat(fontSize).isBetween(8.0, 20.0);
 
-        int pairsPerCol = (int) Math.ceil((double) result.chordLines().size() / result.numColumns());
-        double estimatedHeight = pairsPerCol * 2.5 * fontSize;
+        // As the UI draws it: a pair is two 1.25em rows, a blank spacer one 8px row, a tab one row per line
+        double totalHeight = result.chordLines().stream().mapToDouble(line -> {
+            if (line instanceof GuitarTabLine gt) return (gt.tabLines().size() + 1) * 1.25 * gt.fontSize() + 8;
+            ChordLyric cl = (ChordLyric) line;
+            return cl.chords().isBlank() && cl.lyrics().isBlank() ? 1.25 * cl.fontSize() : 2.5 * cl.fontSize();
+        }).sum();
+        double estimatedHeight = totalHeight / result.numColumns() + 2.5 * fontSize;
         assertThat(estimatedHeight).isLessThanOrEqualTo(660.0);
     }
 
@@ -252,5 +257,189 @@ class ChordSheetParserTest {
                 .anyMatch(line -> line instanceof GuitarTabLine gt
                         && gt.header().contains("C#m")
                         && gt.tabLines().size() == 6);
+    }
+
+    // --- Edge cases ---
+
+    private ChordLyric firstPair(String raw) {
+        return (ChordLyric) parser.parse(raw).chordLines().get(0);
+    }
+
+    @Test
+    void windowsLineEndingsDoNotLeakCarriageReturns() {
+        ChordLyric first = firstPair("G      C\r\nHello world\r\n");
+        assertThat(first.chords()).doesNotContain("\r").startsWith("G      C");
+        assertThat(first.lyrics()).doesNotContain("\r").startsWith("Hello world");
+    }
+
+    @Test
+    void nonBreakingSpacesFromWebPastesStillSeparateChords() {
+        ChordLyric first = firstPair("G\u00A0\u00A0\u00A0C\nHello world\n");
+        assertThat(first.chords()).startsWith("G   C");
+        assertThat(first.lyrics()).startsWith("Hello world");
+    }
+
+    @Test
+    void tabCharactersExpandToKeepChordsOverTheirWords() {
+        ChordLyric first = firstPair("G\tC\nHello\tworld\n");
+        assertThat(first.chords().indexOf('C')).isEqualTo(first.lyrics().indexOf('w'));
+    }
+
+    @Test
+    void rhythmSlashesAndRepeatCountsStayOnTheChordLine() {
+        ChordLyric first = firstPair("G / / / C / / /  x2\nHello world\n");
+        assertThat(first.chords()).contains("G / / / C");
+        assertThat(first.lyrics()).startsWith("Hello world");
+    }
+
+    @Test
+    void lineOfOnlyNeutralTokensIsNotAChordLine() {
+        ChordLyric first = firstPair("x2\n");
+        assertThat(first.chords()).isBlank();
+        assertThat(first.lyrics()).contains("x2");
+    }
+
+    @Test
+    void extendedChordQualitiesAreRecognised() {
+        ChordLyric first = firstPair("Cmaj7#11  E7#9  C6/9  F#m7b5  Bb°7\nSome lyrics here\n");
+        assertThat(first.chords()).contains("Cmaj7#11");
+        assertThat(first.lyrics()).startsWith("Some lyrics here");
+    }
+
+    @Test
+    void lyricLineMadeOfCapitalisedWordsIsNotAChordLine() {
+        ChordLyric first = firstPair("Baby Do Go\n");
+        assertThat(first.chords()).isBlank();
+        assertThat(first.lyrics()).startsWith("Baby Do Go");
+    }
+
+    @Test
+    void backToBackTabSystemsAreSplitWhereLabelsRepeat() {
+        String system = "e|---0---|\nB|---1---|\nG|---0---|\nD|---2---|\nA|---3---|\nE|-------|\n";
+        List<ChordSheetLine> lines = parser.parse(system + system).chordLines();
+        assertThat(lines).filteredOn(l -> l instanceof GuitarTabLine).hasSize(2)
+                .allMatch(l -> ((GuitarTabLine) l).tabLines().size() == 6);
+    }
+
+    @Test
+    void sevenStringTabStaysOneBlock() {
+        String raw = "e|---0---|\nB|---1---|\nG|---0---|\nD|---2---|\nA|---3---|\nE|-------|\nB|-------|\n";
+        List<ChordSheetLine> lines = parser.parse(raw).chordLines();
+        assertThat(lines).filteredOn(l -> l instanceof GuitarTabLine)
+                .singleElement().matches(l -> ((GuitarTabLine) l).tabLines().size() == 7);
+    }
+
+    @Test
+    void indentedTabLinesAreDetectedAndDedented() {
+        String raw = "  e|---0---|\n  B|---1---|\n  G|---0---|\n  D|---2---|\n";
+        GuitarTabLine tab = (GuitarTabLine) parser.parse(raw).chordLines().get(0);
+        assertThat(tab.tabLines()).allMatch(l -> !l.startsWith(" "));
+    }
+
+    @Test
+    void wrappedLinesKeepChordsOverTheSameSyllables() {
+        StringBuilder chords = new StringBuilder();
+        StringBuilder lyrics = new StringBuilder();
+        String[] words = {"alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel",
+                "india", "juliet", "kilo", "lima", "mike", "november", "oscar", "papa", "quebec",
+                "romeo", "sierra", "tango", "uniform", "victor", "whiskey", "xray", "yankee", "zulu"};
+        String[] names = {"G", "C", "D", "Em"};
+        for (int w = 0; w < words.length; w++) {
+            while (chords.length() < lyrics.length()) chords.append(' ');
+            chords.append(names[w % names.length]);
+            lyrics.append(words[w]).append(' ');
+        }
+        List<ChordLyric> pairs = parser.parse(chords + "\n" + lyrics + "\n").chordLines().stream()
+                .filter(l -> l instanceof ChordLyric).map(l -> (ChordLyric) l)
+                .filter(p -> !p.lyrics().isBlank()).toList();
+        assertThat(pairs).hasSizeGreaterThan(1);
+        for (ChordLyric p : pairs) {
+            for (int col = 0; col < p.chords().length(); col++) {
+                boolean chordStarts = p.chords().charAt(col) != ' ' && (col == 0 || p.chords().charAt(col - 1) == ' ');
+                if (!chordStarts) continue;
+                boolean wordStarts = p.lyrics().charAt(col) != ' ' && (col == 0 || p.lyrics().charAt(col - 1) == ' ');
+                assertThat(wordStarts).as("chord at col %d of '%s' / '%s'", col, p.chords(), p.lyrics()).isTrue();
+            }
+        }
+    }
+
+    @Test
+    void nullOrEmptyInputDoesNotThrow() {
+        assertThat(parser.parse("").chordLines()).isNotNull();
+        assertThat(parser.parse(null).chordLines()).isNotNull();
+    }
+
+    private static String manyShortSections() {
+        StringBuilder song = new StringBuilder();
+        for (String section : new String[]{"Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge", "Chorus"}) {
+            song.append("[").append(section).append("]\n");
+            for (int i = 0; i < 8; i++) song.append("C                 D/F#\nTake my soul and take my heart ").append(i).append("\n");
+            song.append("\n");
+        }
+        return song.toString();
+    }
+
+    private static double contentFont(ChordSheetParser.ParseResult r) {
+        return r.chordLines().stream().filter(l -> l instanceof ChordLyric c && !c.lyrics().isBlank())
+                .mapToDouble(l -> ((ChordLyric) l).fontSize()).findFirst().orElseThrow();
+    }
+
+    @Test
+    void longSongOfShortLinesSpreadsAcrossMoreColumnsForBiggerText() {
+        ChordSheetParser.ParseResult r = parser.parse(manyShortSections());
+        assertThat(r.numColumns()).isGreaterThanOrEqualTo(3);
+        assertThat(contentFont(r)).isGreaterThanOrEqualTo(12.0);
+    }
+
+    @Test
+    void oneVeryLongLineWrapsInsteadOfShrinkingTheWholeSong() {
+        String longLine = "G  C\nA really long lyric line that goes on and on and on and on and on and on and on and on forever\n";
+        double withLongLine = contentFont(parser.parse(longLine + manyShortSections()));
+        double without = contentFont(parser.parse(manyShortSections()));
+        assertThat(withLongLine).isGreaterThanOrEqualTo(without - 1.0);
+    }
+
+    // --- Repeat markers ---
+
+    private List<ChordLyric> contentPairs(String raw) {
+        return parser.parse(raw).chordLines().stream()
+                .filter(l -> l instanceof ChordLyric c && !(c.chords().isBlank() && c.lyrics().isBlank()))
+                .map(l -> (ChordLyric) l).toList();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"x2", "X2", "2x", "(x2)", "(2x)", "[x2]", "×2", "x 2"})
+    void trailingRepeatMarkerWritesTheChordLineOutAgain(String marker) {
+        List<ChordLyric> pairs = contentPairs("G   C   D   " + marker + "\n");
+        assertThat(pairs).hasSize(2);
+        assertThat(pairs).allSatisfy(p -> {
+            assertThat(p.chords().trim()).isEqualTo("G   C   D");
+            assertThat(p.chords()).doesNotContainIgnoringCase("x");
+        });
+    }
+
+    @Test
+    void repeatCountIsHonoured() {
+        assertThat(contentPairs("Intro\nAm  F  C  G  x4\n")).filteredOn(p -> !p.chords().isBlank()).hasSize(4);
+    }
+
+    @Test
+    void repeatedChordLineKeepsItsLyricOnEveryPass() {
+        List<ChordLyric> pairs = contentPairs("G        C   x2\nNa na na na\n");
+        assertThat(pairs).hasSize(2).allSatisfy(p -> assertThat(p.lyrics()).startsWith("Na na na na"));
+    }
+
+    @Test
+    void hugeRepeatCountIsLeftWrittenOut() {
+        List<ChordLyric> pairs = contentPairs("G   C   x16\n");
+        assertThat(pairs).hasSize(1);
+        assertThat(pairs.get(0).chords()).contains("x16");
+    }
+
+    @Test
+    void repeatMarkerOnALyricLineIsLeftAlone() {
+        List<ChordLyric> pairs = contentPairs("Oh yeah (x2)\n");
+        assertThat(pairs).hasSize(1);
+        assertThat(pairs.get(0).lyrics()).contains("(x2)");
     }
 }
