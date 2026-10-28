@@ -17,6 +17,11 @@ public class NoteParser {
         MAP.put("G",  G);   MAP.put("G#", G_SHARP);   MAP.put("AB", G_SHARP);
         MAP.put("A",  A);   MAP.put("A#", B_FLAT);    MAP.put("BB", B_FLAT);
         MAP.put("B",  B);
+        // Enharmonic spellings that fall on a natural note
+        MAP.put("CB", B);   MAP.put("B#", C);
+        MAP.put("FB", E);   MAP.put("E#", F);
+        // Enum names, as stored by older song rows (e.g. "C_SHARP")
+        for (Note n : Note.values()) MAP.put(n.name(), n);
     }
 
     private NoteParser() {}

@@ -17,12 +17,11 @@ public class ChordSheetParser {
 
     private static final Pattern METADATA_LINE  = Pattern.compile("^\\(.*\\)$");
     private static final Pattern SECTION_LABEL  = Pattern.compile("^\\[.*\\]$");
-    private static final Pattern CHORD_TOKEN    = Pattern.compile(
-            "^(NC|N\\.C\\.|[A-G][#b]?(maj|min|m|dim|aug|sus|add)?[0-9]*([A-G][#b]?)?(b[0-9]+)?(sus[0-9]+)?(/[A-G][#b]?)?)$"
-    );
     private static final Pattern TAB_LINE = Pattern.compile(
-            "^[A-Ga-g][#b]?\\|.*-.*$"
+            "^\\s*[A-Ga-g][#b]?\\s?\\|.*-.*$"
     );
+    private static final Pattern UNICODE_SPACE = Pattern.compile("[\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]");
+    private static final int TAB_STOP = 8;
 
     private static final double CONTENT_WIDTH    = 1100.0;
     private static final double CONTENT_HEIGHT   = 660.0;
@@ -33,7 +32,7 @@ public class ChordSheetParser {
     private static final double DEFAULT_FONT_SIZE = 8.0;
     private static final int    MAX_COLUMNS      = 4;
     private static final int    TAB_BLOCK_MIN    = 3;
-    private static final int    TAB_BLOCK_MAX    = 6;
+    private static final int    TAB_BLOCK_MAX    = 8;  // up to 8-string instruments
     private static final int    TAB_BLOCK_PAIR_COST = 4; // height cost per tab block
 
     private record ColumnPlan(int numColumns, double effectiveFont) {}
@@ -41,13 +40,32 @@ public class ChordSheetParser {
     public record ParseResult(List<ChordSheetLine> chordLines, int numColumns) {}
 
     public ParseResult parse(String rawText) {
-        String[] lines = rawText.split("\n");
+        String[] lines = normalize(rawText == null ? "" : rawText).split("\n");
         List<String> stripped = stripMetadata(lines);
         List<ChordSheetLine> pairs = pairLines(stripped);
         ColumnPlan plan = selectColumnPlan(pairs);
         double columnWidth = CONTENT_WIDTH / plan.numColumns();
         List<ChordSheetLine> sized = applyFontSizes(pairs, columnWidth, plan.effectiveFont());
         return new ParseResult(sized, plan.numColumns());
+    }
+
+    /** Pasted sheets arrive with CRLF, non-breaking spaces and tab characters; all of them break column alignment. */
+    private String normalize(String rawText) {
+        String text = UNICODE_SPACE.matcher(rawText.replace("\r\n", "\n").replace('\r', '\n')).replaceAll(" ");
+        if (text.indexOf('\t') < 0) return text;
+        StringBuilder out = new StringBuilder(text.length());
+        int col = 0;
+        for (char c : text.toCharArray()) {
+            if (c == '\t') {
+                int pad = TAB_STOP - (col % TAB_STOP);
+                out.append(" ".repeat(pad));
+                col += pad;
+            } else {
+                out.append(c);
+                col = c == '\n' ? 0 : col + 1;
+            }
+        }
+        return out.toString();
     }
 
     private List<String> stripMetadata(String[] lines) {
@@ -66,11 +84,13 @@ public class ChordSheetParser {
             .replaceAll("\\s+-\\s+", " ")
             .trim();
         if (normalized.isBlank()) return false;
+        boolean hasChord = false;
         for (String token : normalized.split("\\s+")) {
             if (token.isEmpty()) continue;
-            if (!CHORD_TOKEN.matcher(token).matches()) return false;
+            if (ChordSymbol.isChord(token)) hasChord = true;
+            else if (!ChordSymbol.isNeutral(token)) return false;
         }
-        return true;
+        return hasChord;
     }
 
     private boolean isTabLine(String line) {
@@ -78,10 +98,24 @@ public class ChordSheetParser {
     }
 
     private int tabBlockLength(List<String> lines, int start) {
-        int count = 0;
-        while (start + count < lines.size() && isTabLine(lines.get(start + count)) && count < TAB_BLOCK_MAX)
-            count++;
-        return count >= TAB_BLOCK_MIN ? count : 0;
+        if (start < 0) return 0;
+        int run = 0;
+        while (start + run < lines.size() && isTabLine(lines.get(start + run))) run++;
+        if (run < TAB_BLOCK_MIN) return 0;
+        // Back-to-back systems with no blank line between them: split where the string labels repeat
+        for (int period = TAB_BLOCK_MIN; period <= TAB_BLOCK_MAX && 2 * period <= run; period++) {
+            boolean repeats = true;
+            for (int k = 0; k < period && repeats; k++) {
+                repeats = tabLabel(lines.get(start + k)).equals(tabLabel(lines.get(start + period + k)));
+            }
+            if (repeats) return period;
+        }
+        return Math.min(run, TAB_BLOCK_MAX);
+    }
+
+    private static String tabLabel(String line) {
+        int pipe = line.indexOf('|');
+        return pipe < 0 ? "" : line.substring(0, pipe).strip();
     }
 
     public Instrument detectInstrument(List<String> tabLines) {
@@ -108,7 +142,7 @@ public class ChordSheetParser {
             int blockLen = tabBlockLength(lines, i);
             if (blockLen > 0) {
                 List<String> tabLines = lines.subList(i, i + blockLen).stream()
-                        .map(String::stripTrailing).collect(Collectors.toList());
+                        .map(String::strip).collect(Collectors.toList());
                 pairs.add(new GuitarTabLine("", tabLines, DEFAULT_FONT_SIZE));
                 i += blockLen;
                 continue;
@@ -118,7 +152,7 @@ public class ChordSheetParser {
             blockLen = tabBlockLength(lines, i + 1);
             if (blockLen > 0) {
                 List<String> tabLines = lines.subList(i + 1, i + 1 + blockLen).stream()
-                        .map(String::stripTrailing).collect(Collectors.toList());
+                        .map(String::strip).collect(Collectors.toList());
                 pairs.add(new GuitarTabLine(line, tabLines, DEFAULT_FONT_SIZE));
                 i += 1 + blockLen;
                 continue;
@@ -238,39 +272,57 @@ public class ChordSheetParser {
         return Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, size));
     }
 
+    /** Splits an over-wide pair into pieces of at most {@code charLimit} columns, keeping chords over their syllables. */
     private List<ChordLyric> breakLine(ChordLyric pair, int charLimit, double fontSize) {
-        String lyrics = pair.lyrics();
-        String chords = pair.chords();
-
-        int lyricsBreak = Math.min(charLimit, lyrics.length());
-        while (lyricsBreak > 0 && lyricsBreak < lyrics.length() && lyrics.charAt(lyricsBreak - 1) != ' ') {
-            lyricsBreak--;
-        }
-        if (lyricsBreak == 0) lyricsBreak = Math.min(charLimit, lyrics.length());
-
-        int chordsBreak = Math.min(charLimit, chords.length());
-        while (chordsBreak > 0 && chordsBreak < chords.length() && chords.charAt(chordsBreak - 1) != ' ') {
-            chordsBreak--;
-        }
-        if (chordsBreak == 0) chordsBreak = Math.min(charLimit, chords.length());
-
-        int breakAt = Math.min(lyricsBreak, chordsBreak);
-
-        String lyrics1 = lyrics.substring(0, Math.min(breakAt, lyrics.length()));
-        String lyrics2 = lyrics.length() > breakAt ? lyrics.substring(breakAt) : "";
-        String chords1 = chords.length() >= breakAt ? chords.substring(0, breakAt) : padRight(chords, breakAt);
-        String chords2 = chords.length() > breakAt ? chords.substring(breakAt) : "";
-
-        lyrics2 = lyrics2.stripLeading();
-        chords2 = chords2.stripLeading();
-
         List<ChordLyric> out = new ArrayList<>();
-        if (!lyrics1.isBlank() || !chords1.isBlank()) {
-            out.add(equalized(chords1, lyrics1, fontSize));
+        String chords = pair.chords();
+        String lyrics = pair.lyrics();
+        int limit = Math.max(1, charLimit);
+        while (Math.max(chords.length(), lyrics.length()) > limit) {
+            int breakAt = findBreak(chords, lyrics, limit);
+            String chords1 = head(chords, breakAt), lyrics1 = head(lyrics, breakAt);
+            String chords2 = tail(chords, breakAt), lyrics2 = tail(lyrics, breakAt);
+
+            // Drop the same indent from both rows so the second half stays aligned
+            int indent = Math.min(leadingSpaces(chords2), leadingSpaces(lyrics2));
+            chords2 = tail(chords2, indent);
+            lyrics2 = tail(lyrics2, indent);
+
+            if (!chords1.isBlank() || !lyrics1.isBlank()) out.add(equalized(chords1, lyrics1, fontSize));
+            chords = chords2;
+            lyrics = lyrics2;
         }
-        if (!lyrics2.isBlank() || !chords2.isBlank()) {
-            out.add(equalized(chords2, lyrics2, fontSize));
-        }
+        if (!chords.isBlank() || !lyrics.isBlank()) out.add(equalized(chords, lyrics, fontSize));
         return out;
+    }
+
+    /** Latest column within the limit that splits neither a chord nor a word; failing that, protect the chord. */
+    private static int findBreak(String chords, String lyrics, int limit) {
+        for (int at = limit; at > 0; at--) {
+            if (isCleanBreak(chords, at) && isCleanBreak(lyrics, at)) return at;
+        }
+        for (int at = limit; at > 0; at--) {
+            if (isCleanBreak(chords, at)) return at;
+        }
+        return limit;
+    }
+
+    private static boolean isCleanBreak(String s, int at) {
+        return at >= s.length() || s.charAt(at - 1) == ' ' || s.charAt(at) == ' ';
+    }
+
+    private static int leadingSpaces(String s) {
+        if (s.isBlank()) return Integer.MAX_VALUE;
+        int n = 0;
+        while (s.charAt(n) == ' ') n++;
+        return n;
+    }
+
+    private static String head(String s, int end) {
+        return s.substring(0, Math.min(end, s.length()));
+    }
+
+    private static String tail(String s, int start) {
+        return start >= s.length() ? "" : s.substring(start);
     }
 }

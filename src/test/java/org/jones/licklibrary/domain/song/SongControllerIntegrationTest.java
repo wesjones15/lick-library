@@ -142,4 +142,64 @@ class SongControllerIntegrationTest {
                 .content(body))
             .andExpect(status().isOk());
     }
+
+    // --- shared song licks ---
+
+    @Autowired org.jones.licklibrary.domain.lick.LickRepository lickRepository;
+
+    private static final String SHARED_TAB_SHEET =
+            "G\nHello\n"
+            + "e|-----------|\n"
+            + "B|-----------|\n"
+            + "G|-----------|\n"
+            + "D|-----------|\n"
+            + "A|-----------|\n"
+            + "E|--3--5--7--|\n";
+
+    private String uploadSong(String title) throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+            "title", title, "originalKey", "G", "rawChordSheet", SHARED_TAB_SHEET));
+        MvcResult result = mockMvc.perform(post("/api/song")
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isOk()).andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText();
+    }
+
+    private String songLickId(String songId) throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/song/{id}", songId)).andExpect(status().isOk()).andReturn();
+        JsonNode licks = objectMapper.readTree(result.getResponse().getContentAsString()).get("songLicks");
+        return licks.elements().next().get("lickId").asText();
+    }
+
+    @Test
+    void deletingOneSongKeepsALickAnotherSongStillUses() throws Exception {
+        String first = uploadSong("First");
+        String second = uploadSong("Second");
+        String lickId = songLickId(second);
+        assertEquals(songLickId(first), lickId, "same tab shape should share one lick");
+
+        mockMvc.perform(delete("/api/song/{id}", first)).andExpect(status().isNoContent());
+
+        assertTrue(lickRepository.existsById(UUID.fromString(lickId)));
+        mockMvc.perform(get("/api/lick/{id}", lickId).param("key", "G")).andExpect(status().isOk());
+    }
+
+    @Test
+    void reparsingKeepsTheSameLickId() throws Exception {
+        String songId = uploadSong("Stable");
+        String before = songLickId(songId);
+        mockMvc.perform(put("/api/song/{id}/reparse", songId)).andExpect(status().isOk());
+        assertEquals(before, songLickId(songId));
+    }
+
+    @Test
+    void songWithLegacyEnumKeyStillImportsItsTab() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+            "title", "Legacy", "originalKey", "F_SHARP", "rawChordSheet", SHARED_TAB_SHEET));
+        MvcResult result = mockMvc.perform(post("/api/song")
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isOk()).andReturn();
+        String id = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText();
+        assertNotNull(songLickId(id));
+    }
 }

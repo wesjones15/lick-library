@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface SongLickRepository extends JpaRepository<SongLick, UUID> {
     List<SongLick> findAllBySongId(UUID songId);
 
+    boolean existsByLickId(UUID lickId);
+
     @Modifying
     @Transactional
     void deleteBySongId(UUID songId);
